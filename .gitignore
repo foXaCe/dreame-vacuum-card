@@ -3,3 +3,6 @@
 .idea
 .env
 .env.*
+
+# Local working files (Claude prompts, notes)
+prompt-*.md
