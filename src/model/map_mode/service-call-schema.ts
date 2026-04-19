@@ -1,7 +1,7 @@
 import { ReplacedKey, ServiceCallSchemaConfig, VariablesStorage } from "../../types/types";
 import { TemplatableValue } from "./templatable-value";
 import { ServiceCall } from "./service-call";
-import { getFilledTemplate } from "../../utils";
+import { getFilledTemplate } from "../../template-utils";
 
 export class ServiceCallSchema {
     public readonly evaluateDataAsTemplate: boolean;

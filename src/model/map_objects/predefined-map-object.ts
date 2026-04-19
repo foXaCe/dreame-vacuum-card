@@ -23,6 +23,11 @@ export abstract class PredefinedMapObject extends MapObject {
         return this._selected;
     }
 
+    /** Réinitialise l'état de sélection (utilisé quand la carte purge ses sélections). */
+    public deselect(): void {
+        this._selected = false;
+    }
+
     protected _toggleSelected(): void {
         if (this._common_config.state_entity) {
             this._selected = this._context.getState(this._common_config.state_entity) != "on";

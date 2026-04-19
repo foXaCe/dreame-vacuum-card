@@ -11,7 +11,7 @@ import {
 import { localize } from "../../localize/localize";
 import { ServiceCall } from "./service-call";
 import { PlatformGenerator } from "../generators/platform-generator";
-import { evaluateJinjaTemplate, replaceInTarget } from "../../utils";
+import { evaluateJinjaTemplate, replaceInTarget } from "../../template-utils";
 import { Modifier } from "./modifier";
 import { HomeAssistantFixed } from "../../types/fixes";
 

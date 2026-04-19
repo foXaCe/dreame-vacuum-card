@@ -8,7 +8,6 @@ import {
     ConditionalObjectConfig,
     ConditionConfig,
     EntityRegistryEntry,
-    KeyReplacer,
     Language,
     PredefinedPointConfig,
     PredefinedZoneConfig,
@@ -20,11 +19,11 @@ import { MapMode } from "./model/map_mode/map-mode";
 import { SelectionType } from "./model/map_mode/selection-type";
 import { MousePosition } from "./model/map_objects/mouse-position";
 import { XiaomiVacuumMapCard } from "./dreame-vacuum-card";
-import { Modifier } from "./model/map_mode/modifier";
 import { HomeAssistantFixed } from "./types/fixes";
 import { ServiceCallSchema } from "./model/map_mode/service-call-schema";
 import { TemplatableItemValue } from "./model/map_mode/templatable-value";
 import { PlatformGenerator } from "./model/generators/platform-generator";
+import { getFilledTemplate } from "./template-utils";
 
 export function stopEvent(event: MouseEvent | TouchEvent): void {
     event.preventDefault();
@@ -277,80 +276,13 @@ function copyMessageFallback(val: string): void {
     }
 }
 
-export async function evaluateJinjaTemplate(
-    hass: HomeAssistantFixed,
-    template: string
-): Promise<string | Record<string, unknown>> {
-    return new Promise((resolve, reject) => {
-        let settled = false;
-        let unsubscribe: (() => void) | undefined;
-        hass.connection
-            .subscribeMessage(
-                (msg: { result: string | Record<string, unknown> }) => {
-                    if (settled) return;
-                    settled = true;
-                    resolve(msg.result);
-                    // Désabonne dès la première réponse — un render est one-shot ici.
-                    unsubscribe?.();
-                },
-                { type: "render_template", template: template }
-            )
-            .then((unsub) => {
-                if (settled) {
-                    unsub();
-                } else {
-                    unsubscribe = unsub;
-                }
-            })
-            .catch(reject);
-    });
-}
-
-export function replaceInTarget(target: Record<string, unknown>, keyReplacer: KeyReplacer): void {
-    for (const [key, value] of Object.entries(target)) {
-        if (typeof value === "object") {
-            replaceInTarget(value as Record<string, unknown>, keyReplacer);
-        } else if (typeof value === "string") {
-            target[key] = keyReplacer(value as string);
-        }
-    }
-}
-
-export function getReplacedValue(value: string, variables: VariablesStorage): ReplacedKey {
-    const vars = Object.fromEntries(Object.entries(variables ?? {}).map(([k, v]) => [`[[${k}]]`, v]));
-    const fullValueReplacer = (v: string): ReplacedKey | null => (v in vars ? vars[v] : null);
-    return fullValueReplacer(value) ?? replaceInStr(value, vars, fullValueReplacer);
-}
-
-export function replaceInStr(
-    value: string,
-    variables: VariablesStorage,
-    kr: (string) => ReplacedKey | null
-): ReplacedKey {
-    let output = value;
-    Object.keys(variables).forEach((tv) => {
-        let replaced = kr(tv);
-        if (typeof replaced === "object") {
-            replaced = JSON.stringify(replaced);
-        }
-        output = output.replaceAll(tv, `${replaced}`);
-    });
-    if (output.endsWith(Modifier.JSONIFY)) {
-        return JSON.parse(output.replace(Modifier.JSONIFY, ""));
-    }
-    return output;
-}
-
-export function getFilledTemplate(
-    template: Record<string, unknown>,
-    ...variablesStorages: VariablesStorage[]
-): ReplacedKey {
-    const target = JSON.parse(JSON.stringify(template));
-    let variables: VariablesStorage = {};
-    for (const variablesStorage of variablesStorages) {
-        variables = { ...variablesStorage, ...variables };
-    }
-    const keyReplacer = (v) => getReplacedValue(v, variables);
-    replaceInTarget(target, keyReplacer);
-    return target;
-}
+// Template substitution helpers moved to ./template-utils to avoid import cycles
+// between utils (which needs MapMode) and the map_mode module (which needs the
+// template primitives). Re-export for backwards compat.
+export {
+    replaceInTarget,
+    getReplacedValue,
+    replaceInStr,
+    getFilledTemplate,
+    evaluateJinjaTemplate,
+} from "./template-utils";

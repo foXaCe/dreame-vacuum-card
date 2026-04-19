@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { forwardHaptic, LovelaceCard, LovelaceCardEditor } from "custom-card-helpers";
@@ -247,13 +246,55 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         document.removeEventListener(EVENT_LOVELACE_DOM, this._handleLovelaceDomEvent);
         this.connected = false;
+        if (this._throttledRenderTimer !== undefined) {
+            clearTimeout(this._throttledRenderTimer);
+            this._throttledRenderTimer = undefined;
+        }
     }
+
+    private _lastRenderTs = 0;
+    private _throttledRenderTimer?: number;
+    private static readonly _CLEANING_RENDER_MIN_MS = 200;
 
     protected shouldUpdate(changedProps: PropertyValues): boolean {
         if (!this.config) {
             return false;
         }
-        return hasConfigOrAnyEntityChanged(this.watchedEntities, changedProps, false, this.hass);
+        const changed = hasConfigOrAnyEntityChanged(this.watchedEntities, changedProps, false, this.hass);
+        if (!changed) return false;
+
+        // Pendant un nettoyage actif le coordinator pousse des updates toutes les ~1-3s.
+        // On throttle pour rester à ~5 FPS maximum — Lit reste réactif aux clics utilisateur
+        // (qui ne passent pas par shouldUpdate) mais on évite les rebuilds cascadés.
+        if (this._isRobotActive() && !changedProps.has("config")) {
+            const now = Date.now();
+            const dt = now - this._lastRenderTs;
+            if (dt < XiaomiVacuumMapCard._CLEANING_RENDER_MIN_MS) {
+                // Planifie un render différé si aucun n'est déjà en vol.
+                if (this._throttledRenderTimer === undefined) {
+                    this._throttledRenderTimer = window.setTimeout(() => {
+                        this._throttledRenderTimer = undefined;
+                        this.requestUpdate();
+                    }, XiaomiVacuumMapCard._CLEANING_RENDER_MIN_MS - dt);
+                }
+                return false;
+            }
+            this._lastRenderTs = now;
+        }
+        return true;
+    }
+
+    private _isRobotActive(): boolean {
+        const preset = this.currentPreset;
+        if (!preset?.entity) return false;
+        const state = this.hass?.states?.[preset.entity]?.state;
+        return (
+            state === "cleaning" ||
+            state === "segment_cleaning" ||
+            state === "zoned_cleaning" ||
+            state === "spot_cleaning" ||
+            state === "returning"
+        );
     }
 
     private _resolveStateSensor(entityId: string): string | null {
@@ -268,7 +309,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         for (const [eid, entry] of Object.entries(this.hass.entities)) {
             if (entry.device_id !== deviceId || !eid.startsWith("sensor.")) continue;
-            if ((entry as any).translation_key === "state" || eid.endsWith("_state")) {
+            if (entry.translation_key === "state" || eid.endsWith("_state")) {
                 this._stateSensorId = eid;
                 if (!this.watchedEntities.includes(eid)) {
                     this.watchedEntities.push(eid);
@@ -516,11 +557,11 @@ export class XiaomiVacuumMapCard extends LitElement {
         this.selectedManualRectangles = [];
         this.selectedManualPoint = undefined;
         this.selectedManualPath = new ManualPath([], this._getContext());
-        this.selectedPredefinedRectangles.forEach((r) => ((r as any).selected = false));
+        this.selectedPredefinedRectangles.forEach((r) => r.deselect());
         this.selectedPredefinedRectangles = [];
-        this.selectedRooms.forEach((r) => ((r as any)._selected = false));
+        this.selectedRooms.forEach((r) => r.deselect());
         this.selectedRooms = [];
-        this.selectedPredefinedPoints.forEach((p) => ((p as any).selected = false));
+        this.selectedPredefinedPoints.forEach((p) => p.deselect());
         this.selectedPredefinedPoints = [];
         this._overlayDirty = true;
         this.requestUpdate();
@@ -724,7 +765,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         this.selectedPredefinedRectangles = [];
         // Réinitialiser l'état _selected de toutes les pièces avant de vider le tableau
         this.selectableRooms.forEach((room) => {
-            (room as any)._selected = false;
+            room.deselect();
         });
         this.selectedRooms = [];
         this.selectedPredefinedPoints = [];
@@ -852,8 +893,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         const { selection } = this._getSelection(currentMode);
 
         if (this.isInEditor) {
-            const event = new Event(EVENT_SELECTION_CHANGED);
-            (event as any).selection = selection ?? "[]";
+            const event: Event & { selection?: unknown } = new Event(EVENT_SELECTION_CHANGED);
+            event.selection = selection ?? "[]";
             window.dispatchEvent(event);
         }
 
@@ -878,8 +919,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private async _handleAutogeneratedConfigGet(): Promise<void> {
-        const event = new Event(EVENT_AUTOGENERATED_CONFIG);
-        (event as any).presetConfig = {
+        const event: Event & { presetConfig?: unknown } = new Event(EVENT_AUTOGENERATED_CONFIG);
+        event.presetConfig = {
             ...this.config,
             map_modes: this._getModes(this.config).map((m) => m.toMapModeConfig()),
         };
@@ -887,8 +928,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _handleRoomsConfigGet(): void {
-        const event = new Event(EVENT_ROOM_CONFIG);
-        (event as any).roomConfig = this._getRoomsConfig();
+        const event: Event & { roomConfig?: RoomConfigEventData } = new Event(EVENT_ROOM_CONFIG);
+        event.roomConfig = this._getRoomsConfig();
         window.dispatchEvent(event);
     }
 
@@ -896,7 +937,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         const currentPreset = this._getCurrentPreset();
         const currentMode = this._getCurrentMode();
         const { selection, variables } = this._getSelection(currentMode);
-        if ((selection as any[]).length === 0 || !currentMode) {
+        if (selection.length === 0 || !currentMode) {
             forwardHaptic("failure");
         } else {
             const serviceCall = await currentMode.getServiceCall(
@@ -906,8 +947,8 @@ export class XiaomiVacuumMapCard extends LitElement {
                 this.repeats,
                 { ...this.internalVariables, ...variables }
             );
-            const event = new Event(EVENT_SERVICE_CALL);
-            (event as any).serviceCall = JSON.stringify(serviceCall, null, 2);
+            const event: Event & { serviceCall?: string } = new Event(EVENT_SERVICE_CALL);
+            event.serviceCall = JSON.stringify(serviceCall, null, 2);
             window.dispatchEvent(event);
         }
     }
@@ -1039,7 +1080,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         const currentPreset = this._getCurrentPreset();
         const currentMode = this._getCurrentMode();
         const { selection, variables } = this._getSelection(currentMode);
-        if ((selection as any[]).length === 0 || !currentMode) {
+        if (selection.length === 0 || !currentMode) {
             forwardHaptic("failure");
         } else {
             const repeats = this.repeats;
@@ -1183,13 +1224,10 @@ export class XiaomiVacuumMapCard extends LitElement {
             return;
         }
 
-        const target = event.target as SVGElement;
-        // Pour les éléments SVG, className est un SVGAnimatedString, pas une string
-        const classNameObj = target?.className;
-        const classNames =
-            (typeof classNameObj === "string" ? classNameObj : classNameObj?.baseVal) ||
-            target?.getAttribute?.("class") ||
-            "";
+        const target = event.target as Element | null;
+        // getAttribute("class") couvre uniformément HTMLElement et SVGElement sans
+        // tomber sur le getter className (SVGAnimatedString) déprécié en TS 6.
+        const classNames = target?.getAttribute?.("class") ?? "";
         const isRoomPolygon = classNames.includes("room-polygon");
 
         // Si le click provient d'un polygone de pièce, ne rien faire ici
@@ -2093,7 +2131,11 @@ export class XiaomiVacuumMapCard extends LitElement {
             }
 
             #map-image.zoomed {
+                /* crisp-edges préserve les pixels sans flouter, en évitant l'aspect "grille"
+                   brutal de pixelated. Fallback sur pixelated pour les navigateurs qui ne
+                   reconnaissent pas crisp-edges. */
                 image-rendering: pixelated;
+                image-rendering: crisp-edges;
             }
 
             #room-selection-overlay {
