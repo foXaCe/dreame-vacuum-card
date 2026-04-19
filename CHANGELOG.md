@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.2] - 2026-04-19
+
+### Added
+- Accessibility: ARIA labels, `role="button"`, `tabindex`, `aria-pressed` on map overlay icons, keyboard activation (Enter/Space), `:focus-visible` styles
+- Theme-aware action button colors via CSS custom properties (`--success-color`, `--warning-color`, `--error-color`)
+- French/English translation keys for map controls (`dreame_ui.map.*`)
+- Missing `lv` (Latvian) language registration in translation map
+
+### Changed
+- Map rendering performance during active cleaning: pick canvas cache is now keyed on structure hash (segment_map or rooms geometry) instead of `camera.last_updated`, avoiding rebuilds on every robot movement tick
+- `_updateCalibration` memoized on calibration points — `CoordinatesConverter` matrices no longer recreated on each render
+- `getImageData` result cached on pick canvas key — eliminates repeated GPU→CPU readbacks in room selection overlay
+- Runtime validation of `SelectionType` / `RepeatsType` enums parsed from YAML config, with fallback on invalid values
+- `console.warn` / `console.error` output now gated behind `config.debug`
+- Modernized clipboard API (`navigator.clipboard.writeText`) with execCommand fallback
+- Resolved 24 eslint warnings (dead code, unused imports, `any` types, stale directives)
+
+### Fixed
+- Memory leak in `PinchZoom`: `MutationObserver` and `PointerTracker` are now detached in `disconnectedCallback`
+- `stringReplaceAll` polyfill: regex metacharacters are now escaped, avoiding unintended pattern interpretation
+- `evaluateJinjaTemplate` now unsubscribes from the WebSocket message stream on first response (stream leak)
+- No longer mutates `watchedEntities` inside `render()` (anti-pattern causing potential re-render loops)
+- Null-check on camera `entity_picture` attribute in `_getMapSrc`
+- Removed arbitrary `setTimeout(100)` delays in favor of `updateComplete`
+- Deduplicated `currentPreset` assignment
+- Obstacle `possibility` value of `0` now displays correctly (was falsy)
+- Invalid character class in room CSS id regex (trailing hyphen, stale `m` flag)
+- Defensive copy before `sort()` in `findTopLeft` (was mutating caller's array)
+- Safer DOM target casts in manual rectangle drag handlers
+
 ## [5.2.1] - 2026-02-03
 
 ### Fixed
