@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2026-04-19
+
+### Added
+- **"Add to cleaning" button**: when a segment cleaning is already active and you pick new rooms, the primary button switches from "Clean" to "+ Add to cleaning" and relaunches `vacuum_clean_segment` with the union of in-progress + newly selected rooms — no more stop/restart workflow
+- Active room selection memory is automatically cleared when the vacuum returns to docked/idle/charging
+- Support for `room.segment_id` attribute exposed by the integration: maps raw pixel values of the `segment_map` PNG to `room_id`, enabling correct hit-testing and overlay on devices where `raw ≠ room_id` (e.g. Kitchen `room_id=2` but segment `raw=11`)
+- French/English translations for `dreame_ui.action.append`
+
+### Changed
+- Resolved all circular import warnings by extracting template helpers into a dedicated `template-utils.ts` module
+- Tightened TypeScript types in the main card file: removed the file-wide `eslint-disable no-explicit-any` directive and eliminated all 11 `as any` casts (typed event intersections, public `deselect()` method on `PredefinedMapObject`, proper `EntityRegistryDisplayEntry` usage)
+- `_buildPickCanvasFromPolygons` draws with `segment_id` when available instead of `parseInt(roomId)`
+- Structure hash for pick canvas cache now includes `segment_id` so it invalidates on re-calibration
+- `image-rendering` now uses `crisp-edges` with `pixelated` fallback for sharper map zoom
+- Babel plugins migrated from deprecated `@babel/plugin-proposal-*` to `@babel/plugin-transform-*`
+- TypeScript bumped to 6.0, `moduleResolution` migrated to `bundler`, and `tsconfig` target/lib bumped to `es2021`
+- 10 Dependabot PRs merged (rollup, eslint group, picomatch, flatted, minimatch, custom-card-helpers 2.0, action-gh-release 3, upload-artifact 7, typescript 6)
+
+### Fixed
+- `className` deprecation warning in TypeScript 6 (replaced with `getAttribute("class")`)
+- 1 moderate `npm audit` vulnerability (brace-expansion)
+- CodeQL CI conflict: removed custom workflow because the repo's GitHub Default Setup already analyzes JS/TS and rejected "advanced configuration" SARIF uploads
+
 ## [5.2.2] - 2026-04-19
 
 ### Added
