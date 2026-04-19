@@ -1,4 +1,3 @@
-/* eslint-disable */
 // noinspection JSUnusedGlobalSymbols
 
 import PointerTracker, { Pointer } from "pointer-tracker";
@@ -64,7 +63,7 @@ function getMidpoint(a: Point, b?: Point): Point {
 function getAbsoluteValue(value: string | number, max: number): number {
     if (typeof value === "number") return value;
 
-    if (value.trimRight().endsWith("%")) {
+    if (value.trimEnd().endsWith("%")) {
         return (max * parseFloat(value)) / 100;
     }
     return parseFloat(value);
@@ -101,6 +100,9 @@ export default class PinchZoom extends HTMLElement {
     private _enablePan = true;
     private _locked = false;
     private _twoFingerPan = false;
+    private _mutationObserver?: MutationObserver;
+    private _pointerTracker?: PointerTracker;
+    private _onWheelHandler = (event: WheelEvent) => this._onWheel(event);
 
     static get observedAttributes() {
         return [minScaleAttr, maxScaleAttr, noDefaultPanAttr, twoFingerPanAttr, lockedAttr];
@@ -112,7 +114,8 @@ export default class PinchZoom extends HTMLElement {
         // Watch for children changes.
         // Note this won't fire for initial contents,
         // so _stageElChange is also called in connectedCallback.
-        new MutationObserver(() => this._stageElChange()).observe(this, { childList: true });
+        this._mutationObserver = new MutationObserver(() => this._stageElChange());
+        this._mutationObserver.observe(this, { childList: true });
         // /*
         // Watch for pointers
         const pointerTracker: PointerTracker = new PointerTracker(this, {
@@ -149,8 +152,17 @@ export default class PinchZoom extends HTMLElement {
                 return false;
             },
         });
+        this._pointerTracker = pointerTracker;
         // */
-        this.addEventListener("wheel", (event) => this._onWheel(event));
+        this.addEventListener("wheel", this._onWheelHandler);
+    }
+
+    disconnectedCallback(): void {
+        this._mutationObserver?.disconnect();
+        this._mutationObserver = undefined;
+        this._pointerTracker?.stop();
+        this._pointerTracker = undefined;
+        this.removeEventListener("wheel", this._onWheelHandler);
     }
 
     attributeChangedCallback(name: string, _oldValue: string, newValue: string) {

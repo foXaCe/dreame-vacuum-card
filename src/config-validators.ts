@@ -2,7 +2,6 @@ import {
     CalibrationPoint,
     CalibrationSourceConfig,
     CardPresetConfig,
-    IconActionConfig,
     IconConfig,
     LabelConfig,
     Language,
@@ -13,7 +12,6 @@ import {
     PredefinedZoneConfig,
     RoomConfig,
     ServiceCallSchemaConfig,
-    TileConfig,
     TranslatableString,
     XiaomiVacuumMapCardConfig,
 } from "./types/types";
@@ -61,34 +59,6 @@ function validateCalibrationSource(calibrationSource: CalibrationSourceConfig): 
         return calibrationSource.calibration_points.flatMap((cp) => validateCalibrationPoint(cp));
     }
     return [];
-}
-
-function validateIconConfig(config: IconActionConfig): TranslatableString[] {
-    if (!config) {
-        return ["validation.preset.icons.invalid"];
-    }
-    const errors: TranslatableString[] = [];
-    if (!config.icon && config.type !== "menu" && !config.replace_config) {
-        errors.push("validation.preset.icons.icon.missing");
-    }
-    return errors;
-}
-
-function validateTileConfig(config: TileConfig): TranslatableString[] {
-    if (!config) {
-        return ["validation.preset.tiles.invalid"];
-    }
-    const errors: TranslatableString[] = [];
-    if (config.replace_config) {
-        return errors;
-    }
-    if (!config.entity && !config.internal_variable) {
-        errors.push("validation.preset.tiles.entity.missing");
-    }
-    if (!config.label && !config.entity) {
-        errors.push("validation.preset.tiles.label.missing");
-    }
-    return errors;
 }
 
 function validateIcon(config: IconConfig): TranslatableString[] {

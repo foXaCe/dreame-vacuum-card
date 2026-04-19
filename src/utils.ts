@@ -253,6 +253,14 @@ export async function delay(ms: number): Promise<void> {
 }
 
 export function copyMessage(val: string): void {
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(val).catch(() => copyMessageFallback(val));
+        return;
+    }
+    copyMessageFallback(val);
+}
+
+function copyMessageFallback(val: string): void {
     const selBox = document.createElement("textarea");
     selBox.style.position = "fixed";
     selBox.style.left = "0";
@@ -262,19 +270,39 @@ export function copyMessage(val: string): void {
     document.body.appendChild(selBox);
     selBox.focus();
     selBox.select();
-    document.execCommand("copy");
-    document.body.removeChild(selBox);
+    try {
+        document.execCommand("copy");
+    } finally {
+        document.body.removeChild(selBox);
+    }
 }
 
 export async function evaluateJinjaTemplate(
     hass: HomeAssistantFixed,
     template: string
 ): Promise<string | Record<string, unknown>> {
-    return new Promise((resolve) => {
-        hass.connection.subscribeMessage((msg: { result: string | Record<string, unknown> }) => resolve(msg.result), {
-            type: "render_template",
-            template: template,
-        });
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let unsubscribe: (() => void) | undefined;
+        hass.connection
+            .subscribeMessage(
+                (msg: { result: string | Record<string, unknown> }) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(msg.result);
+                    // Désabonne dès la première réponse — un render est one-shot ici.
+                    unsubscribe?.();
+                },
+                { type: "render_template", template: template }
+            )
+            .then((unsub) => {
+                if (settled) {
+                    unsub();
+                } else {
+                    unsubscribe = unsub;
+                }
+            })
+            .catch(reject);
     });
 }
 

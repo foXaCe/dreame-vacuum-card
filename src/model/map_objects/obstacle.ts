@@ -63,7 +63,7 @@ export class Obstacle extends MapObject {
                             <div class="obstacle-background"></div>
                             <ha-icon icon="${icon}"></ha-icon>
                             ${
-                                this._config.possibility
+                                this._config.possibility != null
                                     ? svg`
                                 <div class="obstacle-probability">${this._config.possibility}%</div>
                             `

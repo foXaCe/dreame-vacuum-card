@@ -17,7 +17,6 @@ enum DragMode {
 export class ManualRectangle extends MapObject {
     public _id: string;
 
-    private _selectedTarget!: EventTarget | null;
     private _selectedElement!: SVGGraphicsElement | null;
     private _dragMode: DragMode;
 
@@ -130,19 +129,17 @@ export class ManualRectangle extends MapObject {
         if (window.TouchEvent && event instanceof TouchEvent && (event as TouchEvent).touches.length > 1) {
             return;
         }
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        if (!(<Element>event.target).classList.contains("draggable")) {
+        const targetEl = event.target as Element | null;
+        if (!targetEl?.classList?.contains("draggable")) {
             return;
         }
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        if (!(<Element>event.target).parentElement?.classList.contains("manual-rectangle-wrapper")) {
+        if (!targetEl.parentElement?.classList.contains("manual-rectangle-wrapper")) {
             return;
         }
         if (!(event.target as SVGGraphicsElement).parentElement) {
             return;
         }
         stopEvent(event);
-        this._selectedTarget = event.target;
         const targetElement = event.target as SVGGraphicsElement;
         if (targetElement.classList.contains("movable")) {
             this._dragMode = DragMode.MOVE;
@@ -225,7 +222,6 @@ export class ManualRectangle extends MapObject {
     private _endDrag(event: MouseEvent | TouchEvent): void {
         stopEvent(event);
         this._selectedElement = null;
-        this._selectedTarget = null;
         this.update();
     }
 
@@ -241,7 +237,12 @@ export class ManualRectangle extends MapObject {
         }
     }
 
-    private _toVacuumFromDimensions(x, y, width, height): [number, number, number, number] {
+    private _toVacuumFromDimensions(
+        x: number,
+        y: number,
+        width: number,
+        height: number
+    ): [number, number, number, number] {
         const imageX = this.realScaled(x);
         const imageY = this.realScaled(y);
         const imageWidth = this.realScaled(width);

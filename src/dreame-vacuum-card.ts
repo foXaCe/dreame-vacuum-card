@@ -137,6 +137,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _pickCtx: CanvasRenderingContext2D | null = null;
     private _lastPickCacheKey?: string;
     private _pickLoadingKey?: string;
+    private _pickData?: Uint8ClampedArray;
+    private _pickDataCacheKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
 
@@ -194,6 +196,7 @@ export class XiaomiVacuumMapCard extends LitElement {
             throw new Error(this._localize("common.invalid_configuration"));
         }
         this.config = config;
+        MapMode.debug = config.debug ?? false;
         if (isOldConfig(config)) {
             this.oldConfig = true;
             return;
@@ -267,6 +270,9 @@ export class XiaomiVacuumMapCard extends LitElement {
             if (entry.device_id !== deviceId || !eid.startsWith("sensor.")) continue;
             if ((entry as any).translation_key === "state" || eid.endsWith("_state")) {
                 this._stateSensorId = eid;
+                if (!this.watchedEntities.includes(eid)) {
+                    this.watchedEntities.push(eid);
+                }
                 return eid;
             }
         }
@@ -290,9 +296,6 @@ export class XiaomiVacuumMapCard extends LitElement {
 
         const stateSensorId = this._resolveStateSensor(preset.entity);
         const robotState = stateSensorId ? (this.hass.states[stateSensorId]?.state ?? "") : "";
-        if (stateSensorId && !this.watchedEntities.includes(stateSensorId)) {
-            this.watchedEntities.push(stateSensorId);
-        }
 
         this._updateCalibration(preset);
 
@@ -399,14 +402,26 @@ export class XiaomiVacuumMapCard extends LitElement {
                             <ha-icon
                                 icon="${this.mapLocked ? "mdi:lock" : "mdi:lock-open-variant"}"
                                 class="icon-on-map clickable ripple ${this.mapLocked ? "lock-active" : ""}"
+                                role="button"
+                                tabindex="0"
+                                aria-pressed="${this.mapLocked ? "true" : "false"}"
+                                aria-label="${this._localize(
+                                    this.mapLocked ? "dreame_ui.map.unlock" : "dreame_ui.map.lock"
+                                )}"
                                 @click="${this._toggleMapLock}"
+                                @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._toggleMapLock)}"
                             ></ha-icon>
                             ${this.activeTab === "zone"
                                 ? html`
                                       <ha-icon
                                           icon="mdi:plus"
                                           class="icon-on-map clickable ripple"
+                                          role="button"
+                                          tabindex="0"
+                                          aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
                                           @click="${() => this._addRectangle()}"
+                                          @keydown="${(e: KeyboardEvent) =>
+                                              this._handleIconKey(e, () => this._addRectangle())}"
                                       ></ha-icon>
                                   `
                                 : null}
@@ -414,12 +429,11 @@ export class XiaomiVacuumMapCard extends LitElement {
                                 ? html`
                                       <div
                                           class="icon-on-map clickable ripple cycle-counter"
-                                          @click="${() => {
-                                              const maxRepeats = this._getCurrentMode()?.maxRepeats ?? 3;
-                                              this.repeats = (this.repeats % maxRepeats) + 1;
-                                              forwardHaptic("selection");
-                                              this.requestUpdate();
-                                          }}"
+                                          role="button"
+                                          tabindex="0"
+                                          aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
+                                          @click="${this._cycleRepeats}"
+                                          @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
                                       >
                                           x${this.repeats}
                                       </div>
@@ -428,7 +442,11 @@ export class XiaomiVacuumMapCard extends LitElement {
                             <ha-icon
                                 icon="mdi:image-filter-center-focus"
                                 class="icon-on-map clickable ripple"
+                                role="button"
+                                tabindex="0"
+                                aria-label="${this._localize("dreame_ui.map.recenter")}"
                                 @click="${this._restoreMap}"
+                                @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._restoreMap)}"
                             ></ha-icon>
                         </div>
                     </div>
@@ -481,8 +499,8 @@ export class XiaomiVacuumMapCard extends LitElement {
                 const zoneIdx = modes.findIndex((m) => m.selectionType === SelectionType.MANUAL_RECTANGLE);
                 if (zoneIdx >= 0) {
                     this._setCurrentMode(zoneIdx);
-                    // Ajouter automatiquement un rectangle pour commencer à dessiner
-                    setTimeout(() => this._addRectangle(), 100);
+                    // Attend le prochain rendu Lit puis ajoute le rectangle initial
+                    this.updateComplete.then(() => this._addRectangle());
                 }
                 break;
             }
@@ -592,13 +610,13 @@ export class XiaomiVacuumMapCard extends LitElement {
         this.modes = this._getModes(config);
 
         this.presetIndex = index;
-        this.currentPreset = config;
         this.internalVariables = this._getInternalVariables(config);
 
+        // _setPreset assigne currentPreset + watchedEntities — source unique de vérité.
         this._setPreset(config);
-        setTimeout(() => this.requestUpdate(), 100);
         this._setCurrentMode(0, false);
         this._selectionChanged();
+        this.requestUpdate();
     }
 
     private _getInternalVariables(config: CardPresetConfig): VariablesStorage {
@@ -619,24 +637,35 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     private _setPreset(config: CardPresetConfig): void {
         this.currentPreset = config;
-        this.watchedEntities = getWatchedEntities({ type: "", ...config });
+        // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
+        // fournit qu'un preset — type n'est utilisé nulle part dans le calcul des watched.
+        this.watchedEntities = getWatchedEntities(config as XiaomiVacuumMapCardConfig);
     }
 
+    private _lastCalibrationKey?: string;
+
     private _updateCalibration(config: CardPresetConfig): void {
-        this.coordinatesConverter = undefined;
         const calibrationPoints = this._getCalibration(config);
+        // Clé stable sur la calibration : évite de recréer CoordinatesConverter à chaque render
+        // (matrice affine/perspective recalculée = coûteux).
+        const key = calibrationPoints ? JSON.stringify(calibrationPoints) : "none";
+        if (key === this._lastCalibrationKey && this.coordinatesConverter) return;
+        this._lastCalibrationKey = key;
         this.coordinatesConverter = new CoordinatesConverter(calibrationPoints);
     }
 
     private _getMapSrc(config: CardPresetConfig): string {
         if (config.map_source.camera) {
+            const cameraState = this.hass?.states?.[config.map_source.camera];
+            const entityPicture = cameraState?.attributes?.entity_picture;
             if (
                 this.connected &&
                 this.lastHassUpdate &&
-                this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime()
+                this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime() &&
+                entityPicture
             ) {
-                const url = this.hass.hassUrl(this.hass.states[config.map_source.camera].attributes.entity_picture);
-                const lastUpdated = this.hass.states[config.map_source.camera]?.last_updated ?? "";
+                const url = this.hass.hassUrl(entityPicture);
+                const lastUpdated = cameraState?.last_updated ?? "";
                 const fullUrl = `${url}&v=${lastUpdated}`;
                 // Store last valid map URL for cache
                 this.lastValidMapUrl = fullUrl;
@@ -1197,9 +1226,23 @@ export class XiaomiVacuumMapCard extends LitElement {
         this.shouldHandleMouseUp = false;
     }
 
-    private _toggleMapLock(): void {
+    private _toggleMapLock = (): void => {
         this.mapLocked = !this.mapLocked;
         forwardHaptic("selection");
+    };
+
+    private _cycleRepeats = (): void => {
+        const maxRepeats = this._getCurrentMode()?.maxRepeats ?? 3;
+        this.repeats = (this.repeats % maxRepeats) + 1;
+        forwardHaptic("selection");
+        this.requestUpdate();
+    };
+
+    private _handleIconKey(event: KeyboardEvent, action: () => void): void {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            action();
+        }
     }
 
     private _restoreMap(): void {
@@ -1286,19 +1329,47 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (!cameraEntity || !this.hass?.states[cameraEntity]) return;
 
         const entityState = this.hass.states[cameraEntity];
-        const cacheKey = entityState.last_updated ?? entityState.last_changed ?? "";
+        const segmentMap = entityState.attributes["segment_map"] as string | undefined;
+        // Cache basé sur la structure (segment_map ou polygones de pièces), pas sur last_updated.
+        // Pendant le cleanage la position du robot change à chaque seconde — la map elle ne bouge pas.
+        const cacheKey = segmentMap
+            ? `seg:${XiaomiVacuumMapCard._hashString(segmentMap)}`
+            : `poly:${XiaomiVacuumMapCard._hashRoomsStructure(entityState.attributes["rooms"])}`;
 
         // Déjà prêt pour cette version
         if (cacheKey === this._lastPickCacheKey && this._pickCanvas) return;
         // Déjà en cours de chargement async
         if (cacheKey === this._pickLoadingKey) return;
 
-        const segmentMap = entityState.attributes["segment_map"] as string | undefined;
         if (segmentMap) {
             this._loadSegmentMap(segmentMap, cacheKey);
         } else {
             this._buildPickCanvasFromPolygons(cacheKey);
         }
+    }
+
+    /** Hash rapide (djb2) pour invalider le cache sur changement réel de structure. */
+    private static _hashString(s: string): string {
+        let h = 5381;
+        // On échantillonne tous les 64 caractères pour un coût O(n/64) — suffisant pour détecter un changement.
+        for (let i = 0; i < s.length; i += 64) {
+            h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+        }
+        return `${s.length}:${h}`;
+    }
+
+    private static _hashRoomsStructure(rooms: unknown): string {
+        if (!rooms || typeof rooms !== "object") return "empty";
+        const keys = Object.keys(rooms).sort();
+        const parts: string[] = [];
+        for (const k of keys) {
+            const r = (rooms as Record<string, MapExtractorRoom>)[k];
+            // On ne hash que la géométrie (outline, bbox) et visibility — pas l'état runtime.
+            parts.push(
+                `${k}:${r?.visibility ?? ""}:${r?.x0 ?? ""},${r?.y0 ?? ""},${r?.x1 ?? ""},${r?.y1 ?? ""}:${r?.outline?.length ?? 0}`
+            );
+        }
+        return parts.join("|");
     }
 
     /**
@@ -1327,10 +1398,12 @@ export class XiaomiVacuumMapCard extends LitElement {
             this._pickCanvas = canvas;
             this._pickCtx = ctx;
             this._lastPickCacheKey = cacheKey;
+            this._pickData = undefined;
+            this._pickDataCacheKey = undefined;
         };
         img.onerror = () => {
             this._pickLoadingKey = undefined;
-            console.warn("[PickCanvas] segment_map failed, fallback polygons");
+            if (MapMode.debug) console.warn("[PickCanvas] segment_map failed, fallback polygons");
             this._buildPickCanvasFromPolygons(cacheKey);
         };
         img.src = `data:image/png;base64,${b64}`;
@@ -1402,12 +1475,14 @@ export class XiaomiVacuumMapCard extends LitElement {
                 ctx.putImageData(pickImgData, 0, 0);
             }
         } catch (e) {
-            console.warn("[PickCanvas] Cannot mask (CORS?):", e);
+            if (MapMode.debug) console.warn("[PickCanvas] Cannot mask (CORS?):", e);
         }
 
         this._pickCanvas = canvas;
         this._pickCtx = ctx;
         this._lastPickCacheKey = cacheKey;
+        this._pickData = undefined;
+        this._pickDataCacheKey = undefined;
     }
 
     /**
@@ -1424,13 +1499,14 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (!cameraEntity || !this.hass?.states[cameraEntity]) return new Map();
 
         const entityState = this.hass.states[cameraEntity];
-        const cacheKey = entityState.last_updated ?? entityState.last_changed ?? "";
+        const rooms = entityState.attributes["rooms"] as Record<string, MapExtractorRoom> | undefined;
+        // Cache sur la structure rooms, pas sur last_updated (qui change à chaque tick du robot).
+        const cacheKey = XiaomiVacuumMapCard._hashRoomsStructure(rooms);
 
         if (this._apiRoomPolygonsCache && this._apiRoomPolygonsCacheKey === cacheKey) {
             return this._apiRoomPolygonsCache;
         }
 
-        const rooms = entityState.attributes["rooms"] as Record<string, MapExtractorRoom> | undefined;
         if (!rooms) return new Map();
 
         const result = new Map<string, PointType[]>();
@@ -1505,7 +1581,12 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         const hasSelection = selectedRoomIds.size > 0;
 
-        const pickData = this._pickCtx.getImageData(0, 0, pickW, pickH).data;
+        // Cache le readback GPU → CPU : getImageData est coûteux et ne change pas tant que le pickCanvas ne bouge pas.
+        if (this._pickDataCacheKey !== this._lastPickCacheKey || !this._pickData) {
+            this._pickData = this._pickCtx.getImageData(0, 0, pickW, pickH).data;
+            this._pickDataCacheKey = this._lastPickCacheKey;
+        }
+        const pickData = this._pickData;
 
         // Construire l'overlay à la résolution du segment_map (petite) puis upscaler avec lissage.
         // Cela produit des bords lisses au lieu de marches d'escalier.
@@ -2130,6 +2211,12 @@ export class XiaomiVacuumMapCard extends LitElement {
                 display: flex;
                 justify-content: center;
                 align-items: center;
+            }
+
+            .icon-on-map:focus-visible {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+                border-radius: 50%;
             }
 
             .cycle-counter {

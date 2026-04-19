@@ -48,6 +48,7 @@ const languages: Record<string, unknown> = {
     hu: hu,
     is: is,
     it: it,
+    lv: lv,
     "nb-NO": nbNo,
     nl: nl,
     pl: pl,
@@ -82,7 +83,7 @@ function localizeString(string: string, search = "", replace = "", lang: Languag
 
     try {
         translated = evaluateForLanguage(string, lang ?? defaultLang);
-    } catch (e) {
+    } catch {
         translated = evaluateForLanguage(string, defaultLang);
     }
 
@@ -98,7 +99,7 @@ function localizeString(string: string, search = "", replace = "", lang: Languag
 function evaluateForLanguage(string: string, lang: string): string | undefined {
     try {
         return string.split(".").reduce((o, i) => (o as Record<string, unknown>)[i], languages[lang]) as string;
-    } catch (_) {
+    } catch {
         return undefined;
     }
 }

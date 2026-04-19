@@ -4,8 +4,6 @@ import { HassEntity } from "home-assistant-js-websocket";
 import { LocalizeFunc } from "./localize";
 import { computeDomain } from "./compute_domain";
 import { EntityRegistryDisplayEntry, FrontendLocaleDataFixed, HomeAssistantFixed } from "../../types/fixes";
-import { formatAttributeName } from "./entity_attributes";
-import { FrontendLocaleData } from "./translation";
 import { capitalizeFirstLetter } from "./capitalize_first_letter";
 import { isDate } from "./is_date";
 import { isTimestamp } from "./is_timestamp";
@@ -20,7 +18,7 @@ export const computeAttributeValueDisplay = (
     locale: FrontendLocaleDataFixed,
     entities: HomeAssistantFixed["entities"],
     attribute: string,
-    value?: any
+    value?: unknown
 ): string => {
     const attributeValue = value !== undefined ? value : stateObj.attributes[attribute];
 

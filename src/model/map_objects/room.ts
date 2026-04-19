@@ -46,7 +46,7 @@ export class Room extends PredefinedMapObject {
             "room-wrapper",
             this._selected ? "selected" : "",
             isDimmed ? "dimmed" : "",
-            `room-${`${this._config.id}`.replace(/[^a-zA-Z0-9_\-]/gm, "_")}-wrapper`,
+            `room-${`${this._config.id}`.replace(/[^a-zA-Z0-9_-]/g, "_")}-wrapper`,
         ]
             .filter(Boolean)
             .join(" ");

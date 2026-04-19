@@ -53,9 +53,8 @@ export const formatNumber = (
     if (localeOptions?.number_format !== NumberFormat.none && !Number.isNaN(Number(num)) && Intl) {
         try {
             return new Intl.NumberFormat(locale, getDefaultFormatOptions(num, options)).format(Number(num));
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Don't fail when using "TEST" language
-            // eslint-disable-next-line no-console
             console.error(err);
             return new Intl.NumberFormat(undefined, getDefaultFormatOptions(num, options)).format(Number(num));
         }

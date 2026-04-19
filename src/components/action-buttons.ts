@@ -153,11 +153,21 @@ export class ActionButtons extends LitElement {
 
         return html`
             <div class="actions">
-                <button class="action-btn ${primary.cssClass}" @click=${primary.action}>
+                <button
+                    type="button"
+                    class="action-btn ${primary.cssClass}"
+                    aria-label=${primary.label}
+                    @click=${primary.action}
+                >
                     <ha-icon .icon=${primary.icon}></ha-icon>
                     ${primary.label}
                 </button>
-                <button class="action-btn ${secondary.cssClass}" @click=${secondary.action}>
+                <button
+                    type="button"
+                    class="action-btn ${secondary.cssClass}"
+                    aria-label=${secondary.label}
+                    @click=${secondary.action}
+                >
                     <ha-icon .icon=${secondary.icon}></ha-icon>
                     ${secondary.label}
                 </button>
@@ -200,23 +210,28 @@ export class ActionButtons extends LitElement {
             }
 
             .action-btn.primary {
-                background: #4ade80;
-                color: #000;
+                background: var(--dvc-action-primary-bg, var(--success-color, #4ade80));
+                color: var(--dvc-action-primary-fg, var(--text-primary-color, #000));
             }
 
             .action-btn.primary.warning {
-                background: #f59e0b;
-                color: #000;
+                background: var(--dvc-action-warning-bg, var(--warning-color, #f59e0b));
+                color: var(--dvc-action-warning-fg, var(--text-primary-color, #000));
             }
 
             .action-btn.primary.danger {
-                background: #ef4444;
-                color: #fff;
+                background: var(--dvc-action-danger-bg, var(--error-color, #ef4444));
+                color: var(--dvc-action-danger-fg, var(--text-primary-color, #fff));
             }
 
             .action-btn.secondary {
                 background: var(--secondary-background-color, #374151);
                 color: var(--primary-text-color);
+            }
+
+            .action-btn:focus-visible {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
             }
 
             .action-btn ha-icon {

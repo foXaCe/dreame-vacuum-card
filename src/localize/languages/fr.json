@@ -311,6 +311,13 @@
         },
         "mode": {
             "cycle_tooltip": "Cliquer pour changer de mode ({0} options)"
+        },
+        "map": {
+            "lock": "Verrouiller la carte",
+            "unlock": "Déverrouiller la carte",
+            "add_rectangle": "Ajouter une zone",
+            "cycle_repeats": "Changer le nombre de répétitions",
+            "recenter": "Recentrer la carte"
         }
     },
     "editor": {

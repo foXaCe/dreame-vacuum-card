@@ -26,7 +26,9 @@ export abstract class MapObject {
     }
 
     protected static findTopLeft(rect: RectangleType): PointType {
-        const top = rect.sort((p1, p2) => p1[1] - p2[1])[0];
+        // Copie défensive : sort() mute le tableau en place.
+        const sorted = [...rect].sort((p1, p2) => p1[1] - p2[1]);
+        const top = sorted[0];
         const topIndex = rect.indexOf(top);
         const next = rect[(topIndex + 1) % 4];
         const previous = rect[(topIndex + 3) % 4];

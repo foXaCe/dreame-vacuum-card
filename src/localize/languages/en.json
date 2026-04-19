@@ -311,6 +311,13 @@
         },
         "mode": {
             "cycle_tooltip": "Click to cycle mode ({0} options)"
+        },
+        "map": {
+            "lock": "Lock map",
+            "unlock": "Unlock map",
+            "add_rectangle": "Add rectangle",
+            "cycle_repeats": "Cycle repeat count",
+            "recenter": "Recenter map"
         }
     },
     "editor": {

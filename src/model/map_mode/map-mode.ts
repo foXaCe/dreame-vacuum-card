@@ -22,6 +22,25 @@ export class MapMode {
         SelectionType.PREDEFINED_POINT,
     ];
 
+    /** Valide une valeur string en enum numérique; retourne le fallback si invalide. */
+    private static _parseEnum<T extends number>(
+        enumType: Record<string, string | number>,
+        value: string | undefined,
+        fallback: T,
+        fieldName: string
+    ): T {
+        if (value === undefined) return fallback;
+        const parsed = enumType[value];
+        if (typeof parsed !== "number") {
+            if (MapMode.debug) console.warn(`[MapMode] Invalid ${fieldName}: "${value}" — using fallback.`);
+            return fallback;
+        }
+        return parsed as T;
+    }
+
+    /** Active les warnings de parsing config (lu depuis XiaomiVacuumMapCardConfig.debug). */
+    public static debug = false;
+
     public name: string;
     public icon: string;
     public selectionType: SelectionType;
@@ -44,14 +63,17 @@ export class MapMode {
         this.name = config.name ?? localize("map_mode.invalid", language);
         this.icon = config.icon ?? "mdi:help";
         this.idType = config.id_type;
-        this.selectionType = config.selection_type
-            ? SelectionType[config.selection_type]
-            : SelectionType.PREDEFINED_POINT;
+        this.selectionType = MapMode._parseEnum(
+            SelectionType,
+            config.selection_type,
+            SelectionType.PREDEFINED_POINT,
+            "selection_type"
+        );
         this.maxSelections = config.max_selections ?? 999;
         this.coordinatesRounding = config.coordinates_rounding ?? true;
         this.coordinatesToMetersDivider = config.coordinates_to_meters_divider ?? 1000;
         this.runImmediately = config.run_immediately ?? false;
-        this.repeatsType = config.repeats_type ? RepeatsType[config.repeats_type] : RepeatsType.NONE;
+        this.repeatsType = MapMode._parseEnum(RepeatsType, config.repeats_type, RepeatsType.NONE, "repeats_type");
         this.maxRepeats = config.max_repeats ?? 1;
         this.serviceCallSchema = new ServiceCallSchema(config.service_call_schema ?? ({} as ServiceCallSchemaConfig));
         this.predefinedSelections = config.predefined_selections ?? [];
@@ -80,12 +102,12 @@ export class MapMode {
                     );
                     serviceCall = { ...serviceCall, serviceData: serviceData };
                 } catch (e) {
-                    console.error("Failed to parse template output", output);
+                    if (MapMode.debug) console.error("Failed to parse template output", output);
                     // noinspection ExceptionCaughtLocallyJS
                     throw e;
                 }
             } catch {
-                console.error("Failed to evaluate template", serviceCall.serviceData);
+                if (MapMode.debug) console.error("Failed to evaluate template", serviceCall.serviceData);
             }
         }
         return serviceCall;
@@ -115,7 +137,12 @@ export class MapMode {
         if (!config.name && templateValue.name) this.name = localize(templateValue.name, language);
         if (!config.icon && templateValue.icon) this.icon = templateValue.icon;
         if (!config.selection_type && templateValue.selection_type)
-            this.selectionType = SelectionType[templateValue.selection_type];
+            this.selectionType = MapMode._parseEnum(
+                SelectionType,
+                templateValue.selection_type,
+                this.selectionType,
+                "selection_type"
+            );
         if (!config.id_type && templateValue.id_type) this.idType = templateValue.id_type;
         if (!config.max_selections && templateValue.max_selections) this.maxSelections = templateValue.max_selections;
         if (config.coordinates_rounding === undefined && templateValue.coordinates_rounding !== undefined)
@@ -128,7 +155,12 @@ export class MapMode {
         if (config.run_immediately === undefined && templateValue.run_immediately !== undefined)
             this.runImmediately = templateValue.run_immediately;
         if (!config.repeats_type && templateValue.repeats_type)
-            this.repeatsType = RepeatsType[templateValue.repeats_type];
+            this.repeatsType = MapMode._parseEnum(
+                RepeatsType,
+                templateValue.repeats_type,
+                this.repeatsType,
+                "repeats_type"
+            );
         if (!config.max_repeats && templateValue.max_repeats) this.maxRepeats = templateValue.max_repeats;
         if (!config.service_call_schema && templateValue.service_call_schema)
             this.serviceCallSchema = new ServiceCallSchema(templateValue.service_call_schema);

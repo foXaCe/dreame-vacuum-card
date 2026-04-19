@@ -53,7 +53,7 @@ export const computeStateDisplayFromEntityAttributes = (
     locale: FrontendLocaleData,
     entity: EntityRegistryDisplayEntry | undefined,
     entityId: string,
-    attributes: any,
+    attributes: HassEntity["attributes"],
     state: string
 ): string => {
     if (state === UNKNOWN || state === UNAVAILABLE) {

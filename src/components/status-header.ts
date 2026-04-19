@@ -39,7 +39,7 @@ export class StatusHeader extends LitElement {
         let found: string | undefined;
         for (const [eid, entry] of Object.entries(this.hass.entities)) {
             if (entry.device_id !== deviceId || !eid.startsWith("sensor.")) continue;
-            if ((entry as any).translation_key === translationKey || eid.endsWith(suffix)) {
+            if (entry.translation_key === translationKey || eid.endsWith(suffix)) {
                 found = eid;
                 break;
             }

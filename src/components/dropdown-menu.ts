@@ -99,8 +99,8 @@ export class DropdownMenu<T extends DropdownEntry> extends RootlessLitElement {
                 mwcMenu.style.position = "fixed";
             }
             this.menu.querySelectorAll("mwc-list-item").forEach((item) => {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                item.shadowRoot!.querySelector("span")!.style.flexGrow = "1";
+                const span = item.shadowRoot?.querySelector("span");
+                if (span) span.style.flexGrow = "1";
             });
         }
     }
