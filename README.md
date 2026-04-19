@@ -34,12 +34,30 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 - **Manual rectangle drawing** on the map
 - **Repeat counter** (x1, x2, x3) for zone and room cleaning
 
+### Accessibility (5.2.2+)
+
+- **ARIA labels** on all map overlay icons (lock, add-rectangle, recenter, repeat cycle)
+- **Keyboard navigation** with Enter/Space activation and visible focus outlines
+- `role="button"` + `aria-pressed` on the lock toggle
+- Theme-aware colors on action buttons via CSS custom properties (`--success-color`, `--warning-color`, `--error-color`)
+- Localized labels in 28 languages
+
+### Performance (5.2.2+)
+
+- **Structure-based cache invalidation** for the pick buffer and room polygons — rebuilds only when the floor plan actually changes, not on every robot tick
+- **Memoized calibration**: `CoordinatesConverter` is not recreated per render
+- **Cached `getImageData`** — avoids repeated GPU→CPU readbacks during room selection
+- **Render throttling** during active cleaning (~5 FPS cap) to keep the UI responsive while the robot moves
+- **Proper cleanup** in `disconnectedCallback` for `PinchZoom`, `MutationObserver`, `PointerTracker`, and pending timers
+
 ### Technical highlights
 
-- Built with **Lit** (Web Components) and **TypeScript**, bundled with **Rollup**
+- Built with **Lit 3** (Web Components) and **TypeScript 6**, bundled with **Rollup** (moduleResolution=bundler)
 - **Cached Context** pattern avoids recreating closures on every render cycle
 - **Cached entity lookups** for sibling sensor discovery (device_id based)
 - **Smooth overlay rendering**: built at segment_map resolution then upscaled with browser smoothing
+- `crisp-edges` image rendering preserves map pixel fidelity while zooming
+- Runtime validation of enum values parsed from YAML config
 - Simplified editor with minimal configuration needed
 
 ## Installation
