@@ -515,7 +515,9 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .activeTab=${this.activeTab}
                     .hasSelection=${hasSelection}
                     .selectionCount=${this.selectedRooms.length + this.selectedPredefinedRectangles.length}
+                    .canAppendRooms=${this._getRoomsInProgress().length > 0 && this.activeTab === "room"}
                     @action-run=${() => this._run(false)}
+                    @action-append=${() => this._runAppend()}
                     @action-cancel=${() => this._clearSelection()}
                 ></dreame-action-buttons>
             </ha-card>
@@ -578,6 +580,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         const changed =
             oldHass && this.hass && checkIfEntitiesChanged(this.entitiesToManuallyUpdate, oldHass, this.hass);
         this._updateElements(changed);
+        this._maybeResetActiveSelection();
 
         if (this._overlayDirty) {
             this._overlayDirty = false;
@@ -1082,18 +1085,49 @@ export class XiaomiVacuumMapCard extends LitElement {
         return roomId;
     }
 
-    private async _run(debug: boolean): Promise<void> {
+    /** Pièces envoyées au dernier `_run()`. Permet de reconstituer la liste en cours quand
+     *  l'utilisateur veut ajouter des pièces pendant un nettoyage actif — le robot ne
+     *  supporte pas le "append" natif, donc on relance avec l'union des deux listes. */
+    private _activeRoomSelection: (string | number)[] = [];
+
+    private async _run(debug: boolean, extraRooms: (string | number)[] = []): Promise<void> {
         const currentPreset = this._getCurrentPreset();
         const currentMode = this._getCurrentMode();
         const { selection, variables } = this._getSelection(currentMode);
-        if (selection.length === 0 || !currentMode) {
+
+        // Fusionne extraRooms (pièces en cours côté robot) avec la sélection utilisateur,
+        // en mode ROOM uniquement — les autres types de sélection n'ont pas la même forme.
+        let finalSelection = selection;
+        const isRoomMode = currentMode?.selectionType === SelectionType.ROOM;
+        if (isRoomMode && extraRooms.length > 0) {
+            // selection est [roomId1, roomId2, ..., repeats?]. On sépare le trailing repeats.
+            const repeats = this.repeats;
+            const selectionWithRepeats = currentMode.repeatsType === RepeatsType.INTERNAL;
+            const selectedIds = selectionWithRepeats
+                ? (selection.slice(0, -1) as (string | number)[])
+                : (selection as (string | number)[]);
+            const trailing = selectionWithRepeats ? [repeats] : [];
+            const merged = Array.from(new Set([...extraRooms, ...selectedIds].map((v) => String(v)))).map((s) => {
+                const asNum = Number(s);
+                return Number.isNaN(asNum) ? s : asNum;
+            });
+            finalSelection = [...merged, ...trailing];
+        }
+
+        if (finalSelection.length === 0 || !currentMode) {
             forwardHaptic("failure");
         } else {
             const repeats = this.repeats;
-            const serviceCall = await currentMode.getServiceCall(this.hass, currentPreset.entity, selection, repeats, {
-                ...this.internalVariables,
-                ...variables,
-            });
+            const serviceCall = await currentMode.getServiceCall(
+                this.hass,
+                currentPreset.entity,
+                finalSelection,
+                repeats,
+                {
+                    ...this.internalVariables,
+                    ...variables,
+                }
+            );
             if (debug || (this.config.debug ?? false)) {
                 const message = JSON.stringify(serviceCall, null, 2);
                 window.alert(message);
@@ -1104,6 +1138,12 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .then(
                         () => {
                             forwardHaptic("success");
+                            // Mémorise la liste envoyée pour alimenter un éventuel "Ajouter" ultérieur.
+                            if (isRoomMode) {
+                                this._activeRoomSelection = (finalSelection as unknown[])
+                                    .filter((v) => typeof v === "string" || typeof v === "number")
+                                    .map((v) => v as string | number);
+                            }
                         },
                         () => {
                             forwardHaptic("failure");
@@ -1115,6 +1155,33 @@ export class XiaomiVacuumMapCard extends LitElement {
             this._setCurrentMode(this.selectedMode);
         }
         this._selectionChanged();
+    }
+
+    /** Appelé par le bouton "+ Ajouter au nettoyage" : relance avec la liste active du robot
+     *  plus la sélection courante. Utile pour étendre un nettoyage déjà en cours sans perdre
+     *  les pièces déjà prévues (le robot les revisitera mais ça reste plus rapide que stop+restart). */
+    private _runAppend(): Promise<void> {
+        return this._run(false, this._getRoomsInProgress());
+    }
+
+    /** Récupère la liste des pièces "en cours" — basée sur la dernière sélection envoyée,
+     *  filtrée pour exclure les pièces sélectionnées (on ne veut pas les dupliquer). */
+    private _getRoomsInProgress(): (string | number)[] {
+        if (this._activeRoomSelection.length === 0) return [];
+        // `_activeRoomSelection` peut contenir le trailing "repeats" — on filtre les ids
+        // qui matchent une room connue.
+        const knownRoomIds = new Set(this.selectableRooms.map((r) => String(r.toVacuum())));
+        return this._activeRoomSelection.filter((v) => knownRoomIds.has(String(v)));
+    }
+
+    /** Reset de la mémoire quand le robot retourne au repos. */
+    private _maybeResetActiveSelection(): void {
+        const preset = this.currentPreset;
+        if (!preset?.entity) return;
+        const state = this.hass?.states?.[preset.entity]?.state;
+        if (state === "docked" || state === "idle" || state === "charging" || state === "charging_completed") {
+            this._activeRoomSelection = [];
+        }
     }
 
     private _updateElements(somethingChanged = false): void {

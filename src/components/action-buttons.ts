@@ -38,6 +38,11 @@ export class ActionButtons extends LitElement {
     @property({ type: Number })
     public selectionCount = 0;
 
+    /** True quand une séance de nettoyage est en cours ET la carte connaît les pièces
+     *  envoyées : on peut alors proposer "+ Ajouter" au lieu du "Nettoyer" classique. */
+    @property({ type: Boolean })
+    public canAppendRooms = false;
+
     private _callService(action: string): void {
         if (!this.hass || !this.entityId) return;
         forwardHaptic("light");
@@ -59,14 +64,20 @@ export class ActionButtons extends LitElement {
     }
 
     private _getSelectionButtons(): [ButtonConfig, ButtonConfig] {
-        const cleanLabel = localize("dreame_ui.action.clean", this._lang);
         const countSuffix = this.selectionCount > 0 ? ` (${this.selectionCount})` : "";
-        const primary: ButtonConfig = {
-            label: `${cleanLabel}${countSuffix}`,
-            icon: "mdi:play",
-            cssClass: "primary",
-            action: () => this._fireEvent("action-run"),
-        };
+        const primary: ButtonConfig = this.canAppendRooms
+            ? {
+                  label: `${localize("dreame_ui.action.append", this._lang)}${countSuffix}`,
+                  icon: "mdi:plus",
+                  cssClass: "primary",
+                  action: () => this._fireEvent("action-append"),
+              }
+            : {
+                  label: `${localize("dreame_ui.action.clean", this._lang)}${countSuffix}`,
+                  icon: "mdi:play",
+                  cssClass: "primary",
+                  action: () => this._fireEvent("action-run"),
+              };
         const secondary: ButtonConfig = {
             label: localize("dreame_ui.action.cancel", this._lang),
             icon: "mdi:close",
