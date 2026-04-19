@@ -138,6 +138,12 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _pickLoadingKey?: string;
     private _pickData?: Uint8ClampedArray;
     private _pickDataCacheKey?: string;
+    /** Mapping raw pixel value (canal bleu du segment_map) → room_id, reconstruit quand
+     *  la structure des rooms change. L'intégration dreame_vacuum expose `segment_id`
+     *  sur chaque room pour gérer les devices où raw ≠ room_id
+     *  (ex. Kitchen room_id=2 mais segment raw=11). Absent ⇒ on suppose raw == room_id. */
+    private _rawToRoomId = new Map<number, string | number>();
+    private _rawToRoomIdCacheKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
 
@@ -1402,9 +1408,9 @@ export class XiaomiVacuumMapCard extends LitElement {
         const parts: string[] = [];
         for (const k of keys) {
             const r = (rooms as Record<string, MapExtractorRoom>)[k];
-            // On ne hash que la géométrie (outline, bbox) et visibility — pas l'état runtime.
+            // Géométrie + visibility + segment_id (change avec une recalibration du segment_map).
             parts.push(
-                `${k}:${r?.visibility ?? ""}:${r?.x0 ?? ""},${r?.y0 ?? ""},${r?.x1 ?? ""},${r?.y1 ?? ""}:${r?.outline?.length ?? 0}`
+                `${k}:${r?.visibility ?? ""}:${r?.x0 ?? ""},${r?.y0 ?? ""},${r?.x1 ?? ""},${r?.y1 ?? ""}:${r?.outline?.length ?? 0}:${r?.segment_id ?? ""}`
             );
         }
         return parts.join("|");
@@ -1449,7 +1455,8 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     /**
      * Fallback : construit le pick canvas depuis les polygones de l'API.
-     * Canal bleu = parseInt(roomId), masqué par l'image réelle.
+     * Canal bleu = segment_id si exposé par l'intégration, sinon parseInt(roomId).
+     * Masqué par l'image réelle ensuite.
      */
     private _buildPickCanvasFromPolygons(cacheKey: string): void {
         const mapImage = this._getMapImage();
@@ -1458,6 +1465,13 @@ export class XiaomiVacuumMapCard extends LitElement {
 
         const roomPolygons = this._getApiRoomPolygons();
         if (roomPolygons.size === 0) return;
+
+        const config = this._getCurrentPreset();
+        const roomsAttr = config.map_source?.camera
+            ? (this.hass?.states?.[config.map_source.camera]?.attributes?.["rooms"] as
+                  | Record<string, MapExtractorRoom>
+                  | undefined)
+            : undefined;
 
         const w = mapImage.naturalWidth;
         const h = mapImage.naturalHeight;
@@ -1474,7 +1488,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         entries.sort((a, b) => XiaomiVacuumMapCard._polygonArea(b[1]) - XiaomiVacuumMapCard._polygonArea(a[1]));
 
         for (const [roomId, poly] of entries) {
-            const id = parseInt(roomId) || 0;
+            const rawFromAttr = roomsAttr?.[roomId]?.segment_id;
+            const id = typeof rawFromAttr === "number" && rawFromAttr > 0 ? rawFromAttr : parseInt(roomId) || 0;
             if (id === 0 || id > 255) continue;
 
             ctx.fillStyle = `rgb(0,0,${id})`;
@@ -1613,11 +1628,26 @@ export class XiaomiVacuumMapCard extends LitElement {
         const pickW = this._pickCanvas.width;
         const pickH = this._pickCanvas.height;
 
-        const selectedRoomIds = new Set<number>();
+        // Construit l'inverse du mapping : room_id → Set<raw> pour comparer directement
+        // aux valeurs lues dans le pick buffer (canal bleu). Plusieurs raw peuvent pointer
+        // vers une même room quand l'intégration expose segment_id.
+        const rawToRoomId = this._buildRawToRoomId();
+        const selectedLogicalIds = new Set<string>();
         for (const room of this.selectedRooms) {
-            selectedRoomIds.add(Number(room.toVacuum()));
+            selectedLogicalIds.add(String(room.toVacuum()));
         }
-        const hasSelection = selectedRoomIds.size > 0;
+        const selectedRawValues = new Set<number>();
+        for (const [raw, rid] of rawToRoomId) {
+            if (selectedLogicalIds.has(String(rid))) selectedRawValues.add(raw);
+        }
+        // Fallback : pas de mapping connu ⇒ raw == room_id numérique.
+        if (selectedRawValues.size === 0) {
+            for (const room of this.selectedRooms) {
+                const n = Number(room.toVacuum());
+                if (!Number.isNaN(n)) selectedRawValues.add(n);
+            }
+        }
+        const hasSelection = selectedRawValues.size > 0;
 
         // Cache le readback GPU → CPU : getImageData est coûteux et ne change pas tant que le pickCanvas ne bouge pas.
         if (this._pickDataCacheKey !== this._lastPickCacheKey || !this._pickData) {
@@ -1639,9 +1669,9 @@ export class XiaomiVacuumMapCard extends LitElement {
         for (let y = 0; y < pickH; y++) {
             for (let x = 0; x < pickW; x++) {
                 const pi = (y * pickW + x) * 4;
-                const roomId = pickData[pi + 2];
+                const raw = pickData[pi + 2];
 
-                if (hasSelection && roomId > 0 && selectedRoomIds.has(roomId)) {
+                if (hasSelection && raw > 0 && selectedRawValues.has(raw)) {
                     // Pièce sélectionnée → transparent (pas de dim)
                     continue;
                 }
@@ -1661,7 +1691,48 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     /**
-     * Hit-test pixel-perfect : canal bleu du pick buffer = room ID directement.
+     * Construit le mapping raw pixel → room_id depuis les attrs de la caméra.
+     * Si l'intégration expose `segment_id` sur chaque room, on l'utilise ; sinon
+     * fallback transparent (raw == room_id).
+     */
+    private _buildRawToRoomId(): Map<number, string | number> {
+        const config = this._getCurrentPreset();
+        const cameraEntity = config.map_source?.camera;
+        const rooms = cameraEntity
+            ? (this.hass?.states?.[cameraEntity]?.attributes?.["rooms"] as Record<string, MapExtractorRoom> | undefined)
+            : undefined;
+        const cacheKey = XiaomiVacuumMapCard._hashRoomsStructure(rooms);
+        if (cacheKey === this._rawToRoomIdCacheKey) return this._rawToRoomId;
+
+        const map = new Map<number, string | number>();
+        if (rooms) {
+            for (const [roomId, room] of Object.entries(rooms)) {
+                const raw = room?.segment_id;
+                if (typeof raw === "number" && raw > 0) {
+                    map.set(raw, roomId);
+                } else {
+                    // Fallback : raw est supposé égal au room_id numérique.
+                    const rid = parseInt(roomId);
+                    if (!Number.isNaN(rid) && rid > 0) map.set(rid, roomId);
+                }
+            }
+        }
+        this._rawToRoomId = map;
+        this._rawToRoomIdCacheKey = cacheKey;
+        return map;
+    }
+
+    /** Résout une valeur raw du pick buffer vers l'id "logique" utilisé par les Room objects. */
+    private _rawToLogicalRoomId(raw: number): string | number | undefined {
+        if (raw === 0) return undefined;
+        const mapped = this._buildRawToRoomId().get(raw);
+        // Si aucune room ne déclare ce raw, on retombe sur le raw brut (compat.
+        // anciens devices où raw == room_id et `segment_id` absent partout).
+        return mapped ?? raw;
+    }
+
+    /**
+     * Hit-test pixel-perfect : canal bleu du pick buffer → room_id via segment_id.
      */
     private _hitTestRoom(event: MouseEvent): Room | null {
         if (this.selectableRooms.length === 0) return null;
@@ -1681,10 +1752,10 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (x < 0 || y < 0 || x >= this._pickCanvas.width || y >= this._pickCanvas.height) return null;
 
         const pixel = this._pickCtx.getImageData(x, y, 1, 1).data;
-        const roomId = pixel[2];
-        if (roomId === 0) return null;
+        const logicalId = this._rawToLogicalRoomId(pixel[2]);
+        if (logicalId === undefined) return null;
 
-        return this.selectableRooms.find((r) => String(r.toVacuum()) === String(roomId)) ?? null;
+        return this.selectableRooms.find((r) => String(r.toVacuum()) === String(logicalId)) ?? null;
     }
 
     private _calculateScale(): void {

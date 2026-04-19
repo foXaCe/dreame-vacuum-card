@@ -278,6 +278,12 @@ export interface MapExtractorRoom {
     readonly visibility: string | undefined;
     readonly color_index: number | undefined;
     readonly color: number[] | undefined;
+    /**
+     * Raw pixel value encoded in the segment_map PNG (blue channel).
+     * Exposed by the integration when it differs from room_id
+     * (e.g. Kitchen room_id=2 but segment raw=11). Absent on devices where raw == room_id.
+     */
+    readonly segment_id: number | undefined;
 }
 
 export interface RoomConfigEventData {
