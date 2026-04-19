@@ -269,14 +269,17 @@ export class XiaomiVacuumMapCard extends LitElement {
         const changed = hasConfigOrAnyEntityChanged(this.watchedEntities, changedProps, false, this.hass);
         if (!changed) return false;
 
-        // Pendant un nettoyage actif le coordinator pousse des updates toutes les ~1-3s.
-        // On throttle pour rester à ~5 FPS maximum — Lit reste réactif aux clics utilisateur
-        // (qui ne passent pas par shouldUpdate) mais on évite les rebuilds cascadés.
-        if (this._isRobotActive() && !changedProps.has("config")) {
+        // Pendant un nettoyage actif, le coordinator HA pousse des updates toutes les ~1-3s.
+        // On throttle CES ticks (~5 FPS max) pour éviter les rebuilds cascadés.
+        // CRITIQUE : on ne throttle QUE quand la seule source de changement est `_hass` —
+        // un requestUpdate() déclenché par une interaction utilisateur (toggle de pièce,
+        // changement d'onglet, bouton) ne doit jamais être retardé.
+        const changedKeys = Array.from(changedProps.keys());
+        const isPureHassTick = changedKeys.length === 1 && changedKeys[0] === "_hass";
+        if (isPureHassTick && this._isRobotActive()) {
             const now = Date.now();
             const dt = now - this._lastRenderTs;
             if (dt < XiaomiVacuumMapCard._CLEANING_RENDER_MIN_MS) {
-                // Planifie un render différé si aucun n'est déjà en vol.
                 if (this._throttledRenderTimer === undefined) {
                     this._throttledRenderTimer = window.setTimeout(() => {
                         this._throttledRenderTimer = undefined;
@@ -1164,13 +1167,37 @@ export class XiaomiVacuumMapCard extends LitElement {
         return this._run(false, this._getRoomsInProgress());
     }
 
-    /** Récupère la liste des pièces "en cours" — basée sur la dernière sélection envoyée,
-     *  filtrée pour exclure les pièces sélectionnées (on ne veut pas les dupliquer). */
+    /** Récupère la liste des pièces "en cours". Source prioritaire : l'attribut
+     *  `active_segments` exposé par l'intégration (fonctionne même si le nettoyage a été
+     *  lancé depuis l'app Dreame ou un script HA). Fallback : la dernière sélection
+     *  envoyée par la carte, mémorisée dans `_activeRoomSelection`. */
     private _getRoomsInProgress(): (string | number)[] {
-        if (this._activeRoomSelection.length === 0) return [];
-        // `_activeRoomSelection` peut contenir le trailing "repeats" — on filtre les ids
-        // qui matchent une room connue.
         const knownRoomIds = new Set(this.selectableRooms.map((r) => String(r.toVacuum())));
+        const preset = this.currentPreset;
+
+        // Source 1 : attribut `active_segments` sur l'entité vacuum (intégration dreame_vacuum).
+        const vacState = preset?.entity ? this.hass?.states?.[preset.entity] : undefined;
+        const stateName = vacState?.state;
+        const isActivelyCleaning =
+            stateName === "cleaning" ||
+            stateName === "segment_cleaning" ||
+            stateName === "zoned_cleaning" ||
+            stateName === "paused";
+        if (isActivelyCleaning) {
+            const raw = vacState?.attributes?.["active_segments"];
+            if (Array.isArray(raw) && raw.length > 0) {
+                const fromIntegration = raw
+                    .map((v) => (typeof v === "number" ? v : Number(v)))
+                    .filter((v) => Number.isFinite(v))
+                    .map((v) => String(v))
+                    .filter((id) => knownRoomIds.has(id));
+                if (fromIntegration.length > 0) return fromIntegration;
+            }
+        }
+
+        // Source 2 : mémoire locale — utile si l'intégration n'expose pas active_segments
+        // (devices plus anciens) et que l'utilisateur a lancé depuis la carte.
+        if (this._activeRoomSelection.length === 0) return [];
         return this._activeRoomSelection.filter((v) => knownRoomIds.has(String(v)));
     }
 
@@ -1506,6 +1533,24 @@ export class XiaomiVacuumMapCard extends LitElement {
 
             ctx.drawImage(img, 0, 0);
 
+            // Certains devices exposent un `segment_map` dégénéré (PNG uniforme, typiquement
+            // tout à zéro) quand le robot n'a pas de segmentation pixel-level à jour.
+            // On détecte ce cas en échantillonnant quelques pixels (O(n), early-exit dès
+            // qu'on trouve un pixel non-nul), et si le buffer est vide on bascule sur le
+            // fallback polygon-based qui utilise la géométrie des rooms via les attrs.
+            const data = ctx.getImageData(0, 0, w, h).data;
+            let hasContent = false;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
+                    hasContent = true;
+                    break;
+                }
+            }
+            if (!hasContent) {
+                this._buildPickCanvasFromPolygons(cacheKey);
+                return;
+            }
+
             this._pickCanvas = canvas;
             this._pickCtx = ctx;
             this._lastPickCacheKey = cacheKey;
@@ -1793,8 +1838,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _rawToLogicalRoomId(raw: number): string | number | undefined {
         if (raw === 0) return undefined;
         const mapped = this._buildRawToRoomId().get(raw);
-        // Si aucune room ne déclare ce raw, on retombe sur le raw brut (compat.
-        // anciens devices où raw == room_id et `segment_id` absent partout).
+        // Si aucune room ne déclare ce raw, on retombe sur le raw brut (compat. anciens
+        // devices où raw == room_id et `segment_id` absent partout).
         return mapped ?? raw;
     }
 
