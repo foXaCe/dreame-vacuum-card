@@ -4,12 +4,8 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import babel from "@rollup/plugin-babel";
 import terser from "@rollup/plugin-terser";
 import json from "@rollup/plugin-json";
-import alias from "@rollup/plugin-alias";
 
 const plugins = [
-    alias({
-        entries: [{ find: /^lit\/(.+)$/, replacement: "lit/$1.js" }],
-    }),
     nodeResolve({
         extensions: [".js", ".ts"],
         browser: true,

@@ -28,7 +28,7 @@ import * as zh from "./languages/zh.json";
 import * as zhHant from "./languages/zh-Hant.json";
 import { EntityConfig, Language, TranslatableString, XiaomiVacuumMapCardConfig } from "../types/types";
 import { HomeAssistantFixed } from "../types/fixes";
-import { HassEntity } from "home-assistant-js-websocket/dist/types";
+import { HassEntity } from "home-assistant-js-websocket";
 import { formatAttributeValue } from "./hass/entity_attributes";
 import { computeStateDisplay } from "./hass/compute_state_display";
 import { computeAttributeValueDisplay } from "./hass/compute_attribute_display";

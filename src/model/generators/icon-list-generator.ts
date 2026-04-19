@@ -1,4 +1,4 @@
-import { HassEntity } from "home-assistant-js-websocket/dist/types";
+import { HassEntity } from "home-assistant-js-websocket";
 
 import {
     EntityRegistryEntry,

@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 import { ActionHandlerFunctionCreator, TileConfig, VariablesStorage } from "../types/types";
 import { HomeAssistantFixed } from "../types/fixes";
 import { RootlessLitElement } from "./rootless-lit-element";

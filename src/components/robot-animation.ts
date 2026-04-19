@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing, CSSResultGroup } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 import lottie, { AnimationItem } from "lottie-web/build/player/lottie_light";
 
 import animDrying from "../assets/lottie/anim_drying.json";

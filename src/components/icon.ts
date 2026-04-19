@@ -2,7 +2,7 @@ import { css, CSSResultGroup, html, TemplateResult } from "lit";
 
 import { ActionHandlerFunctionCreator, DropdownIconActionConfig, IconActionConfig } from "../types/types";
 import { DropdownIcon } from "./dropdown-icon";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 import { SingleIcon } from "./single-icon";
 import { RootlessLitElement } from "./rootless-lit-element";
 

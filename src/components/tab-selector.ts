@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 
 import { localize } from "../localize/localize";
 

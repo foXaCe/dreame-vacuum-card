@@ -5,7 +5,6 @@ import babel from "@rollup/plugin-babel";
 import serve from "rollup-plugin-serve";
 import terser from "@rollup/plugin-terser";
 import json from "@rollup/plugin-json";
-import alias from "@rollup/plugin-alias";
 
 const port = process.env.PORT || 5000;
 
@@ -16,11 +15,6 @@ export default {
         format: "es",
     },
     plugins: [
-        alias({
-            entries: [
-                { find: /^lit\/(.+)$/, replacement: 'lit/$1.js' }
-            ]
-        }),
         nodeResolve({
             extensions: [".js", ".ts"],
             browser: true,

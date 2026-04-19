@@ -3,7 +3,7 @@ import { hasAction } from "custom-card-helpers";
 
 import { actionHandler } from "../action-handler-directive";
 import { ActionHandlerFunctionCreator, IconActionConfig } from "../types/types";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 import { RootlessLitElement } from "./rootless-lit-element";
 
 @customElement("xvmc-single-icon")

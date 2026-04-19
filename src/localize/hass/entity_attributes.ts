@@ -9,7 +9,7 @@ import { isDate } from "./is_date";
 import { isTimestamp } from "./is_timestamp";
 import { HomeAssistantFixed } from "../../types/fixes";
 import { computeAttributeValueDisplay } from "./compute_attribute_display";
-import { HassEntity } from "home-assistant-js-websocket/dist/types";
+import { HassEntity } from "home-assistant-js-websocket";
 
 export const STATE_ATTRIBUTES = [
     "entity_id",

@@ -1,6 +1,6 @@
 import { css, CSSResultGroup, html, TemplateResult } from "lit";
 import { conditional } from "../utils";
-import { customElement, property, query } from "lit/decorators";
+import { customElement, property, query } from "lit/decorators.js";
 import { RootlessLitElement } from "./rootless-lit-element";
 
 interface DropdownEntry {

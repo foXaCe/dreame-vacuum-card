@@ -1,7 +1,7 @@
 import { css, CSSResultGroup, html, TemplateResult } from "lit";
 
 import { ActionHandlerFunctionCreator, DropdownIconActionConfig } from "../types/types";
-import { customElement, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators.js";
 import { RootlessLitElement } from "./rootless-lit-element";
 
 @customElement("xvmc-dropdown-icon")

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators.js";
 import { fireEvent, LovelaceCardEditor } from "custom-card-helpers";
 
 import { TranslatableString, XiaomiVacuumMapCardConfig } from "./types/types";
