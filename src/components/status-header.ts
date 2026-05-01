@@ -99,11 +99,11 @@ export class StatusHeader extends LitElement {
         }
 
         return html`
-            <div class="header-section">
+            <div class="header-section" part="header">
                 ${this.showTitle ? html`<div class="device-name">${friendlyName}</div>` : ""}
                 <div class="status">${statusDisplay}</div>
             </div>
-            <div class="stats-bar">
+            <div class="stats-bar" part="stats">
                 ${cleanedArea !== undefined
                     ? html`
                           <div class="stat">

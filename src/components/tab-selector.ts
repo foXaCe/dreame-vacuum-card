@@ -53,9 +53,10 @@ export class DreameTabSelector extends LitElement {
 
     protected render(): TemplateResult {
         return html`
-            <div class="tabs">
+            <div class="tabs" part="tabs">
                 <button
                     class="tab ${this.activeTab === "room" ? "active" : ""}"
+                    part="tab tab-room${this.activeTab === "room" ? " tab-active" : ""}"
                     @click=${(): void => this._selectTab("room")}
                 >
                     <ha-icon icon="mdi:floor-plan"></ha-icon>
@@ -63,6 +64,7 @@ export class DreameTabSelector extends LitElement {
                 </button>
                 <button
                     class="tab ${this.activeTab === "all" ? "active" : ""}"
+                    part="tab tab-all${this.activeTab === "all" ? " tab-active" : ""}"
                     @click=${(): void => this._selectTab("all")}
                 >
                     <ha-icon icon="mdi:home"></ha-icon>
@@ -70,6 +72,7 @@ export class DreameTabSelector extends LitElement {
                 </button>
                 <button
                     class="tab ${this.activeTab === "zone" ? "active" : ""}"
+                    part="tab tab-zone${this.activeTab === "zone" ? " tab-active" : ""}"
                     @click=${(): void => this._selectTab("zone")}
                 >
                     <ha-icon icon="mdi:select-drag"></ha-icon>

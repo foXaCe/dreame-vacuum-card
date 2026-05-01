@@ -1,10 +1,4 @@
-import {
-    ActionConfig,
-    ActionHandlerEvent,
-    LovelaceCard,
-    LovelaceCardConfig,
-    LovelaceCardEditor,
-} from "custom-card-helpers";
+import { ActionConfig, ActionHandlerEvent, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from "../ha";
 import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME, CARD_CUSTOM_ELEMENT_NAME, EDITOR_CUSTOM_ELEMENT_NAME } from "../const";
 import { XiaomiVacuumMapCardActionHandler } from "../action-handler-directive";
 import { XiaomiVacuumMapCard } from "../dreame-vacuum-card";

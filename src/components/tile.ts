@@ -1,7 +1,7 @@
 import { css, CSSResultGroup, html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
-import { computeStateDomain, hasAction } from "custom-card-helpers";
+import { computeStateDomain, hasAction } from "../ha";
 import { HassEntity } from "home-assistant-js-websocket";
 
 import { actionHandler } from "../action-handler-directive";

@@ -352,7 +352,10 @@
             "generate_rooms_config": "Generate rooms config",
             "copy_service_call": "Copy service call",
             "language": "Language override",
-            "clean_selection_on_start": "Clear selection on clean start"
+            "clean_selection_on_start": "Clear selection on clean start",
+            "map_source": "Map source",
+            "display": "Display",
+            "map_behavior": "Map behavior"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"

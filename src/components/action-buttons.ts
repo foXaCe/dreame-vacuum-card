@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { forwardHaptic } from "custom-card-helpers";
+import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 
@@ -46,7 +46,9 @@ export class ActionButtons extends LitElement {
     private _callService(action: string): void {
         if (!this.hass || !this.entityId) return;
         forwardHaptic("light");
-        this.hass.callService("vacuum", action, { entity_id: this.entityId });
+        // HA 2024+ recommande de passer entity_id via `target` plutôt que serviceData,
+        // pour bénéficier du resolving area_id/floor_id/label_id.
+        this.hass.callService("vacuum", action, undefined, { entity_id: this.entityId });
     }
 
     private _fireEvent(eventName: string): void {
@@ -163,10 +165,11 @@ export class ActionButtons extends LitElement {
             : this._getStateButtons(vacuumState);
 
         return html`
-            <div class="actions">
+            <div class="actions" part="actions">
                 <button
                     type="button"
                     class="action-btn ${primary.cssClass}"
+                    part="action-btn action-btn-primary"
                     aria-label=${primary.label}
                     @click=${primary.action}
                 >
@@ -176,6 +179,7 @@ export class ActionButtons extends LitElement {
                 <button
                     type="button"
                     class="action-btn ${secondary.cssClass}"
+                    part="action-btn action-btn-secondary"
                     aria-label=${secondary.label}
                     @click=${secondary.action}
                 >

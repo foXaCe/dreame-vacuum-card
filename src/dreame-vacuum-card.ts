@@ -1,6 +1,6 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { forwardHaptic, LovelaceCard, LovelaceCardEditor } from "custom-card-helpers";
+import { forwardHaptic, LovelaceCard, LovelaceCardEditor } from "./ha";
 
 import "./editor";
 import type {
@@ -176,22 +176,46 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     public static getStubConfig(hass: HomeAssistantFixed): XiaomiVacuumMapCardConfig | undefined {
         const entities = Object.keys(hass.states);
-        const cameras = entities
-            .filter((e) => ["camera", "image"].includes(e.substring(0, e.indexOf("."))))
-            .filter((e) => hass?.states[e].attributes["calibration_points"]);
-        const vacuums = entities.filter((e) => e.substring(0, e.indexOf(".")) === "vacuum");
+
+        // Cherche en priorité une caméra/image avec `calibration_points` (intégrations
+        // dreame_vacuum / xiaomi_miio). Sinon, accepte n'importe quelle caméra liée
+        // à un device qui héberge aussi une entité vacuum.
+        const cameras = entities.filter((e) => {
+            const domain = e.substring(0, e.indexOf("."));
+            return domain === "camera" || domain === "image";
+        });
+        const vacuums = entities.filter((e) => e.startsWith("vacuum."));
         if (cameras.length === 0 || vacuums.length === 0) {
             return undefined;
         }
+
+        const calibrated = cameras.filter((e) => hass?.states[e]?.attributes?.["calibration_points"]);
+
+        // Match camera ↔ vacuum par device_id (l'utilisateur peut avoir plusieurs robots).
+        let pickedCamera = calibrated[0] ?? cameras[0];
+        let pickedVacuum = vacuums[0];
+        const cameraDeviceId = hass?.entities?.[pickedCamera]?.device_id;
+        if (cameraDeviceId) {
+            const matchingVacuum = vacuums.find((v) => hass?.entities?.[v]?.device_id === cameraDeviceId);
+            if (matchingVacuum) pickedVacuum = matchingVacuum;
+        } else {
+            // Inverse : déduire la caméra à partir du device du premier vacuum trouvé.
+            const vacuumDeviceId = hass?.entities?.[pickedVacuum]?.device_id;
+            const matchingCamera = vacuumDeviceId
+                ? cameras.find((c) => hass?.entities?.[c]?.device_id === vacuumDeviceId)
+                : undefined;
+            if (matchingCamera) pickedCamera = matchingCamera;
+        }
+
         return {
             type: "custom:" + CARD_CUSTOM_ELEMENT_NAME,
             map_source: {
-                camera: cameras[0],
+                camera: pickedCamera,
             },
             calibration_source: {
                 camera: true,
             },
-            entity: vacuums[0],
+            entity: pickedVacuum,
             vacuum_platform: PlatformGenerator.TASSHACK_DREAME_VACUUM_PLATFORM,
         };
     }
@@ -217,6 +241,21 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     public getCardSize(): number {
         return 12;
+    }
+
+    /** API HA 2024.10+ : sections layout grid options.
+     *  Inclut `max_columns`/`max_rows` pour borner correctement la carte sur les
+     *  dashboards larges. La méthode legacy `getLayoutOptions()` reste exposée comme
+     *  fallback pour les versions HA < 2024.10. */
+    public getGridOptions() {
+        return {
+            columns: 12,
+            min_columns: 6,
+            max_columns: 24,
+            rows: 10,
+            min_rows: 6,
+            max_rows: 20,
+        };
     }
 
     public getLayoutOptions() {
@@ -390,6 +429,9 @@ export class XiaomiVacuumMapCard extends LitElement {
                     id="map-image"
                     alt="camera_image"
                     crossorigin="anonymous"
+                    decoding="async"
+                    loading="eager"
+                    fetchpriority="high"
                     class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
                     style="pointer-events: none;"
@@ -428,13 +470,13 @@ export class XiaomiVacuumMapCard extends LitElement {
 
         return html`
             <ha-card style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};">
-                <div class="map-wrapper">
+                <div class="map-wrapper" part="map-wrapper">
                     <dreame-status-header
                         .hass=${this.hass}
                         .entityId=${preset.entity}
                         .showTitle=${this.config.show_title ?? false}
                     ></dreame-status-header>
-                    <div class="map-container">
+                    <div class="map-container" part="map">
                         <pinch-zoom
                             min-scale="0.5"
                             id="map-zoomer"
@@ -756,7 +798,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                 () => this._runImmediately(),
                 (string) => this._localize(string),
                 (entity) => this._hass.states[entity].state,
-                (entity) => this._hass.callService("homeassistant", "toggle", { entity_id: entity }),
+                (entity) => this._hass.callService("homeassistant", "toggle", undefined, { entity_id: entity }),
                 () => this._getCurrentMode(),
                 () => this._activateRoomMode(),
                 () => this.activeTab

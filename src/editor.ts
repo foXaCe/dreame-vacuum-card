@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { fireEvent, LovelaceCardEditor } from "custom-card-helpers";
+import { fireEvent, LovelaceCardEditor } from "./ha";
 
 import { TranslatableString, XiaomiVacuumMapCardConfig } from "./types/types";
 import { localizeWithHass } from "./localize/localize";
-import { PlatformGenerator } from "./model/generators/platform-generator";
 import { EDITOR_CUSTOM_ELEMENT_NAME } from "./const";
 import { HomeAssistantFixed } from "./types/fixes";
 
@@ -40,213 +38,153 @@ const AVAILABLE_LANGUAGES = [
     { value: "zh-Hant", label: "Chinese (Traditional)" },
 ];
 
+/**
+ * Schéma `ha-form` déclaratif. Avantages vs implémentation manuelle :
+ * - validation et UI native par HA (selectors riches, themes, a11y)
+ * - support automatique entity/area/device pickers
+ * - sections collapsibles via `type: "expandable"`
+ */
+interface HaFormSchema {
+    name: string;
+    type?: string;
+    required?: boolean;
+    selector?: Record<string, unknown>;
+    schema?: HaFormSchema[];
+    title?: string;
+    expanded?: boolean;
+}
+
+const buildSchema = (): HaFormSchema[] => [
+    {
+        name: "entity",
+        required: true,
+        selector: { entity: { domain: "vacuum" } },
+    },
+    {
+        name: "map_source",
+        type: "expandable",
+        title: "Map source",
+        expanded: true,
+        schema: [
+            {
+                name: "camera",
+                required: true,
+                selector: { entity: { domain: ["camera", "image"] } },
+            },
+        ],
+    },
+    {
+        name: "display",
+        type: "expandable",
+        title: "Display",
+        schema: [
+            { name: "show_title", selector: { boolean: {} } },
+            {
+                name: "language",
+                selector: {
+                    select: {
+                        mode: "dropdown",
+                        options: AVAILABLE_LANGUAGES.map((l) => ({ value: l.value, label: l.label })),
+                    },
+                },
+            },
+        ],
+    },
+    {
+        name: "map_behavior",
+        type: "expandable",
+        title: "Map behavior",
+        schema: [
+            { name: "map_locked", selector: { boolean: {} } },
+            { name: "two_finger_pan", selector: { boolean: {} } },
+            { name: "clean_selection_on_start", selector: { boolean: {} } },
+        ],
+    },
+];
+
 @customElement(EDITOR_CUSTOM_ELEMENT_NAME)
 export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<LovelaceCardEditor, "hass"> {
     @property({ attribute: false }) public hass?: HomeAssistantFixed;
     @state() private _config?: XiaomiVacuumMapCardConfig;
-    @state() private _helpers?: any;
-    private _initialized = false;
-
-    get _showTitle(): boolean {
-        return this._config?.show_title ?? false;
-    }
-
-    get _entity(): string {
-        return this._config?.entity || "";
-    }
-
-    get _camera(): string {
-        return this._config?.map_source?.camera || "";
-    }
-
-    get _mapLocked(): boolean {
-        return this._config?.map_locked ?? false;
-    }
-
-    get _twoFingerPan(): boolean {
-        return this._config?.two_finger_pan ?? false;
-    }
-
-    get _cleanSelectionOnStart(): boolean {
-        return this._config?.clean_selection_on_start ?? true;
-    }
-
-    get _language(): string {
-        return this._config?.language || "";
-    }
 
     public setConfig(config: XiaomiVacuumMapCardConfig): void {
         this._config = config;
-        this.loadCardHelpers();
     }
 
-    protected shouldUpdate(): boolean {
-        if (!this._initialized) {
-            this._initialize();
-        }
-        return true;
-    }
-
-    protected render(): TemplateResult | void {
-        if (!this.hass || !this._helpers) {
+    protected render(): TemplateResult | typeof Symbol {
+        if (!this.hass || !this._config) {
             return html``;
         }
 
-        this._helpers.importMoreInfoControl("climate");
-
-        const entityIds = Object.keys(this.hass.states);
-        const cameras = entityIds.filter((e) => ["camera", "image"].includes(e.substring(0, e.indexOf("."))));
-        const vacuums = entityIds.filter((e) => e.substring(0, e.indexOf(".")) === "vacuum");
+        // Valeurs aplaties pour ha-form : map_source.camera vit dans une sous-section.
+        const data = {
+            entity: this._config.entity ?? "",
+            map_source: this._config.map_source ?? { camera: "" },
+            display: {
+                show_title: this._config.show_title ?? false,
+                language: this._config.language ?? "",
+            },
+            map_behavior: {
+                map_locked: this._config.map_locked ?? false,
+                two_finger_pan: this._config.two_finger_pan ?? false,
+                clean_selection_on_start: this._config.clean_selection_on_start ?? true,
+            },
+        };
 
         return html`
-            <div class="card-config">
-                <div class="values">
-                    <ha-select
-                        naturalMenuWidth
-                        fixedMenuPosition
-                        label="${this._localize("editor.label.entity")}"
-                        @selected="${this._valueChanged}"
-                        @closed="${(ev) => ev.stopPropagation()}"
-                        .configValue="${"entity"}"
-                        .value="${this._entity}"
-                    >
-                        ${vacuums.map((entity) => {
-                            return html` <mwc-list-item .value="${entity}">${entity}</mwc-list-item> `;
-                        })}
-                    </ha-select>
-                </div>
-                <div class="values">
-                    <ha-select
-                        naturalMenuWidth
-                        fixedMenuPosition
-                        label="${this._localize("editor.label.camera")}"
-                        @selected="${this._cameraChanged}"
-                        @closed="${(ev) => ev.stopPropagation()}"
-                        .configValue="${"camera"}"
-                        .value="${this._camera}"
-                    >
-                        ${cameras.map((entity) => {
-                            return html` <mwc-list-item .value="${entity}">${entity}</mwc-list-item> `;
-                        })}
-                    </ha-select>
-                </div>
-
-                <ha-expansion-panel .header="${this._localize("editor.section.display")}" outlined>
-                    <div class="expansion-content">
-                        <div class="values">
-                            <ha-formfield .label="${this._localize("editor.label.show_title")}">
-                                <ha-switch
-                                    .checked="${this._showTitle}"
-                                    .configValue="${"show_title"}"
-                                    @change="${this._valueChanged}"
-                                ></ha-switch>
-                            </ha-formfield>
-                        </div>
-                        <div class="values">
-                            <ha-select
-                                naturalMenuWidth
-                                fixedMenuPosition
-                                label="${this._localize("editor.label.language")}"
-                                @selected="${this._valueChanged}"
-                                @closed="${(ev) => ev.stopPropagation()}"
-                                .configValue="${"language"}"
-                                .value="${this._language}"
-                            >
-                                ${AVAILABLE_LANGUAGES.map(
-                                    (lang) => html`
-                                        <mwc-list-item .value="${lang.value}">${lang.label}</mwc-list-item>
-                                    `
-                                )}
-                            </ha-select>
-                        </div>
-                    </div>
-                </ha-expansion-panel>
-
-                <ha-expansion-panel .header="${this._localize("editor.section.map_behavior")}" outlined>
-                    <div class="expansion-content">
-                        <div class="values">
-                            <ha-formfield .label="${this._localize("editor.label.map_locked")}">
-                                <ha-switch
-                                    .checked="${this._mapLocked}"
-                                    .configValue="${"map_locked"}"
-                                    @change="${this._valueChanged}"
-                                ></ha-switch>
-                            </ha-formfield>
-                        </div>
-                        <div class="values">
-                            <ha-formfield .label="${this._localize("editor.label.two_finger_pan")}">
-                                <ha-switch
-                                    .checked="${this._twoFingerPan}"
-                                    .configValue="${"two_finger_pan"}"
-                                    @change="${this._valueChanged}"
-                                ></ha-switch>
-                            </ha-formfield>
-                        </div>
-                        <div class="values">
-                            <ha-formfield .label="${this._localize("editor.label.clean_selection_on_start")}">
-                                <ha-switch
-                                    .checked="${this._cleanSelectionOnStart}"
-                                    .configValue="${"clean_selection_on_start"}"
-                                    @change="${this._valueChanged}"
-                                ></ha-switch>
-                            </ha-formfield>
-                        </div>
-                    </div>
-                </ha-expansion-panel>
-
-                <div class="yaml-hint">${this._localize("editor.description.text")}</div>
-            </div>
+            <ha-form
+                .hass=${this.hass}
+                .data=${data}
+                .schema=${buildSchema()}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="yaml-hint">${this._localize("editor.description.text")}</div>
         `;
     }
 
-    private _initialize(): void {
-        if (this.hass === undefined) return;
-        if (this._config === undefined) return;
-        if (this._helpers === undefined) return;
-        this._initialized = true;
-    }
+    private _computeLabel = (schema: HaFormSchema): string => {
+        const key = `editor.label.${schema.name}`;
+        return this._localize(key);
+    };
 
-    private async loadCardHelpers(): Promise<void> {
-        this._helpers = await (window as any).loadCardHelpers();
-    }
+    private _valueChanged = (ev: CustomEvent): void => {
+        if (!this._config) return;
+        const value = ev.detail.value as {
+            entity?: string;
+            map_source?: { camera?: string };
+            display?: { show_title?: boolean; language?: string };
+            map_behavior?: { map_locked?: boolean; two_finger_pan?: boolean; clean_selection_on_start?: boolean };
+        };
 
-    private _cameraChanged(ev): void {
-        if (!this._config || !this.hass) {
-            return;
-        }
-        const value = ev.target.value;
-        if (this._camera === value) return;
-        const tmpConfig = { ...this._config };
-        tmpConfig["map_source"] = { camera: value };
+        // `XiaomiVacuumMapCardConfig` est `readonly` côté typage : on construit l'objet
+        // mutable, puis on cast à la fin. Évite des spreads multiples.
+        const draft: Record<string, unknown> = {
+            ...this._config,
+            entity: value.entity ?? this._config.entity,
+            map_source: value.map_source ?? this._config.map_source,
+            show_title: value.display?.show_title,
+            language: value.display?.language || undefined,
+            map_locked: value.map_behavior?.map_locked,
+            two_finger_pan: value.map_behavior?.two_finger_pan,
+            clean_selection_on_start: value.map_behavior?.clean_selection_on_start,
+        };
+
+        // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`
+        // et qu'aucune source n'est encore configurée — préserve le wizard "happy path" du legacy.
+        const newCamera = (draft.map_source as { camera?: string } | undefined)?.camera;
         if (
-            !PlatformGenerator.getCalibration(this._config.vacuum_platform) &&
-            !tmpConfig["calibration_source"] &&
-            "calibration_points" in this.hass.states[value].attributes
+            this.hass &&
+            newCamera &&
+            !draft.calibration_source &&
+            "calibration_points" in (this.hass.states[newCamera]?.attributes ?? {})
         ) {
-            tmpConfig["calibration_source"] = { camera: true };
+            draft.calibration_source = { camera: true };
         }
-        this._config = tmpConfig;
-        fireEvent(this, "config-changed", { config: this._config });
-    }
 
-    private _valueChanged(ev): void {
-        if (!this._config || !this.hass) {
-            return;
-        }
-        const target = ev.target;
-        if (this[`_${target.configValue}`] === target.value) {
-            return;
-        }
-        if (!target.configValue) {
-            return;
-        } else {
-            this._config = {
-                ...this._config,
-                [target.configValue]: target.checked !== undefined ? target.checked : target.value,
-            };
-        }
+        this._config = draft as XiaomiVacuumMapCardConfig;
         fireEvent(this, "config-changed", { config: this._config });
-    }
+    };
 
     private _localize(ts: TranslatableString): string {
         return localizeWithHass(ts, this.hass);
@@ -254,23 +192,9 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
 
     static get styles(): CSSResultGroup {
         return css`
-            .card-config {
-                padding-bottom: 15px;
-            }
-
-            .values {
-                padding-left: 16px;
-                padding-right: 16px;
-                margin: 8px 0;
-                display: grid;
-            }
-
-            ha-expansion-panel {
-                margin: 8px 0;
-            }
-
-            .expansion-content {
-                padding: 0 0 8px;
+            ha-form {
+                display: block;
+                padding: 8px 16px 0;
             }
 
             .yaml-hint {

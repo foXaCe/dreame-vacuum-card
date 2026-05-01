@@ -1,6 +1,6 @@
 // home-assistant/frontend/src/common/datetime/use_am_pm.ts
 
-import { TimeFormat } from "custom-card-helpers";
+import { TimeFormat } from "../../ha";
 import { FrontendLocaleDataFixed } from "../../types/fixes";
 
 export const useAmPm = (locale: FrontendLocaleDataFixed): boolean => {

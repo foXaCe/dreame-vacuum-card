@@ -1,8 +1,8 @@
 import { noChange } from "lit";
 import { AttributePart, directive, Directive, DirectiveParameters } from "lit/directive.js";
 
-import { ActionHandlerDetail, ActionHandlerOptions } from "custom-card-helpers/dist/types";
-import { fireEvent } from "custom-card-helpers";
+import { ActionHandlerDetail, ActionHandlerOptions } from "./ha";
+import { fireEvent } from "./ha";
 import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME } from "./const";
 
 const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;

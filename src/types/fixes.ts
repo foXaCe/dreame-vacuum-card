@@ -1,4 +1,4 @@
-import { HomeAssistant, NumberFormat, TimeFormat } from "custom-card-helpers";
+import { HomeAssistant, NumberFormat, TimeFormat } from "../ha";
 import { Connection } from "home-assistant-js-websocket";
 
 export interface HomeAssistantFixed extends Omit<HomeAssistant, "connection"> {

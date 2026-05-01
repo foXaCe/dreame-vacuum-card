@@ -1,4 +1,4 @@
-import { ActionHandlerEvent, handleAction, HomeAssistant } from "custom-card-helpers";
+import { ActionHandlerEvent, handleAction, HomeAssistant } from "./ha";
 import { PropertyValues } from "lit";
 
 import {
@@ -29,6 +29,20 @@ export function stopEvent(event: MouseEvent | TouchEvent): void {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+}
+
+/** Compare la version HA courante (`hass.config.version`, ex. "2024.10.3") à un seuil
+ *  "MAJOR.MINOR" et retourne true si HA est plus récent ou égal.
+ *  Utile pour activer une fonctionnalité conditionnellement (selectors avancés,
+ *  champs UI 2024.10+, etc.) sans casser sur les anciennes versions HA. */
+export function isHaVersionAtLeast(hass: HomeAssistantFixed | undefined, target: `${number}.${number}`): boolean {
+    const version = hass?.config?.version;
+    if (typeof version !== "string") return false;
+    const [hMajor, hMinor] = version.split(".").map((n) => parseInt(n, 10));
+    const [tMajor, tMinor] = target.split(".").map((n) => parseInt(n, 10));
+    if (Number.isNaN(hMajor) || Number.isNaN(hMinor)) return false;
+    if (hMajor !== tMajor) return hMajor > tMajor;
+    return hMinor >= tMinor;
 }
 
 export function deleteFromArray<T>(array: T[], entry: T): number {

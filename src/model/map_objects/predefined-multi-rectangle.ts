@@ -1,7 +1,7 @@
 // noinspection CssUnresolvedCustomProperty
 
 import { css, CSSResultGroup, svg, SVGTemplateResult } from "lit";
-import { forwardHaptic } from "custom-card-helpers";
+import { forwardHaptic } from "../../ha";
 
 import { Context } from "./context";
 import { PredefinedZoneConfig, ZoneType, ZoneWithRepeatsType } from "../../types/types";

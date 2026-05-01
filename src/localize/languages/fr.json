@@ -352,7 +352,10 @@
             "generate_rooms_config": "Générer la configuration des pièces",
             "copy_service_call": "Copier l'appel de service",
             "language": "Langue (surcharge)",
-            "clean_selection_on_start": "Effacer la sélection au démarrage"
+            "clean_selection_on_start": "Effacer la sélection au démarrage",
+            "map_source": "Source de la carte",
+            "display": "Affichage",
+            "map_behavior": "Comportement de la carte"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"

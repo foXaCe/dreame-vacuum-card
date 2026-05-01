@@ -65,10 +65,7 @@ export class CleaningModeChip extends LitElement {
         const nextIndex = (currentIndex + 1) % options.length;
         const nextOption = options[nextIndex];
 
-        this.hass.callService("select", "select_option", {
-            entity_id: selectEntityId,
-            option: nextOption,
-        });
+        this.hass.callService("select", "select_option", { option: nextOption }, { entity_id: selectEntityId });
     }
 
     protected render(): TemplateResult | typeof nothing {
@@ -98,6 +95,7 @@ export class CleaningModeChip extends LitElement {
         return html`
             <div
                 class="mode-chip"
+                part="mode-chip"
                 @click="${this._handleClick}"
                 title="${options
                     ? localize(["dreame_ui.mode.cycle_tooltip", "{0}", `${options.length}`], this.hass.locale?.language)

@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, TemplateResult } from "lit";
-import { hasAction } from "custom-card-helpers";
+import { hasAction } from "../ha";
 
 import { actionHandler } from "../action-handler-directive";
 import { ActionHandlerFunctionCreator, IconActionConfig } from "../types/types";
