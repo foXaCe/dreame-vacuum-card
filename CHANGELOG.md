@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.0] - 2026-04-21
+
+### Added
+- Visual editor rebuilt on `ha-form` with a declarative schema: native HA entity selectors filtered by domain, expandable sections, themed UI and proper accessibility out of the box.
+- `getGridOptions()` for HA 2024.10+ sections layout (in addition to the legacy `getLayoutOptions()` for older dashboards).
+- `isHaVersionAtLeast(hass, "MAJOR.MINOR")` helper for clean feature gating.
+- `getStubConfig` now matches the camera and the vacuum entity by `device_id` when possible, instead of picking the first of each list.
+- CSS `::part()` hooks (`header`, `stats`, `map-wrapper`, `map`, `tabs`, `tab`, `tab-active`, `action-btn`, `action-btn-primary`, `action-btn-secondary`, `mode-chip`) for clean theming via card-mod or themes.
+- Three new editor section labels in EN and FR (`map_source`, `display`, `map_behavior`).
+- vitest + happy-dom test setup with 23 unit tests covering `utils`, `template-utils` and the local `ha` helpers (`fireEvent`, `hasAction`, `computeStateDomain`, `forwardHaptic`, `handleAction`).
+- npm scripts `test`, `test:watch`, `test:coverage`, `typecheck`. The `build` script now chains lint → typecheck → test → rollup so a broken commit cannot ship.
+
+### Changed
+- Service calls now pass `entity_id` via the `target` parameter rather than `serviceData` (vacuum/select/homeassistant.toggle), enabling `area_id`/`floor_id`/`label_id` resolution where applicable.
+- Camera map `<img>` gets HTML5 perf attributes: `decoding="async"`, `loading="eager"`, `fetchpriority="high"` for non-blocking decode and prioritized network fetches.
+
+### Removed
+- Dependency on `custom-card-helpers` (barely maintained upstream). Vendored a minimal `src/ha/` module that re-implements only the helpers we use (`fireEvent`, `forwardHaptic`, `hasAction`, `handleAction`, `computeStateDomain`) plus the typed `ActionConfig` / `LovelaceCard` / `LovelaceCardEditor` / `HomeAssistant` interfaces.
+
 ## [5.4.0] - 2026-04-19
 
 ### Added
