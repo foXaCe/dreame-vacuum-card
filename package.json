@@ -24,7 +24,7 @@
         "transformation-matrix": "^3.1.0"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^29.0.2",
+        "@rollup/plugin-commonjs": "^29.0.3",
         "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-node-resolve": "^16.0.3",
         "@rollup/plugin-terser": "^1.0.0",
@@ -38,7 +38,7 @@
         "happy-dom": "^20.9.0",
         "prettier": "^3.8.3",
         "replace-in-file": "^8.2.0",
-        "rollup": "^4.60.2",
+        "rollup": "^4.61.1",
         "rollup-plugin-serve": "^3.0.0",
         "tslib": "^2.8.1",
         "typescript": "^6.0.3",
