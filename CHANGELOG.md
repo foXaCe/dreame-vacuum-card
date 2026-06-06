@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.6.0] - 2026-06-06
 
 Refonte interne complète (audit → suppression du code mort → correction de bugs → refactor structurel → robustesse → accessibilité → typage strict → suite de tests). **Aucun changement cassant** pour les utilisateurs : tags des custom elements, schéma de config YAML et clés de traduction inchangés.
 
