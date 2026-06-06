@@ -1,0 +1,6 @@
+resources:
+  - url: http://127.0.0.1:5000/dreame-vacuum-card.js
+    type: module
+views:
+  - cards:
+      - type: custom:dreame-vacuum-card

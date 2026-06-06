@@ -1,0 +1,86 @@
+{
+    "v": "5.6.10",
+    "fr": 30,
+    "ip": 0,
+    "op": 60,
+    "w": 100,
+    "h": 100,
+    "nm": "清洗拖布",
+    "ddd": 0,
+    "assets": [
+        {
+            "id": "image_0",
+            "w": 66,
+            "h": 66,
+            "u": "",
+            "p": "data:image/png;base64,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",
+            "e": 1
+        },
+        {
+            "id": "image_1",
+            "w": 96,
+            "h": 96,
+            "u": "",
+            "p": "data:image/png;base64,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",
+            "e": 1
+        }
+    ],
+    "layers": [
+        {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 2,
+            "nm": "洗拖布2.png",
+            "cl": "png",
+            "refId": "image_0",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": {
+                    "a": 1,
+                    "k": [
+                        {
+                            "i": { "x": [0.833], "y": [0.833] },
+                            "o": { "x": [0.167], "y": [0.167] },
+                            "t": 0,
+                            "s": [0],
+                            "e": [720]
+                        },
+                        { "t": 60 }
+                    ],
+                    "ix": 10
+                },
+                "p": { "a": 0, "k": [50, 50, 0], "ix": 2 },
+                "a": { "a": 0, "k": [33, 33, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "ip": 0,
+            "op": 240,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 2,
+            "ty": 2,
+            "nm": "白色圆形背景.png",
+            "cl": "png",
+            "refId": "image_1",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [50, 50, 0], "ix": 2 },
+                "a": { "a": 0, "k": [48, 48, 0], "ix": 1 },
+                "s": { "a": 0, "k": [95, 95, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "ip": 0,
+            "op": 240,
+            "st": 0,
+            "bm": 0
+        }
+    ],
+    "markers": []
+}

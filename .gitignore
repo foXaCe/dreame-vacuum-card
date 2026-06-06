@@ -1,0 +1,14 @@
+/node_modules/
+/.rpt2_cache/
+.idea
+.env
+.env.*
+
+# Local working files (Claude prompts, notes)
+prompt-*.md
+
+# Local agent dir
+.claude/
+
+# Coverage
+coverage/

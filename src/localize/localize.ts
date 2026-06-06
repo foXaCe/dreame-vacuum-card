@@ -1,0 +1,118 @@
+import * as bg from "./languages/bg.json";
+import * as ca from "./languages/ca.json";
+import * as cs from "./languages/cs.json";
+import * as da from "./languages/da.json";
+import * as de from "./languages/de.json";
+import * as el from "./languages/el.json";
+import * as en from "./languages/en.json";
+import * as es from "./languages/es.json";
+import * as fi from "./languages/fi.json";
+import * as fr from "./languages/fr.json";
+import * as he from "./languages/he.json";
+import * as hu from "./languages/hu.json";
+import * as is from "./languages/is.json";
+import * as it from "./languages/it.json";
+import * as lv from "./languages/lv.json";
+import * as nbNo from "./languages/nb-NO.json";
+import * as nl from "./languages/nl.json";
+import * as pl from "./languages/pl.json";
+import * as pt from "./languages/pt.json";
+import * as ptBr from "./languages/pt-BR.json";
+import * as ro from "./languages/ro.json";
+import * as ru from "./languages/ru.json";
+import * as sk from "./languages/sk.json";
+import * as sv from "./languages/sv.json";
+import * as tr from "./languages/tr.json";
+import * as uk from "./languages/uk.json";
+import * as zh from "./languages/zh.json";
+import * as zhHant from "./languages/zh-Hant.json";
+import { Language, TranslatableString, XiaomiVacuumMapCardConfig } from "../types/types";
+import { HomeAssistantFixed } from "../types/fixes";
+
+const languages: Record<string, unknown> = {
+    bg: bg,
+    ca: ca,
+    cs: cs,
+    da: da,
+    de: de,
+    el: el,
+    en: en,
+    es: es,
+    fi: fi,
+    fr: fr,
+    he: he,
+    hu: hu,
+    is: is,
+    it: it,
+    lv: lv,
+    "nb-NO": nbNo,
+    nl: nl,
+    pl: pl,
+    pt: pt,
+    "pt-BR": ptBr,
+    ro: ro,
+    ru: ru,
+    sk: sk,
+    sv: sv,
+    tr: tr,
+    uk: uk,
+    zh: zh,
+    "zh-Hant": zhHant,
+};
+
+let cachedLanguage: string | null = null;
+
+function localizeString(string: string, search = "", replace = "", lang: Language = "", fallback = string): string {
+    const defaultLang = "en";
+    if (!lang) {
+        if (!cachedLanguage) {
+            try {
+                cachedLanguage = JSON.parse(localStorage.getItem("selectedLanguage") || `"${defaultLang}"`);
+            } catch {
+                cachedLanguage = (localStorage.getItem("selectedLanguage") || defaultLang).replace(/['"]+/g, "");
+            }
+        }
+        lang = cachedLanguage ?? defaultLang;
+    }
+
+    let translated: string | undefined;
+
+    try {
+        translated = evaluateForLanguage(string, lang ?? defaultLang);
+    } catch {
+        translated = evaluateForLanguage(string, defaultLang);
+    }
+
+    if (translated === undefined) translated = evaluateForLanguage(string, defaultLang);
+
+    translated = translated ?? fallback;
+    if (search !== "" && replace !== "") {
+        translated = translated.replaceAll(search, replace);
+    }
+    return translated;
+}
+
+function evaluateForLanguage(string: string, lang: string): string | undefined {
+    try {
+        return string.split(".").reduce((o, i) => (o as Record<string, unknown>)[i], languages[lang]) as string;
+    } catch {
+        return undefined;
+    }
+}
+
+export function localize(ts: TranslatableString, lang?: Language, fallback?: string): string {
+    if (typeof ts === "string") {
+        return localizeString(ts as string, "", "", lang, fallback);
+    } else {
+        return localizeString(...ts, lang, fallback);
+    }
+}
+
+export function localizeWithHass(
+    ts: TranslatableString,
+    hass?: HomeAssistantFixed,
+    config?: XiaomiVacuumMapCardConfig,
+    fallback?: string
+): string {
+    return localize(ts, config?.language ?? hass?.locale?.language, fallback);
+}

@@ -1,0 +1,1419 @@
+{
+    "v": "5.6.9",
+    "fr": 30,
+    "ip": 0,
+    "op": 90,
+    "w": 80,
+    "h": 80,
+    "nm": "烘干",
+    "ddd": 0,
+    "assets": [
+        {
+            "id": "image_0",
+            "w": 73,
+            "h": 28,
+            "u": "",
+            "p": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEkAAAAcCAYAAAAtMJKYAAAACXBIWXMAAAABAAAAAQBPJcTWAAAAJHpUWHRDcmVhdG9yAAAImXNMyU9KVXBMK0ktUnBNS0tNLikGAEF6Bs5qehXFAAAGp0lEQVRoge2Xy24byRWGv1PVJJuk2rJsE2N7nEAYGEFgYlbzAgKyz07Z5yGySDaiNtlkHSC7PIB22QfQC2RJTzDjDISJYzuQbV3avHfVn0XzYtls2UpgZOL4X7C66lTXqfq66tShcYl2fqXbFka/AX4OfHZZ3/9R/RP4k3z87eHvNp5VdbIqw89+rZthMj4w9NMPMr0fkIT91U/S3T//3l6ssyeVL06Gv7By95x8sNn9QGToM9WHu8Af1tmrIeG+BE5AlBvu4y7l9GUVi0pIEGbIThfIPvbSZDMqVL2TZOeYffRHbSFJeZWtEpJ5Oyd+/PFoJTuvslRDknKZ+7+BZIpX30kye2lRaQQcEHE4IChaWQeHIxK5UFdhZXv5XvnzARVXRTmPiDOn9fMrS7+0x9U8LVl7/cNlkIr4jRwtIkTnAREBMyvDnYJFDI+BB1dgOOHkwYFbep+Pp2h4ICxaHBfrvGc9LqtmTgsfC38uerCybonkgy2HkHkZgTgP2BGDGIgOiPHbK0NqhvbX4zi4KWcZFvHzroplAionA4cIpbdauQpZsMWCpLBKVs2Xn3HZojfqvGd91SDEgqJ5r4Vfc174gALg0OJbmUkEh7mSUqAADCuUp2p/XcWiMuMG2U6PBvl0uxbCzeisTlJCUsSkYPgE8HgFm8XCkiRhFgsrWxMUCyvZLgCHS/xdTebmUCigAHOJoGAC1FyioiiouUTBvCBAKDDzMofMIQqIUVN5/4KsfnTYYwKmdb4qdpIMweE+093v699+t8XfvriLvXqBjW5iGbh8fpiavHSzkZmbmMV2G43H1mKTcf4PB9cgzQjTfA4nq1z0wlJMX1lS3xBAZSQFmMdZX8/EMEc8J80+j2POiGlb7nSEJVM1m9KIGxEabJRvxeYLtHETffcEfXFCPOjON6XJ1oGq+LIyevu229+z4y7WAXcMbgFnBO4OuNkYG+e5a6VYUTcLs4FBmzAza9TLscNsZLRaq7UVb/sMs5G13mwEhoCvNd+atEtYtQ2Hyz6TKfI1CQb4WlvJVBqOUZplsZaipxCbELM5rA7EY4idPjro7ovenq4EqdfD+n3sIfhO98hlbDsbPvdD865hW24wy32om9WH5kIda9TMYoGFWVk2mwBNQm1ksRjP/TQpn9P1boEYxuZ8unbblxrjklQwmgNL5WdNwYjRqAToa5JL0GQm+SmathT9VGrXsjDRSWwpRLVuhZyjeNzfjg8gdLuo10NzJBf8X/K3BNiFyR8f2eQstfpdzHPLGuMzN5jlvlnPbFQMfGJmKkZuYmbQJKmPnas3mRRji2FiTFNImyWAAkttDaDXmmJhdmGnjN/uPA7gkvkOGwCc4jxKWiW8mdJIMcIVUmLNGAqsWd8Ig2nu2zXHrLml0MYmTxKbvHpk/PI+PKzG8KGzmI9Cl++kA2hs3Fdj80iNAbLhcw3Nx3Ztk8E096FuoZjiYi1VIzGLhSxMU8VC1mw2wL9x3HyTYt1xG60eY5A5z6XHrZ6kQvPj1k7lZ9fL4zYULklVq0kuSTWRVEylkCiOpvnquA2fK+GWppuFGhv3xQHQ/Tcg9dhnlz06XWKHbY6BrHWLApSD7qSZZmNsXOQuS7BCZooDS3ybEM1MGAywwcj8MnBHTHVbpslzXQjcBsQBUBW46zgfBY2yOhhgtSgA75D3EnGAU1tZlIYFuqYs1rJF4N6KWgbu7UiXSL9cL+wBb3+g6ttNwD6222d5w12WAhQTM65fpxif2ebrKcC1D5QC8FoKcJ4D56TZ5/GMM5J0U5yekjSk2jIFgOyNFGB1syH2UEnjvW+3NaCODy3/yY6NT7DJbexefmSwzWQLm24+NbjDrI2FwbF1AOgwGz63onVqcGM+5o1Kb1fXy2WZDK+r1rolOOYY8O2OagMET6mf3VHjBMERj7NtNZ6hdAtl3xyq09l5JyC4FBKASrugt1/27fex4+6h5U92DGB88tDgAT++/cjgPqP8aD7mNgCTrcfGjwDuXRh5ev70ytl3/dqdNxbxGP4OjZN78/YjAJrZtuAR3z+7L3hIuvVAANndQ3X6O+p2yyPVW8KBKkDwTkgL6fU/TKXm0HpAv39gsAvA8fGh5Xlm8FXZ76vVKCXQhR68n+sLWt3Ti4UD8JfVQ5bl6nR25rYDut1d9RbmvfnsL6y6Gs6yx9UnqrffWYLbt3nwW6o3L0uQC+1e3e1SB8unbndXr/tYaR/29tYAWejdYC70vkrn9VoD7YL5P/fwTr1zFVeD8kmf9En/Nf0LKHedrlYAXzIAAAAASUVORK5CYII=",
+            "e": 1
+        }
+    ],
+    "layers": [
+        {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 4,
+            "nm": "深10",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [49.125, 47, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-5.45, 9.223],
+                                        [1.25, 0.125]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [4.875, -8.25],
+                                        [-1.25, -0.125]
+                                    ],
+                                    "v": [
+                                        [-30.375, 5.625],
+                                        [-32.125, -6.5],
+                                        [-33.75, -17.25]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tm",
+                            "s": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [0]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 1
+                            },
+                            "e": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [100]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 2
+                            },
+                            "o": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [50]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 3
+                            },
+                            "m": 1,
+                            "ix": 2,
+                            "nm": "修剪路径 1",
+                            "mn": "ADBE Vector Filter - Trim",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, 5], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -18], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 2",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 2,
+            "ty": 4,
+            "nm": "深9",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [60.875, 47, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-5.45, 9.223],
+                                        [1.25, 0.125]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [4.875, -8.25],
+                                        [-1.25, -0.125]
+                                    ],
+                                    "v": [
+                                        [-30.375, 5.625],
+                                        [-32.125, -6.5],
+                                        [-33.75, -17.25]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tm",
+                            "s": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [0]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 1
+                            },
+                            "e": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [100]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 2
+                            },
+                            "o": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [50]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 3
+                            },
+                            "m": 1,
+                            "ix": 2,
+                            "nm": "修剪路径 1",
+                            "mn": "ADBE Vector Filter - Trim",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, 5], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -18], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 2",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 3,
+            "ty": 4,
+            "nm": "深8",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [97.25, 47, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-5.45, 9.223],
+                                        [1.25, 0.125]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [4.875, -8.25],
+                                        [-1.25, -0.125]
+                                    ],
+                                    "v": [
+                                        [-30.375, 5.625],
+                                        [-32.125, -6.5],
+                                        [-33.75, -17.25]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tm",
+                            "s": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [0]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 1
+                            },
+                            "e": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [100]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 2
+                            },
+                            "o": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [50]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 3
+                            },
+                            "m": 1,
+                            "ix": 2,
+                            "nm": "修剪路径 1",
+                            "mn": "ADBE Vector Filter - Trim",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, 5], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -18], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 2",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 4,
+            "ty": 4,
+            "nm": "深7",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [84.625, 47, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-5.45, 9.223],
+                                        [1.25, 0.125]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [4.875, -8.25],
+                                        [-1.25, -0.125]
+                                    ],
+                                    "v": [
+                                        [-30.375, 5.625],
+                                        [-32.125, -6.5],
+                                        [-33.75, -17.25]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tm",
+                            "s": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [0]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 1
+                            },
+                            "e": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [100]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 2
+                            },
+                            "o": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [50]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 3
+                            },
+                            "m": 1,
+                            "ix": 2,
+                            "nm": "修剪路径 1",
+                            "mn": "ADBE Vector Filter - Trim",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, 5], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -18], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 2",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 5,
+            "ty": 4,
+            "nm": "深6",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [72.5, 47, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-5.45, 9.223],
+                                        [1.25, 0.125]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [4.875, -8.25],
+                                        [-1.25, -0.125]
+                                    ],
+                                    "v": [
+                                        [-30.375, 5.625],
+                                        [-32.125, -6.5],
+                                        [-33.75, -17.25]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tm",
+                            "s": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [0]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 1
+                            },
+                            "e": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [100]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 2
+                            },
+                            "o": {
+                                "a": 1,
+                                "k": [
+                                    {
+                                        "i": { "x": [0.833], "y": [0.833] },
+                                        "o": { "x": [0.167], "y": [0.167] },
+                                        "t": 0,
+                                        "s": [0],
+                                        "e": [50]
+                                    },
+                                    { "t": 60 }
+                                ],
+                                "ix": 3
+                            },
+                            "m": 1,
+                            "ix": 2,
+                            "nm": "修剪路径 1",
+                            "mn": "ADBE Vector Filter - Trim",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, 5], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -18], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 2",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 6,
+            "ty": 4,
+            "nm": "浅10",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [38.25, 43.875, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-7.625, 6.5]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [7.625, -6.5]
+                                    ],
+                                    "v": [
+                                        [-22, -14.5],
+                                        [-23.875, -28.75]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, -30], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -13], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "st",
+                            "c": { "a": 0, "k": [1, 1, 1, 1], "ix": 3 },
+                            "o": { "a": 0, "k": 100, "ix": 4 },
+                            "w": { "a": 0, "k": 0, "ix": 5 },
+                            "lc": 1,
+                            "lj": 1,
+                            "ml": 4,
+                            "bm": 0,
+                            "nm": "描边 1",
+                            "mn": "ADBE Vector Graphic - Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 1",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                },
+                {
+                    "ty": "tm",
+                    "s": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [0]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 1
+                    },
+                    "e": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [100]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 2
+                    },
+                    "o": { "a": 0, "k": 0, "ix": 3 },
+                    "m": 1,
+                    "ix": 2,
+                    "nm": "修剪路径 1",
+                    "mn": "ADBE Vector Filter - Trim",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 7,
+            "ty": 4,
+            "nm": "浅9",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [50, 43.875, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-7.625, 6.5]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [7.625, -6.5]
+                                    ],
+                                    "v": [
+                                        [-22, -14.5],
+                                        [-23.875, -28.75]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, -30], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -13], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "st",
+                            "c": { "a": 0, "k": [1, 1, 1, 1], "ix": 3 },
+                            "o": { "a": 0, "k": 100, "ix": 4 },
+                            "w": { "a": 0, "k": 0, "ix": 5 },
+                            "lc": 1,
+                            "lj": 1,
+                            "ml": 4,
+                            "bm": 0,
+                            "nm": "描边 1",
+                            "mn": "ADBE Vector Graphic - Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 1",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                },
+                {
+                    "ty": "tm",
+                    "s": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [0]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 1
+                    },
+                    "e": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [100]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 2
+                    },
+                    "o": { "a": 0, "k": 0, "ix": 3 },
+                    "m": 1,
+                    "ix": 2,
+                    "nm": "修剪路径 1",
+                    "mn": "ADBE Vector Filter - Trim",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 8,
+            "ty": 4,
+            "nm": "浅8",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [61.625, 43.875, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-7.625, 6.5]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [7.625, -6.5]
+                                    ],
+                                    "v": [
+                                        [-22, -14.5],
+                                        [-23.875, -28.75]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, -30], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -13], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "st",
+                            "c": { "a": 0, "k": [1, 1, 1, 1], "ix": 3 },
+                            "o": { "a": 0, "k": 100, "ix": 4 },
+                            "w": { "a": 0, "k": 0, "ix": 5 },
+                            "lc": 1,
+                            "lj": 1,
+                            "ml": 4,
+                            "bm": 0,
+                            "nm": "描边 1",
+                            "mn": "ADBE Vector Graphic - Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 1",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                },
+                {
+                    "ty": "tm",
+                    "s": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [0]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 1
+                    },
+                    "e": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [100]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 2
+                    },
+                    "o": { "a": 0, "k": 0, "ix": 3 },
+                    "m": 1,
+                    "ix": 2,
+                    "nm": "修剪路径 1",
+                    "mn": "ADBE Vector Filter - Trim",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 9,
+            "ty": 4,
+            "nm": "浅7",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [73.875, 43.875, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-7.625, 6.5]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [7.625, -6.5]
+                                    ],
+                                    "v": [
+                                        [-22, -14.5],
+                                        [-23.875, -28.75]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, -30], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -13], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "st",
+                            "c": { "a": 0, "k": [1, 1, 1, 1], "ix": 3 },
+                            "o": { "a": 0, "k": 100, "ix": 4 },
+                            "w": { "a": 0, "k": 0, "ix": 5 },
+                            "lc": 1,
+                            "lj": 1,
+                            "ml": 4,
+                            "bm": 0,
+                            "nm": "描边 1",
+                            "mn": "ADBE Vector Graphic - Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 1",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                },
+                {
+                    "ty": "tm",
+                    "s": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [0]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 1
+                    },
+                    "e": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [100]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 2
+                    },
+                    "o": { "a": 0, "k": 0, "ix": 3 },
+                    "m": 1,
+                    "ix": 2,
+                    "nm": "修剪路径 1",
+                    "mn": "ADBE Vector Filter - Trim",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 10,
+            "ty": 4,
+            "nm": "浅6",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [86.5, 43.875, 0], "ix": 2 },
+                "a": { "a": 0, "k": [0, 0, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "shapes": [
+                {
+                    "ty": "gr",
+                    "it": [
+                        {
+                            "ind": 0,
+                            "ty": "sh",
+                            "ix": 1,
+                            "ks": {
+                                "a": 0,
+                                "k": {
+                                    "i": [
+                                        [0, 0],
+                                        [-7.625, 6.5]
+                                    ],
+                                    "o": [
+                                        [0, 0],
+                                        [7.625, -6.5]
+                                    ],
+                                    "v": [
+                                        [-22, -14.5],
+                                        [-23.875, -28.75]
+                                    ],
+                                    "c": false
+                                },
+                                "ix": 2
+                            },
+                            "nm": "路径 1",
+                            "mn": "ADBE Vector Shape - Group",
+                            "hd": false
+                        },
+                        {
+                            "ty": "gs",
+                            "o": { "a": 0, "k": 100, "ix": 9 },
+                            "w": { "a": 0, "k": 3.5, "ix": 10 },
+                            "g": { "p": 2, "k": { "a": 0, "k": [0, 1, 1, 1, 1, 0, 0, 0], "ix": 8 } },
+                            "s": { "a": 0, "k": [0, -30], "ix": 4 },
+                            "e": { "a": 0, "k": [0, -13], "ix": 5 },
+                            "t": 1,
+                            "lc": 2,
+                            "lj": 2,
+                            "bm": 0,
+                            "nm": "渐变描边 1",
+                            "mn": "ADBE Vector Graphic - G-Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "st",
+                            "c": { "a": 0, "k": [1, 1, 1, 1], "ix": 3 },
+                            "o": { "a": 0, "k": 100, "ix": 4 },
+                            "w": { "a": 0, "k": 0, "ix": 5 },
+                            "lc": 1,
+                            "lj": 1,
+                            "ml": 4,
+                            "bm": 0,
+                            "nm": "描边 1",
+                            "mn": "ADBE Vector Graphic - Stroke",
+                            "hd": false
+                        },
+                        {
+                            "ty": "tr",
+                            "p": { "a": 0, "k": [0, 0], "ix": 2 },
+                            "a": { "a": 0, "k": [0, 0], "ix": 1 },
+                            "s": { "a": 0, "k": [100, 100], "ix": 3 },
+                            "r": { "a": 0, "k": 0, "ix": 6 },
+                            "o": { "a": 0, "k": 100, "ix": 7 },
+                            "sk": { "a": 0, "k": 0, "ix": 4 },
+                            "sa": { "a": 0, "k": 0, "ix": 5 },
+                            "nm": "变换"
+                        }
+                    ],
+                    "nm": "形状 1",
+                    "np": 3,
+                    "cix": 2,
+                    "bm": 0,
+                    "ix": 1,
+                    "mn": "ADBE Vector Group",
+                    "hd": false
+                },
+                {
+                    "ty": "tm",
+                    "s": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [0]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 1
+                    },
+                    "e": {
+                        "a": 1,
+                        "k": [
+                            {
+                                "i": { "x": [0.833], "y": [0.833] },
+                                "o": { "x": [0.167], "y": [0.167] },
+                                "t": 60,
+                                "s": [0],
+                                "e": [100]
+                            },
+                            { "t": 90 }
+                        ],
+                        "ix": 2
+                    },
+                    "o": { "a": 0, "k": 0, "ix": 3 },
+                    "m": 1,
+                    "ix": 2,
+                    "nm": "修剪路径 1",
+                    "mn": "ADBE Vector Filter - Trim",
+                    "hd": false
+                }
+            ],
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        },
+        {
+            "ddd": 0,
+            "ind": 22,
+            "ty": 2,
+            "nm": "组 26.png",
+            "cl": "png",
+            "refId": "image_0",
+            "sr": 1,
+            "ks": {
+                "o": { "a": 0, "k": 100, "ix": 11 },
+                "r": { "a": 0, "k": 0, "ix": 10 },
+                "p": { "a": 0, "k": [39.75, 68.75, 0], "ix": 2 },
+                "a": { "a": 0, "k": [36.5, 14, 0], "ix": 1 },
+                "s": { "a": 0, "k": [100, 100, 100], "ix": 6 }
+            },
+            "ao": 0,
+            "ip": 0,
+            "op": 90,
+            "st": 0,
+            "bm": 0
+        }
+    ],
+    "markers": []
+}
