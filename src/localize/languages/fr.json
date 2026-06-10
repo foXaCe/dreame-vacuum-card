@@ -326,6 +326,7 @@
             "text": "Cet éditeur visuel ne permet qu'une configuration de base. Pour un paramétrage plus avancé, utilisez le mode YAML."
         },
         "section": {
+            "map_source": "Source de la carte",
             "display": "Options d'affichage",
             "map_behavior": "Comportement de la carte"
         },

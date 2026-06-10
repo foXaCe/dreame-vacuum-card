@@ -326,6 +326,7 @@
             "text": "This visual editor supports only a basic configuration. For more advanced setup use YAML mode."
         },
         "section": {
+            "map_source": "Map source",
             "display": "Display Options",
             "map_behavior": "Map Behavior"
         },

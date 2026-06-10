@@ -54,7 +54,7 @@ interface HaFormSchema {
     expanded?: boolean;
 }
 
-const buildSchema = (): HaFormSchema[] => [
+const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
     {
         name: "entity",
         required: true,
@@ -63,7 +63,7 @@ const buildSchema = (): HaFormSchema[] => [
     {
         name: "map_source",
         type: "expandable",
-        title: "Map source",
+        title: t("editor.section.map_source"),
         expanded: true,
         schema: [
             {
@@ -76,7 +76,7 @@ const buildSchema = (): HaFormSchema[] => [
     {
         name: "display",
         type: "expandable",
-        title: "Display",
+        title: t("editor.section.display"),
         schema: [
             { name: "show_title", selector: { boolean: {} } },
             {
@@ -93,7 +93,7 @@ const buildSchema = (): HaFormSchema[] => [
     {
         name: "map_behavior",
         type: "expandable",
-        title: "Map behavior",
+        title: t("editor.section.map_behavior"),
         schema: [
             { name: "map_locked", selector: { boolean: {} } },
             { name: "two_finger_pan", selector: { boolean: {} } },
@@ -137,7 +137,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             <ha-form
                 .hass=${this.hass}
                 .data=${data}
-                .schema=${buildSchema()}
+                .schema=${buildSchema((k) => this._localize(k))}
                 .computeLabel=${this._computeLabel}
                 @value-changed=${this._valueChanged}
             ></ha-form>
