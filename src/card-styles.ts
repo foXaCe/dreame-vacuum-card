@@ -225,6 +225,39 @@ export const cardStyles: CSSResultGroup = css`
         --map-card-internal-room-label-color: var(--map-card-room-label-color, #333);
         --map-card-internal-room-label-font-size: var(--map-card-room-label-font-size, 12px);
         --map-card-internal-transitions-duration: var(--map-card-transitions-duration, 200ms);
+
+        /* ===== Premium "Apple material" design tokens (purely cosmetic) ===== */
+        /* Vibrancy glass: theme-aware translucent surface + saturated blur. */
+        --dvc-glass-tint: color-mix(
+            in srgb,
+            var(--ha-card-background, var(--card-background-color, #fff)) 78%,
+            transparent
+        );
+        --dvc-glass-tint-strong: color-mix(
+            in srgb,
+            var(--ha-card-background, var(--card-background-color, #fff)) 88%,
+            transparent
+        );
+        --dvc-glass-blur: saturate(180%) blur(20px);
+        /* Hairline separators (Apple 0.5px translucent borders). */
+        --dvc-hairline: color-mix(in srgb, var(--primary-text-color, #000) 9%, transparent);
+        --dvc-hairline-strong: color-mix(in srgb, var(--primary-text-color, #000) 14%, transparent);
+        /* Soft, layered elevation. */
+        --dvc-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px rgba(0, 0, 0, 0.1),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
+        --dvc-shadow-2: 0 2px 8px rgba(0, 0, 0, 0.1), 0 16px 40px rgba(0, 0, 0, 0.18),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.32);
+        /* Apple-like motion. */
+        --dvc-ease: cubic-bezier(0.32, 0.72, 0, 1);
+        --dvc-ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+        --dvc-dur-tap: 180ms;
+        --dvc-radius-pill: 980px;
+
+        /* Refined system typography (SF on Apple) + smoothing. */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        letter-spacing: -0.01em;
     }
 
     /* Responsive: small cards (< 350px) */
@@ -378,8 +411,12 @@ export const cardStyles: CSSResultGroup = css`
     }
 
     .standalone-icon-on-map {
-        background-color: var(--map-card-internal-secondary-color);
-        color: var(--map-card-internal-secondary-text-color);
+        background: var(--dvc-glass-tint);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid var(--dvc-hairline);
+        box-shadow: var(--dvc-shadow-1);
+        color: var(--primary-text-color);
         border-radius: var(--map-card-internal-small-radius);
         margin: 5px;
         width: 36px;
@@ -387,6 +424,9 @@ export const cardStyles: CSSResultGroup = css`
         display: flex;
         justify-content: center;
         align-items: center;
+        transition:
+            transform var(--dvc-dur-tap) var(--dvc-ease-out),
+            box-shadow var(--dvc-dur-tap) var(--dvc-ease-out);
     }
 
     .map-zoom-icons {
@@ -395,8 +435,12 @@ export const cardStyles: CSSResultGroup = css`
         position: absolute;
         display: flex;
         flex-direction: column-reverse;
-        background-color: var(--map-card-internal-secondary-color);
-        color: var(--map-card-internal-secondary-text-color);
+        background: var(--dvc-glass-tint);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid var(--dvc-hairline);
+        box-shadow: var(--dvc-shadow-1);
+        color: var(--primary-text-color);
         border-radius: var(--map-card-internal-small-radius);
         margin: 5px;
         direction: ltr;
@@ -407,8 +451,12 @@ export const cardStyles: CSSResultGroup = css`
         bottom: 0;
         position: absolute;
         display: inline-flex;
-        background-color: var(--map-card-internal-secondary-color);
-        color: var(--map-card-internal-secondary-text-color);
+        background: var(--dvc-glass-tint);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid var(--dvc-hairline);
+        box-shadow: var(--dvc-shadow-1);
+        color: var(--primary-text-color);
         border-radius: var(--map-card-internal-small-radius);
         margin: 5px;
         direction: ltr;
@@ -421,14 +469,18 @@ export const cardStyles: CSSResultGroup = css`
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background-color: rgba(var(--rgb-warning-color, 255, 152, 0), 0.9);
+        background: color-mix(in srgb, rgb(var(--rgb-warning-color, 255, 152, 0)) 82%, transparent);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid rgba(255, 255, 255, 0.18);
         color: var(--text-primary-color, #ffffff);
-        border-radius: var(--map-card-internal-small-radius);
+        border-radius: var(--dvc-radius-pill);
         padding: 6px 12px;
         margin: 5px;
         font-size: 12px;
-        font-weight: 500;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        font-weight: 590;
+        letter-spacing: -0.01em;
+        box-shadow: var(--dvc-shadow-1);
         animation: pulse-opacity 2s ease-in-out infinite;
     }
 
@@ -472,6 +524,11 @@ export const cardStyles: CSSResultGroup = css`
         display: flex;
         justify-content: center;
         align-items: center;
+        transition: transform var(--dvc-dur-tap) var(--dvc-ease-out);
+    }
+
+    .icon-on-map:active {
+        transform: scale(0.88);
     }
 
     .icon-on-map:focus-visible {
@@ -497,6 +554,16 @@ export const cardStyles: CSSResultGroup = css`
         border-radius: var(--map-card-internal-small-radius);
     }
 
+    /* Lévitation douce au survol des contrôles en verre (desktop uniquement). */
+    @media (hover: hover) {
+        .map-zoom-icons:hover,
+        .map-return-base-button:hover,
+        .standalone-icon-on-map:hover,
+        .map-actions-list:hover {
+            box-shadow: var(--dvc-shadow-2);
+        }
+    }
+
     .controls-wrapper {
         margin: 15px;
         display: flex;
@@ -515,8 +582,12 @@ export const cardStyles: CSSResultGroup = css`
     .map-actions-list {
         border-radius: var(--map-card-internal-big-radius);
         overflow: hidden;
-        background-color: var(--map-card-internal-secondary-color);
-        color: var(--map-card-internal-secondary-text-color);
+        background: var(--dvc-glass-tint);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid var(--dvc-hairline);
+        box-shadow: var(--dvc-shadow-1);
+        color: var(--primary-text-color);
         margin-inline-start: auto;
         display: inline-flex;
         height: min-content;
@@ -535,6 +606,11 @@ export const cardStyles: CSSResultGroup = css`
         justify-content: center;
         align-items: center;
         background-color: transparent;
+        transition: transform var(--dvc-dur-tap) var(--dvc-ease-out);
+    }
+
+    .map-actions-item:active {
+        transform: scale(0.9);
     }
 
     .ripple {

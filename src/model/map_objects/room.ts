@@ -21,17 +21,38 @@ export class Room extends PredefinedMapObject {
         if (!label) return null;
         const mapped = this.vacuumToScaledMap(label.x, label.y);
         const text = label.text ?? "";
+        if (!text) return null;
+        const cx = mapped[0];
+        const cy = mapped[1];
         const fontSize = 12 / this._context.scale();
+        // Pilule-badge dimensionnée par estimation (pas de mesure DOM possible en rendu
+        // SVG déclaratif) : largeur ≈ longueur du texte × largeur moyenne d'un glyphe,
+        // + padding. Centrée sur le point de label, coins pleinement arrondis.
+        const padX = fontSize * 0.72;
+        const padY = fontSize * 0.34;
+        const textW = Math.max(text.length, 1) * fontSize * 0.58;
+        const w = textW + padX * 2;
+        const h = fontSize + padY * 2;
         return svg`
-            <text class="room-label-text"
-                  x="${mapped[0]}"
-                  y="${mapped[1]}"
-                  font-size="${fontSize}"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  pointer-events="none">
-                ${text}
-            </text>
+            <g class="room-label">
+                <rect class="room-label-pill"
+                      x="${cx - w / 2}"
+                      y="${cy - h / 2}"
+                      width="${w}"
+                      height="${h}"
+                      rx="${h / 2}"
+                      ry="${h / 2}"
+                      pointer-events="none"></rect>
+                <text class="room-label-text"
+                      x="${cx}"
+                      y="${cy}"
+                      font-size="${fontSize}"
+                      text-anchor="middle"
+                      dominant-baseline="central"
+                      pointer-events="none">
+                    ${text}
+                </text>
+            </g>
         `;
     }
 
@@ -117,43 +138,49 @@ export class Room extends PredefinedMapObject {
 
     public static get styles(): CSSResultGroup {
         return css`
+            /* Pilule-badge sous le nom de pièce (fond sombre translucide premium). */
+            .room-label-pill {
+                fill: rgba(18, 18, 20, 0.55);
+                transition:
+                    fill 0.3s ease,
+                    opacity 0.3s ease;
+            }
             .room-label-text {
-                fill: rgba(255, 255, 255, 0.9);
+                fill: #fff;
                 font-weight: 600;
+                letter-spacing: 0.02em;
                 font-family: inherit;
                 pointer-events: none;
-                paint-order: stroke;
-                stroke: rgba(0, 0, 0, 0.6);
-                stroke-width: 3px;
-                stroke-linecap: round;
-                stroke-linejoin: round;
                 transition:
                     opacity 0.3s ease,
                     fill 0.3s ease;
             }
 
-            /* Mode pièce : tous les labels dimmés par défaut */
+            /* Mode pièce : badges atténués par défaut */
+            .room-mode .room-label-pill,
             .room-mode .room-label-text {
-                opacity: 0.5;
+                opacity: 0.55;
             }
 
-            /* Mode pièce, pièce sélectionnée : label bien visible */
-            .room-mode .room-wrapper.selected .room-label-text {
-                opacity: 1;
-                fill: #fff;
-                font-weight: 700;
+            /* Pièce sélectionnée : badge en couleur d'accent, texte net */
+            .room-wrapper.selected .room-label-pill {
+                fill: var(--map-card-internal-primary-color, var(--primary-color, #0a84ff));
             }
-
-            /* Mode pièce, pièces non sélectionnées quand il y a une sélection */
-            .room-mode .room-wrapper.dimmed .room-label-text {
-                opacity: 0.3;
-            }
-
             .room-wrapper.selected .room-label-text {
                 fill: #fff;
                 font-weight: 700;
             }
+            .room-mode .room-wrapper.selected .room-label-pill,
+            .room-mode .room-wrapper.selected .room-label-text {
+                opacity: 1;
+            }
 
+            /* Pièces non sélectionnées quand une sélection est active */
+            .room-mode .room-wrapper.dimmed .room-label-pill,
+            .room-mode .room-wrapper.dimmed .room-label-text {
+                opacity: 0.3;
+            }
+            .room-wrapper.dimmed .room-label-pill,
             .room-wrapper.dimmed .room-label-text {
                 opacity: 0.4;
             }

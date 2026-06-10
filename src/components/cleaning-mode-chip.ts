@@ -15,6 +15,8 @@ export class CleaningModeChip extends LitElement {
 
     private _cachedModeEntityId: string | null | undefined = undefined;
     private _cachedModeEntityKey: string | undefined = undefined;
+    private _cachedCgEntityId: string | null | undefined = undefined;
+    private _cachedCgEntityKey: string | undefined = undefined;
 
     private _getCleaningModeEntity(): string | undefined {
         if (!this.hass || !this.entityId) return undefined;
@@ -34,6 +36,31 @@ export class CleaningModeChip extends LitElement {
             return entry?.device_id === deviceId && eid.startsWith("select.") && eid.includes("cleaning_mode");
         });
         this._cachedModeEntityId = found ?? null;
+        return found;
+    }
+
+    /** Entité CleanGenius (le select principal, pas `cleangenius_mode`) du même device. */
+    private _getCleanGeniusEntity(): string | undefined {
+        if (!this.hass || !this.entityId) return undefined;
+        if (this._cachedCgEntityId !== undefined && this._cachedCgEntityKey === this.entityId) {
+            return this._cachedCgEntityId ?? undefined;
+        }
+        this._cachedCgEntityKey = this.entityId;
+        const deviceId = this.hass.entities[this.entityId]?.device_id;
+        if (!deviceId) {
+            this._cachedCgEntityId = null;
+            return undefined;
+        }
+        const found = Object.keys(this.hass.states).find((eid) => {
+            const entry = this.hass!.entities[eid];
+            return (
+                entry?.device_id === deviceId &&
+                eid.startsWith("select.") &&
+                eid.includes("cleangenius") &&
+                !eid.includes("cleangenius_mode")
+            );
+        });
+        this._cachedCgEntityId = found ?? null;
         return found;
     }
 
@@ -92,23 +119,41 @@ export class CleaningModeChip extends LitElement {
 
         const currentMode = stateObj.state;
         const lang = this.hass.locale?.language;
+        // En veille, le robot coupe sa liaison locale : le select de mode devient
+        // indisponible. Plutôt qu'un « Indisponible » brut, on grise la puce et on
+        // affiche un tiret discret (rendu premium).
+        const unavailable = currentMode === "unavailable" || currentMode === "unknown" || !currentMode;
         const translatedMode = computeStateDisplay(this.hass.localize, stateObj, this.hass.locale, this.hass.entities);
         const modeLabel = localize("tile.cleaning_mode.label", lang);
         const options: string[] | undefined = stateObj.attributes.options;
-        const icons = this._getModeIcons(currentMode);
 
-        const displayLabel = `${modeLabel}: ${translatedMode}`;
+        // Le mode manuel devient indisponible quand CleanGenius pilote le robot
+        // (suction/eau/mode en auto) ou quand le robot est en veille. Plutôt qu'un
+        // « Indisponible » brut : si CleanGenius est actif on l'affiche (mode auto),
+        // sinon on grise discrètement la puce.
+        let cgActive = false;
+        if (unavailable) {
+            const cgId = this._getCleanGeniusEntity();
+            const cgState = cgId ? this.hass.states[cgId]?.state : undefined;
+            cgActive = !!cgState && !["off", "unavailable", "unknown", ""].includes(cgState);
+        }
+
+        const icons = cgActive ? ["mdi:auto-fix"] : this._getModeIcons(currentMode);
+        const valueText = cgActive ? "CleanGenius" : unavailable ? "—" : translatedMode;
+        const displayLabel = `${modeLabel}: ${valueText}`;
+        const dimmed = unavailable && !cgActive;
+        const interactive = !unavailable;
 
         return html`
             <div
-                class="mode-chip"
+                class="mode-chip ${dimmed ? "unavailable" : ""} ${cgActive ? "cg-active" : ""}"
                 part="mode-chip"
                 role="button"
-                tabindex="0"
+                tabindex="${interactive ? 0 : -1}"
                 aria-label="${displayLabel}"
                 @click="${this._handleClick}"
                 @keydown="${this._handleKeydown}"
-                title="${options
+                title="${interactive && options
                     ? localize(["dreame_ui.mode.cycle_tooltip", "{0}", `${options.length}`], this.hass.locale?.language)
                     : ""}"
             >
@@ -132,15 +177,45 @@ export class CleaningModeChip extends LitElement {
                 display: flex;
                 align-items: center;
                 gap: var(--dvc-chip-gap, 8px);
-                background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
-                border-radius: 20px;
+                background: var(--dvc-glass-tint, var(--secondary-background-color, rgba(0, 0, 0, 0.1)));
+                -webkit-backdrop-filter: var(--dvc-glass-blur);
+                backdrop-filter: var(--dvc-glass-blur);
+                border: 0.5px solid var(--dvc-hairline, transparent);
+                box-shadow: var(--dvc-shadow-1);
+                border-radius: var(--dvc-radius-pill, 980px);
                 padding: var(--dvc-chip-padding, 10px 16px);
                 cursor: pointer;
-                transition: background 0.2s;
+                transition:
+                    transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    filter var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    box-shadow var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    opacity var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+                will-change: transform;
             }
 
-            .mode-chip:hover {
-                background: var(--primary-background-color, rgba(0, 0, 0, 0.15));
+            @media (hover: hover) {
+                .mode-chip:hover {
+                    filter: brightness(1.03);
+                }
+            }
+
+            .mode-chip:active {
+                transform: scale(0.97);
+                filter: brightness(0.96);
+            }
+
+            .mode-chip.unavailable {
+                opacity: 0.45;
+                cursor: default;
+                box-shadow: none;
+            }
+
+            /* CleanGenius actif : puce informative (mode auto), non cliquable. */
+            .mode-chip.cg-active {
+                cursor: default;
+            }
+            .mode-chip.cg-active .mode-arrow {
+                display: none;
             }
 
             .mode-icons {

@@ -70,24 +70,32 @@ export class CleaningProgressBar extends LitElement {
 
             .progress-bar {
                 flex: 1;
-                height: 4px;
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-                border-radius: 2px;
+                height: 6px;
+                background: color-mix(in srgb, var(--primary-text-color, #000) 10%, transparent);
+                border-radius: 980px;
                 overflow: hidden;
             }
 
             .progress-fill {
                 height: 100%;
-                background: #3b82f6;
-                border-radius: 2px;
-                transition: width 1s ease;
+                border-radius: 980px;
+                background: linear-gradient(
+                    90deg,
+                    color-mix(in srgb, var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 78%, #fff),
+                    var(--map-card-internal-primary-color, var(--primary-color, #0a84ff))
+                );
+                box-shadow: 0 0 8px
+                    color-mix(in srgb, var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 45%, transparent);
+                transition: width 0.8s var(--dvc-ease, ease);
             }
 
             .progress-text {
                 font-size: var(--dvc-progress-font-size, 12px);
-                font-weight: 600;
-                color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-                min-width: 32px;
+                font-weight: 590;
+                letter-spacing: -0.01em;
+                font-variant-numeric: tabular-nums;
+                color: var(--primary-text-color);
+                min-width: 36px;
                 text-align: right;
             }
         `;

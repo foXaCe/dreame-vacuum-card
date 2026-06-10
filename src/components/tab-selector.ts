@@ -16,34 +16,56 @@ export class DreameTabSelector extends LitElement {
             :host {
                 display: block;
             }
+            /* Segmented control façon iOS : track arrondi, segment actif en pilule surélevée. */
             .tabs {
                 display: flex;
-                border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                gap: 4px;
+                margin: 10px 14px 4px;
+                padding: 3px;
+                background: color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent);
+                border: 0.5px solid var(--dvc-hairline, transparent);
+                border-radius: 14px;
             }
             .tab {
                 flex: 1;
-                padding: var(--dvc-tab-padding, 10px 0);
+                padding: 7px 4px;
                 text-align: center;
                 cursor: pointer;
-                background: none;
+                background: transparent;
                 border: none;
-                border-bottom: 2px solid transparent;
+                border-radius: 11px;
                 color: var(--secondary-text-color);
                 font-size: var(--dvc-tab-font-size, 14px);
+                font-weight: 510;
+                letter-spacing: -0.01em;
                 font-family: inherit;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 gap: var(--dvc-tab-gap, 4px);
-                transition: all 0.2s ease;
+                -webkit-tap-highlight-color: transparent;
+                transition:
+                    color var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    background-color var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    box-shadow var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
             }
-            .tab:hover {
-                background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
+            @media (hover: hover) {
+                .tab:not(.active):hover {
+                    color: var(--primary-text-color);
+                }
+            }
+            .tab:active {
+                transform: scale(0.96);
             }
             .tab.active {
+                color: var(--primary-text-color);
+                background: var(--dvc-glass-tint-strong, var(--card-background-color, #fff));
+                box-shadow: var(--dvc-shadow-1);
+                font-weight: 600;
+            }
+            .tab.active ha-icon {
                 color: var(--primary-color);
-                border-bottom-color: var(--primary-color);
-                font-weight: 500;
             }
             .tab ha-icon {
                 --mdc-icon-size: var(--dvc-tab-icon-size, 20px);

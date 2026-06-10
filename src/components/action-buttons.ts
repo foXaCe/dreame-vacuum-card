@@ -206,7 +206,7 @@ export class ActionButtons extends LitElement {
                 flex: 1;
                 min-height: 48px;
                 padding: var(--dvc-action-btn-padding, 14px);
-                border-radius: 12px;
+                border-radius: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -214,19 +214,38 @@ export class ActionButtons extends LitElement {
                 border: none;
                 cursor: pointer;
                 font-size: var(--dvc-action-font-size, 15px);
-                font-weight: 600;
+                font-weight: 590;
+                letter-spacing: -0.01em;
                 font-family: inherit;
                 -webkit-tap-highlight-color: transparent;
-                transition: transform 0.1s ease;
+                transition:
+                    transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    box-shadow var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
+                    filter var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+                will-change: transform;
             }
 
             .action-btn:active {
-                transform: scale(0.95);
+                transform: scale(0.97);
+                filter: brightness(0.95);
+            }
+
+            @media (hover: hover) {
+                .action-btn:hover {
+                    filter: brightness(1.04);
+                }
             }
 
             .action-btn.primary {
-                background: var(--dvc-action-primary-bg, var(--success-color, #4ade80));
+                background: linear-gradient(
+                    180deg,
+                    color-mix(in srgb, var(--dvc-action-primary-bg, var(--success-color, #4ade80)) 88%, #fff) 0%,
+                    var(--dvc-action-primary-bg, var(--success-color, #4ade80)) 100%
+                );
                 color: var(--dvc-action-primary-fg, var(--text-primary-color, #000));
+                box-shadow:
+                    var(--dvc-shadow-1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.22);
             }
 
             .action-btn.primary.warning {
@@ -242,6 +261,8 @@ export class ActionButtons extends LitElement {
             .action-btn.secondary {
                 background: var(--secondary-background-color, #374151);
                 color: var(--primary-text-color);
+                border: 0.5px solid var(--dvc-hairline);
+                box-shadow: var(--dvc-shadow-1);
             }
 
             .action-btn:focus-visible {

@@ -161,11 +161,14 @@ export class StatusHeader extends LitElement {
             .device-name {
                 font-size: var(--dvc-header-name-size, 18px);
                 font-weight: 600;
+                letter-spacing: -0.02em;
                 color: var(--primary-text-color);
             }
 
             .status {
                 font-size: var(--dvc-header-status-size, 14px);
+                font-weight: 510;
+                letter-spacing: -0.01em;
                 color: var(--secondary-text-color);
                 margin-top: 2px;
             }
@@ -175,9 +178,10 @@ export class StatusHeader extends LitElement {
                 justify-content: center;
                 gap: var(--dvc-stats-gap, 24px);
                 padding: var(--dvc-stats-padding, 8px 16px);
-                background: color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                background: var(--dvc-glass-tint, color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent));
+                backdrop-filter: var(--dvc-glass-blur, blur(8px));
+                -webkit-backdrop-filter: var(--dvc-glass-blur, blur(8px));
+                border-top: 0.5px solid var(--dvc-hairline, transparent);
             }
 
             .stat {
@@ -194,7 +198,9 @@ export class StatusHeader extends LitElement {
             }
 
             .stat-value {
-                font-weight: 500;
+                font-weight: 590;
+                letter-spacing: -0.01em;
+                font-variant-numeric: tabular-nums;
                 color: var(--primary-text-color);
             }
 
