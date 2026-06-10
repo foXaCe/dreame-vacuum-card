@@ -28,6 +28,9 @@ export class RobotMarker extends LitElement {
     @property({ type: Boolean })
     public visible = false;
 
+    @property({ type: Boolean, reflect: true })
+    public active = false;
+
     protected render(): unknown {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
@@ -89,6 +92,44 @@ export class RobotMarker extends LitElement {
 
             .body {
                 fill: var(--map-card-internal-primary-color, var(--primary-color, #03a9f4));
+            }
+
+            /* Sonar-like halo while the robot is actively cleaning (Find My-style, premium). */
+            :host([active]) #icon::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 26px;
+                height: 26px;
+                margin: -13px 0 0 -13px;
+                border-radius: 50%;
+                background: radial-gradient(
+                    circle,
+                    var(--map-card-internal-primary-color, var(--primary-color, #03a9f4)) 0%,
+                    transparent 70%
+                );
+                z-index: -1;
+                pointer-events: none;
+                animation: dvc-robot-pulse 2.6s ease-out infinite;
+            }
+
+            @keyframes dvc-robot-pulse {
+                0% {
+                    transform: scale(0.7);
+                    opacity: 0.5;
+                }
+                70%,
+                100% {
+                    transform: scale(2.4);
+                    opacity: 0;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                :host([active]) #icon::after {
+                    animation: none;
+                }
             }
         `;
     }

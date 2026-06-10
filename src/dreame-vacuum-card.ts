@@ -406,13 +406,24 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
 
         // Compute robot position/heading as percentage of map image (option 2 anti-flash).
-        // Requiert `robot_overlay: true` ET le robot masqué du PNG côté intégration
-        // (cocher « Robot Icon » dans les *Hidden map objects*), sinon double robot.
         let robotXPct = -1;
         let robotYPct = -1;
         let robotHeadingDeg = 0;
         let robotVisible = false;
-        const robotOverlayEnabled = preset.robot_overlay ?? this.config?.robot_overlay ?? false;
+        // Résolution de l'overlay robot client-side :
+        //  - un réglage explicite (preset puis config) est toujours respecté ;
+        //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
+        //    du PNG (attribut caméra `robot_in_map === false`). Zéro double-robot, suivi
+        //    fluide (le marqueur glisse en CSS, sans recharger l'<img> à chaque déplacement).
+        //    Les installs avec un réglage explicite restent inchangées.
+        const robotOverlayCfg = preset.robot_overlay ?? this.config?.robot_overlay;
+        let robotOverlayEnabled: boolean;
+        if (typeof robotOverlayCfg === "boolean") {
+            robotOverlayEnabled = robotOverlayCfg;
+        } else {
+            const cam = preset.map_source?.camera ? this.hass?.states[preset.map_source.camera] : undefined;
+            robotOverlayEnabled = cam?.attributes?.["robot_in_map"] === false;
+        }
         if (robotOverlayEnabled && this.coordinatesConverter?.calibrated && preset.map_source?.camera) {
             const camState = this.hass.states[preset.map_source.camera];
             const robotPos = camState?.attributes?.vacuum_position;
@@ -499,6 +510,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                 ></dreame-robot-animation>
                 <dreame-robot-marker
                     .visible=${robotVisible}
+                    .active=${this._isRobotActive()}
                     .xPercent=${robotXPct}
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
