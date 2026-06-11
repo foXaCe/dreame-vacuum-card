@@ -233,28 +233,36 @@ export class ActionButtons extends LitElement {
             @media (hover: hover) {
                 .action-btn:hover {
                     filter: brightness(1.04);
+                    transform: translateY(-1px);
+                }
+                .action-btn:hover:active {
+                    transform: scale(0.97);
                 }
             }
 
+            /* Glow coloré sous le bouton d'action : l'ombre reprend la teinte du fond
+               (vert action / orange pause / rouge stop) — signature visuelle Apple. */
             .action-btn.primary {
+                --dvc-btn-tint: var(--dvc-action-primary-bg, var(--success-color, #4ade80));
                 background: linear-gradient(
                     180deg,
-                    color-mix(in srgb, var(--dvc-action-primary-bg, var(--success-color, #4ade80)) 88%, #fff) 0%,
-                    var(--dvc-action-primary-bg, var(--success-color, #4ade80)) 100%
+                    color-mix(in srgb, var(--dvc-btn-tint) 88%, #fff) 0%,
+                    var(--dvc-btn-tint) 100%
                 );
                 color: var(--dvc-action-primary-fg, var(--text-primary-color, #000));
                 box-shadow:
-                    var(--dvc-shadow-1),
+                    0 1px 2px rgba(0, 0, 0, 0.06),
+                    0 8px 20px color-mix(in srgb, var(--dvc-btn-tint) 32%, transparent),
                     inset 0 1px 0 rgba(255, 255, 255, 0.22);
             }
 
             .action-btn.primary.warning {
-                background: var(--dvc-action-warning-bg, var(--warning-color, #f59e0b));
+                --dvc-btn-tint: var(--dvc-action-warning-bg, var(--warning-color, #f59e0b));
                 color: var(--dvc-action-warning-fg, var(--text-primary-color, #000));
             }
 
             .action-btn.primary.danger {
-                background: var(--dvc-action-danger-bg, var(--error-color, #ef4444));
+                --dvc-btn-tint: var(--dvc-action-danger-bg, var(--error-color, #ef4444));
                 color: var(--dvc-action-danger-fg, var(--text-primary-color, #fff));
             }
 

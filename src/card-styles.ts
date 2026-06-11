@@ -238,26 +238,43 @@ export const cardStyles: CSSResultGroup = css`
             var(--ha-card-background, var(--card-background-color, #fff)) 88%,
             transparent
         );
-        --dvc-glass-blur: saturate(180%) blur(20px);
+        /* 14px sample radius reads identically to 20px on these small surfaces but
+           costs roughly half the GPU time (backdrop sampling scales with radius²). */
+        --dvc-glass-blur: saturate(180%) blur(14px);
         /* Hairline separators (Apple 0.5px translucent borders). */
         --dvc-hairline: color-mix(in srgb, var(--primary-text-color, #000) 9%, transparent);
         --dvc-hairline-strong: color-mix(in srgb, var(--primary-text-color, #000) 14%, transparent);
         /* Soft, layered elevation. */
-        --dvc-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px rgba(0, 0, 0, 0.1),
-            inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
-        --dvc-shadow-2: 0 2px 8px rgba(0, 0, 0, 0.1), 0 16px 40px rgba(0, 0, 0, 0.18),
-            inset 0 0.5px 0 rgba(255, 255, 255, 0.32);
+        --dvc-shadow-1:
+            0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px rgba(0, 0, 0, 0.1), inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
+        --dvc-shadow-2:
+            0 2px 8px rgba(0, 0, 0, 0.1), 0 16px 40px rgba(0, 0, 0, 0.18), inset 0 0.5px 0 rgba(255, 255, 255, 0.32);
         /* Apple-like motion. */
         --dvc-ease: cubic-bezier(0.32, 0.72, 0, 1);
         --dvc-ease-out: cubic-bezier(0.4, 0, 0.2, 1);
         --dvc-dur-tap: 180ms;
         --dvc-radius-pill: 980px;
 
-        /* Refined system typography (SF on Apple) + smoothing. */
+        /* Refined system typography (SF on Apple devices, Roboto elsewhere) + smoothing. */
+        font-family:
+            -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto,
+            var(--paper-font-body1_-_font-family, sans-serif);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
         letter-spacing: -0.01em;
+    }
+
+    /* Accessibility: collapse decorative motion when the user opted out (this scope only;
+       each sub-component guards its own animations the same way). */
+    @media (prefers-reduced-motion: reduce) {
+        ha-card *,
+        ha-card *::before,
+        ha-card *::after {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+        }
     }
 
     /* Responsive: small cards (< 350px) */
@@ -552,6 +569,17 @@ export const cardStyles: CSSResultGroup = css`
         background-color: var(--map-card-internal-primary-color);
         color: var(--map-card-internal-primary-text-color);
         border-radius: var(--map-card-internal-small-radius);
+    }
+
+    /* Les contrôles en verre flottent au-dessus de la carte pan/zoomée : on leur donne
+       leur propre layer de composition pour que le backdrop-filter ne force pas un
+       repaint de tout l'overlay à chaque frame de transformation de la carte. */
+    .map-zoom-icons,
+    .map-return-base-button,
+    .map-actions-list,
+    .standalone-icon-on-map,
+    .updating-badge {
+        transform: translateZ(0);
     }
 
     /* Lévitation douce au survol des contrôles en verre (desktop uniquement). */

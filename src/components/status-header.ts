@@ -4,6 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { computeStateDisplay } from "../localize/hass/compute_state_display";
+import { ACTIVE_VACUUM_STATES } from "../const";
 
 @customElement("dreame-status-header")
 export class StatusHeader extends LitElement {
@@ -98,10 +99,14 @@ export class StatusHeader extends LitElement {
             }
         }
 
+        const isActive = ACTIVE_VACUUM_STATES.includes(stateObj.state);
+
         return html`
             <div class="header-section" part="header">
                 ${this.showTitle ? html`<div class="device-name">${friendlyName}</div>` : ""}
-                <div class="status">${statusDisplay}</div>
+                <div class="status">
+                    ${isActive ? html`<span class="live-dot" aria-hidden="true"></span>` : nothing}${statusDisplay}
+                </div>
             </div>
             <div class="stats-bar" part="stats">
                 ${cleanedArea !== undefined
@@ -173,12 +178,44 @@ export class StatusHeader extends LitElement {
                 margin-top: 2px;
             }
 
+            /* Pastille "live" : le robot travaille (pulsation douce, type indicateur d'appel). */
+            .live-dot {
+                display: inline-block;
+                width: 7px;
+                height: 7px;
+                margin-right: 6px;
+                vertical-align: 1px;
+                border-radius: 50%;
+                background: var(--success-color, #34c759);
+                box-shadow: 0 0 6px color-mix(in srgb, var(--success-color, #34c759) 60%, transparent);
+                animation: dvc-live-pulse 2s ease-in-out infinite;
+            }
+
+            @keyframes dvc-live-pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.45;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .live-dot {
+                    animation: none;
+                }
+            }
+
             .stats-bar {
                 display: flex;
                 justify-content: center;
                 gap: var(--dvc-stats-gap, 24px);
                 padding: var(--dvc-stats-padding, 8px 16px);
-                background: var(--dvc-glass-tint, color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent));
+                background: var(
+                    --dvc-glass-tint,
+                    color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent)
+                );
                 backdrop-filter: var(--dvc-glass-blur, blur(8px));
                 -webkit-backdrop-filter: var(--dvc-glass-blur, blur(8px));
                 border-top: 0.5px solid var(--dvc-hairline, transparent);

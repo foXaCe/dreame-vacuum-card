@@ -218,26 +218,40 @@ export class CleaningModeChip extends LitElement {
                 display: none;
             }
 
+            /* Bulle teintée autour des icônes de mode : structure la puce, à la iOS Settings. */
             .mode-icons {
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 2px;
+                padding: 4px 6px;
+                border-radius: var(--dvc-radius-pill, 980px);
+                background: color-mix(in srgb, var(--primary-color, #0a84ff) 12%, transparent);
             }
 
             .mode-icon {
                 color: var(--primary-color);
-                --mdc-icon-size: 20px;
+                --mdc-icon-size: 18px;
             }
 
             .mode-label {
                 flex: 1;
                 font-size: var(--dvc-chip-font-size, 14px);
+                font-weight: 510;
+                letter-spacing: -0.01em;
                 color: var(--primary-text-color);
             }
 
             .mode-arrow {
                 color: var(--secondary-text-color);
                 --mdc-icon-size: 18px;
+                transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+            }
+
+            @media (hover: hover) {
+                .mode-chip:hover .mode-arrow {
+                    transform: translateX(2px);
+                }
             }
         `;
     }

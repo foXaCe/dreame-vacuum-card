@@ -16,8 +16,11 @@ export class DreameTabSelector extends LitElement {
             :host {
                 display: block;
             }
-            /* Segmented control façon iOS : track arrondi, segment actif en pilule surélevée. */
+            /* Segmented control façon iOS : track arrondi, pilule active qui GLISSE
+               d'un segment à l'autre (indicateur décoratif sous les boutons — la
+               géométrie/hit-zone des onglets ne change pas). */
             .tabs {
+                position: relative;
                 display: flex;
                 gap: 4px;
                 margin: 10px 14px 4px;
@@ -25,6 +28,22 @@ export class DreameTabSelector extends LitElement {
                 background: color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent);
                 border: 0.5px solid var(--dvc-hairline, transparent);
                 border-radius: 14px;
+            }
+            .tab-indicator {
+                position: absolute;
+                top: 3px;
+                bottom: 3px;
+                left: 3px;
+                /* 3 segments : largeur = (track - 2×3px padding - 2×4px gaps) / 3 ;
+                   le pas de glissement = sa propre largeur + le gap. */
+                width: calc((100% - 6px - 8px) / 3);
+                border-radius: 11px;
+                background: var(--dvc-glass-tint-strong, var(--card-background-color, #fff));
+                box-shadow: var(--dvc-shadow-1);
+                transform: translateX(calc(var(--dvc-tab-index, 0) * (100% + 4px)));
+                transition: transform 280ms var(--dvc-ease, cubic-bezier(0.32, 0.72, 0, 1));
+                will-change: transform;
+                pointer-events: none;
             }
             .tab {
                 flex: 1;
@@ -44,10 +63,10 @@ export class DreameTabSelector extends LitElement {
                 align-items: center;
                 gap: var(--dvc-tab-gap, 4px);
                 -webkit-tap-highlight-color: transparent;
+                position: relative;
+                z-index: 1;
                 transition:
                     color var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
-                    background-color var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
-                    box-shadow var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease),
                     transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
             }
             @media (hover: hover) {
@@ -60,8 +79,6 @@ export class DreameTabSelector extends LitElement {
             }
             .tab.active {
                 color: var(--primary-text-color);
-                background: var(--dvc-glass-tint-strong, var(--card-background-color, #fff));
-                box-shadow: var(--dvc-shadow-1);
                 font-weight: 600;
             }
             .tab.active ha-icon {
@@ -70,12 +87,21 @@ export class DreameTabSelector extends LitElement {
             .tab ha-icon {
                 --mdc-icon-size: var(--dvc-tab-icon-size, 20px);
             }
+            @media (prefers-reduced-motion: reduce) {
+                .tab-indicator {
+                    transition: none;
+                }
+            }
         `;
     }
 
+    private static readonly _TAB_ORDER = ["room", "all", "zone"];
+
     protected render(): TemplateResult {
+        const tabIndex = Math.max(0, DreameTabSelector._TAB_ORDER.indexOf(this.activeTab));
         return html`
-            <div class="tabs" part="tabs" role="tablist">
+            <div class="tabs" part="tabs" role="tablist" style="--dvc-tab-index: ${tabIndex}">
+                <div class="tab-indicator" aria-hidden="true"></div>
                 <button
                     class="tab ${this.activeTab === "room" ? "active" : ""}"
                     part="tab tab-room${this.activeTab === "room" ? " tab-active" : ""}"

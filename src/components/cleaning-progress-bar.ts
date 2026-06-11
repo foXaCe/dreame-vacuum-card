@@ -77,6 +77,8 @@ export class CleaningProgressBar extends LitElement {
             }
 
             .progress-fill {
+                position: relative;
+                overflow: hidden;
                 height: 100%;
                 border-radius: 980px;
                 background: linear-gradient(
@@ -85,8 +87,38 @@ export class CleaningProgressBar extends LitElement {
                     var(--map-card-internal-primary-color, var(--primary-color, #0a84ff))
                 );
                 box-shadow: 0 0 8px
-                    color-mix(in srgb, var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 45%, transparent);
+                    color-mix(
+                        in srgb,
+                        var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 45%,
+                        transparent
+                    );
                 transition: width 0.8s var(--dvc-ease, ease);
+            }
+
+            /* Reflet qui balaie doucement le remplissage (progression "vivante"). */
+            .progress-fill::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
+                background-size: 200% 100%;
+                animation: dvc-progress-shimmer 2.4s ease-in-out infinite;
+            }
+
+            @keyframes dvc-progress-shimmer {
+                0% {
+                    background-position: 150% 0;
+                }
+                100% {
+                    background-position: -50% 0;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .progress-fill::after {
+                    animation: none;
+                    background: none;
+                }
             }
 
             .progress-text {

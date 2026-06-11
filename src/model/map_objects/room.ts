@@ -165,6 +165,28 @@ export class Room extends PredefinedMapObject {
             /* Pièce sélectionnée : badge en couleur d'accent, texte net */
             .room-wrapper.selected .room-label-pill {
                 fill: var(--map-card-internal-primary-color, var(--primary-color, #0a84ff));
+                /* Petit "pop" à la sélection — purement décoratif, centré sur la pilule. */
+                transform-box: fill-box;
+                transform-origin: center;
+                animation: dvc-pill-pop 320ms var(--dvc-ease, cubic-bezier(0.32, 0.72, 0, 1));
+            }
+
+            @keyframes dvc-pill-pop {
+                0% {
+                    transform: scale(0.86);
+                }
+                55% {
+                    transform: scale(1.06);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .room-wrapper.selected .room-label-pill {
+                    animation: none;
+                }
             }
             .room-wrapper.selected .room-label-text {
                 fill: #fff;
