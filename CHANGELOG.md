@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.7.0] - 2026-06-11
+
+### Added
+- iOS-style sliding pill indicator on the tab selector.
+- Tinted glow under the primary action button with a subtle hover lift.
+- Shimmer sweep on the cleaning progress fill.
+- Pulsing "live" dot next to the status while the robot is working.
+- Tinted icon bubble and animated chevron on the cleaning mode chip.
+- Selection "pop" on room label pills.
+- SF Pro system font stack on Apple devices.
+- `prefers-reduced-motion` honoured by every animation and transition.
+
+### Changed
+- Glass blur radius reduced from 20px to 14px (visually identical on these
+  surfaces, roughly half the backdrop-filter GPU cost) and floating map
+  controls isolated on their own compositing layer so panning/zooming the
+  map no longer repaints them.
+- Charger and robot overlay math now uses cached image dimensions instead
+  of querying the shadow DOM on every render; the room-selection overlay
+  reuses its scratch canvas between redraws.
+
 ## [5.6.0] - 2026-06-06
 
 Refonte interne complète (audit → suppression du code mort → correction de bugs → refactor structurel → robustesse → accessibilité → typage strict → suite de tests). **Aucun changement cassant** pour les utilisateurs : tags des custom elements, schéma de config YAML et clés de traduction inchangés.
