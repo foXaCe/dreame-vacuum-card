@@ -149,6 +149,7 @@ export class XiaomiVacuumMapCard extends LitElement {
      *  (ex. Kitchen room_id=2 mais segment raw=11). Absent ⇒ on suppose raw == room_id. */
     private _rawToRoomId = new Map<number, string | number>();
     private _rawToRoomIdCacheKey?: string;
+    private _overlaySmallCanvas?: HTMLCanvasElement;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
 
@@ -395,9 +396,10 @@ export class XiaomiVacuumMapCard extends LitElement {
             const chargerPos = camState?.attributes?.charger_position;
             if (chargerPos && chargerPos.x != null && chargerPos.y != null) {
                 const mapCoords = this.coordinatesConverter.vacuumToMap(chargerPos.x, chargerPos.y);
-                const img = this.shadowRoot?.querySelector("#map-image") as HTMLImageElement | null;
-                const natW = img?.naturalWidth;
-                const natH = img?.naturalHeight;
+                // Dimensions naturelles déjà cachées par _calculateBasicScale (@load de l'image) :
+                // pas de lecture DOM dans le chemin chaud de render().
+                const natW = this.realImageWidth;
+                const natH = this.realImageHeight;
                 if (natW && natH) {
                     chargerXPct = (mapCoords[0] / natW) * 100;
                     chargerYPct = (mapCoords[1] / natH) * 100;
@@ -429,9 +431,8 @@ export class XiaomiVacuumMapCard extends LitElement {
             const robotPos = camState?.attributes?.vacuum_position;
             if (robotPos && robotPos.x != null && robotPos.y != null) {
                 const p0 = this.coordinatesConverter.vacuumToMap(robotPos.x, robotPos.y);
-                const img = this.shadowRoot?.querySelector("#map-image") as HTMLImageElement | null;
-                const natW = img?.naturalWidth;
-                const natH = img?.naturalHeight;
+                const natW = this.realImageWidth;
+                const natH = this.realImageHeight;
                 if (natW && natH) {
                     robotXPct = (p0[0] / natW) * 100;
                     robotYPct = (p0[1] / natH) * 100;
@@ -477,7 +478,6 @@ export class XiaomiVacuumMapCard extends LitElement {
                     fetchpriority="high"
                     class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
-                    style="pointer-events: none;"
                     @load="${() => {
                         this._calculateBasicScale();
                         this._buildPickCanvas();
@@ -1916,9 +1916,10 @@ export class XiaomiVacuumMapCard extends LitElement {
 
         // Construire l'overlay à la résolution du segment_map (petite) puis upscaler avec lissage.
         // Cela produit des bords lisses au lieu de marches d'escalier.
-        const smallCanvas = document.createElement("canvas");
-        smallCanvas.width = pickW;
-        smallCanvas.height = pickH;
+        // Canvas intermédiaire réutilisé entre les redraws (pas d'allocation par toggle de pièce).
+        const smallCanvas = (this._overlaySmallCanvas ??= document.createElement("canvas"));
+        if (smallCanvas.width !== pickW) smallCanvas.width = pickW;
+        if (smallCanvas.height !== pickH) smallCanvas.height = pickH;
         const smallCtx = smallCanvas.getContext("2d");
         if (!smallCtx) return;
         const smallImg = smallCtx.createImageData(pickW, pickH);
