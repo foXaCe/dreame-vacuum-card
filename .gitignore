@@ -1,8 +1,32 @@
+# Dependencies
 /node_modules/
 /.rpt2_cache/
-.idea
+
+# Build / type caches
+*.tsbuildinfo
+.eslintcache
+
+# Coverage / test output
+coverage/
+
+# Editors / IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
 .env
 .env.*
+
+# Logs
+*.log
+npm-debug.log*
 
 # Local working files (Claude prompts, notes)
 prompt-*.md
@@ -10,5 +34,5 @@ prompt-*.md
 # Local agent dir
 .claude/
 
-# Coverage
-coverage/
+# NOTE: dist/ is intentionally committed so the card can be installed via raw
+# URL without a release. Do not ignore it.
