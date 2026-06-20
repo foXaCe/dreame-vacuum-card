@@ -6,7 +6,7 @@ Thank you for your contribution! To submit your changes please fork this reposit
 
 To add a new language follow these steps:
 1. Fork this repository (with all branches)
-1. Change branch to `dev`
+1. Change branch to `main`
 1. Create a new json file named with a [correct language code](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry) in `/src/localize/languages/` directory
 1. Copy content of [`src/localize/languages/en.json`](/src/localize/languages/en.json) file to a newly created file
 1. Replace English texts with your translations (do not replace keys!)
@@ -18,7 +18,7 @@ To add a new language follow these steps:
 
 To add a new platform follow these steps:
 1. Fork this repository (with all branches)
-1. Change branch to `dev`
+1. Change branch to `main`
 1. Create a new json file in `src/model/generators/platform_templates` directory
 1. Copy content of [`src/model/generators/platform_templates/new.json`](/src/model/generators/platform_templates/new.json) file to a newly created file
 1. Adjust configuration according to parameters of added platform
@@ -58,3 +58,10 @@ If you need a fresh test instance you can install a fresh Home Assistant instanc
 
 1. Run the command `container start`.
 2. Home Assistant will install and will eventually be running on port `9123`
+
+## Dependency management
+
+Dependency updates are handled automatically by **Renovate** (not Dependabot).
+PRs are opened by `@renovate[bot]`; the
+[Renovate dashboard](../../issues?q=is%3Aissue+author%3Aapp%2Frenovate) lists all
+pending updates.

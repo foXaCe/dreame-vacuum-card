@@ -1,0 +1,70 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    ":timezone(Europe/Paris)",
+    "group:monorepos",
+    "group:recommended"
+  ],
+  "labels": ["dependencies"],
+  "assignees": ["foXaCe"],
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 4,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security", "dependencies"]
+  },
+  "packageRules": [
+    {
+      "description": "Label npm dependency updates",
+      "matchManagers": ["npm"],
+      "addLabels": ["javascript"]
+    },
+    {
+      "description": "Label GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "Group the rollup toolchain",
+      "matchPackageNames": ["rollup", "/^@rollup//", "/^rollup-/"],
+      "groupName": "rollup"
+    },
+    {
+      "description": "Group eslint & prettier",
+      "matchPackageNames": ["/^eslint/", "/^@typescript-eslint//", "prettier"],
+      "groupName": "eslint & prettier"
+    },
+    {
+      "description": "Group the test stack",
+      "matchPackageNames": ["vitest", "/^@vitest//", "happy-dom"],
+      "groupName": "test stack"
+    },
+    {
+      "description": "Automerge devDependencies minor/patch once CI is green",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      "description": "Automerge pins/digests and GitHub Actions",
+      "matchUpdateTypes": ["pin", "digest"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      "description": "Automerge GitHub Actions minor/patch/digest",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true,
+      "platformAutomerge": true
+    }
+  ]
+}
