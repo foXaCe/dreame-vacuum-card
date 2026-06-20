@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.8.0] - 2026-06-20
+
+### Added
+- Card auto-suggestion in the dashboard card picker for `vacuum.*` entities (Home Assistant 2026.6+ `getEntitySuggestion`), shown only when a compatible map camera/image entity is available.
+
+### Changed
+- Build now targets ES2022 with `useDefineForClassFields` disabled — smaller, faster bundle aligned with Lit 3 decorators.
+- Repository tooling refreshed: Renovate, CodeQL and CI health files added; dependencies updated (Rollup, ESLint, Prettier, test stack, GitHub Actions).
+
 ## [5.7.0] - 2026-06-11
 
 ### Added
