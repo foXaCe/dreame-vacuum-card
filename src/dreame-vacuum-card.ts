@@ -57,6 +57,7 @@ import {
     hasConfigOrAnyEntityChanged,
     stopEvent,
 } from "./utils";
+import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
 import { PredefinedMultiRectangle } from "./model/map_objects/predefined-multi-rectangle";
 import { Room } from "./model/map_objects/room";
@@ -93,6 +94,10 @@ windowWithCards.customCards.push({
     type: CARD_CUSTOM_ELEMENT_NAME,
     name: "Vacuum Map Card",
     description: localize("common.description"),
+    documentationURL: "https://github.com/foXaCe/dreame-vacuum-card",
+    // HA 2026.6+ : auto-suggestion dans le card picker pour les entités vacuum.*
+    // (seulement si une source de carte caméra/image existe — cf. suggestForEntity).
+    getEntitySuggestion: suggestForEntity,
 });
 
 @customElement(CARD_CUSTOM_ELEMENT_NAME)
@@ -213,17 +218,7 @@ export class XiaomiVacuumMapCard extends LitElement {
             if (matchingCamera) pickedCamera = matchingCamera;
         }
 
-        return {
-            type: "custom:" + CARD_CUSTOM_ELEMENT_NAME,
-            map_source: {
-                camera: pickedCamera,
-            },
-            calibration_source: {
-                camera: true,
-            },
-            entity: pickedVacuum,
-            vacuum_platform: PlatformGenerator.TASSHACK_DREAME_VACUUM_PLATFORM,
-        };
+        return buildSuggestedConfig(pickedCamera, pickedVacuum);
     }
 
     public setConfig(config: XiaomiVacuumMapCardConfig): void {
@@ -250,14 +245,16 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     /** API HA 2024.10+ : sections layout grid options.
-     *  Inclut `max_columns`/`max_rows` pour borner correctement la carte sur les
-     *  dashboards larges. La méthode legacy `getLayoutOptions()` reste exposée comme
-     *  fallback pour les versions HA < 2024.10. */
+     *  La grille d'une section HA fait 12 colonnes : `max_columns` est donc borné à 12
+     *  (pleine largeur), au-delà la valeur est sans effet. Les `rows` ne sont pas
+     *  plafonnées par la grille, d'où un `max_rows` plus large adapté à cette carte
+     *  « map ». La méthode legacy `getLayoutOptions()` reste exposée comme fallback
+     *  pour HA < 2024.10. */
     public getGridOptions() {
         return {
             columns: 12,
             min_columns: 6,
-            max_columns: 24,
+            max_columns: 12,
             rows: 10,
             min_rows: 6,
             max_rows: 20,
