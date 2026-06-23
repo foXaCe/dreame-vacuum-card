@@ -1,0 +1,95 @@
+name: Security audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *" # daily — CVEs do not wait for Monday
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  osv-scanner:
+    name: OSV-Scanner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Informative on push/schedule so a newly disclosed CVE does not turn main
+    # red without a fix available yet. Flip continue-on-error to false to block.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: google/osv-scanner-action/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  gitleaks:
+    name: Gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history for retroactive scan
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lockfile-freshness:
+    name: Lockfile age check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check package-lock.json age
+        run: |
+          lock=package-lock.json
+          [ -f "$lock" ] || exit 0
+          AGE=$(( ($(date +%s) - $(git log -1 --format=%ct -- "$lock")) / 86400 ))
+          if [ "$AGE" -gt 90 ]; then
+            echo "::error file=$lock::$lock not refreshed for $AGE days → probable CVEs, run 'npm install' to regenerate"
+            exit 1
+          elif [ "$AGE" -gt 60 ]; then
+            echo "::warning file=$lock::$lock is aging ($AGE days)"
+          else
+            echo "$lock is fresh ($AGE days)"
+          fi
+
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
