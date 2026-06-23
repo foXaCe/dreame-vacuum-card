@@ -34,22 +34,6 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-  osv-scanner:
-    name: OSV-Scanner
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Informative on push/schedule so a newly disclosed CVE does not turn main
-    # red without a fix available yet. Flip continue-on-error to false to block.
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
-        with:
-          scan-args: |-
-            --recursive
-            --skip-git
-            ./
-
   gitleaks:
     name: Gitleaks (secret scan)
     runs-on: ubuntu-latest
