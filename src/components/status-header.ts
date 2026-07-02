@@ -162,7 +162,10 @@ export class StatusHeader extends LitElement {
             }
 
             /* Ligne unique : statut à gauche, stats à droite — hauteur ~44px
-               (~56px avec le nom d'appareil). Fond qui fond vers la map. */
+               (~56px avec le nom d'appareil). Aucun fond peint : la map est clippée
+               sous l'en-tête (padding du wrapper), le texte pose donc directement
+               sur la surface de la carte — thème-proof, y compris sur les thèmes
+               à cartes translucides (--ha-card-background en rgba). */
             .header-row {
                 display: flex;
                 align-items: center;
@@ -171,12 +174,6 @@ export class StatusHeader extends LitElement {
                 min-height: var(--dvc-header-row-height, 44px);
                 padding: var(--dvc-header-section-padding, 6px 16px);
                 box-sizing: border-box;
-                background: linear-gradient(
-                    to bottom,
-                    var(--card-background-color, rgba(255, 255, 255, 0.85)) 0%,
-                    var(--card-background-color, rgba(255, 255, 255, 0.7)) 72%,
-                    transparent 100%
-                );
             }
 
             .status-cluster {

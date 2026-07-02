@@ -23,13 +23,11 @@ export const cardStyles: CSSResultGroup = css`
         --map-card-internal-tertiary-color: var(--map-card-tertiary-color, var(--secondary-background-color));
         --map-card-internal-tertiary-text-color: var(--map-card-tertiary-text-color, var(--primary-text-color));
         --map-card-internal-disabled-text-color: var(--map-card-disabled-text-color, var(--disabled-text-color));
-        /* Le PNG de la caméra est transparent hors des pièces : en calant le fond de la
-           zone map sur celui de la carte, le plan « flotte » sans boîte grise visible.
+        /* Le PNG de la caméra est transparent hors des pièces : aucun fond peint sur
+           la zone map — la surface de la carte transparaît telle quelle, y compris sur
+           les thèmes à cartes translucides (pas de double couche, pas de banding).
            Reste surchargeable par thème via --map-card-zoomer-background. */
-        --map-card-internal-zoomer-background: var(
-            --map-card-zoomer-background,
-            var(--ha-card-background, var(--card-background-color, #fff))
-        );
+        --map-card-internal-zoomer-background: var(--map-card-zoomer-background, transparent);
         --map-card-internal-ripple-color: var(--map-card-ripple-color, #7a7f87);
         --map-card-internal-big-radius: var(--map-card-big-radius, 25px);
         --map-card-internal-small-radius: var(--map-card-small-radius, 18px);
