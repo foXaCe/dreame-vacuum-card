@@ -250,6 +250,8 @@ export class ActionButtons extends LitElement {
                     var(--dvc-btn-tint) 100%
                 );
                 color: var(--dvc-action-primary-fg, var(--text-primary-color, #000));
+                /* Hairline teintée : même langage de bordure que les surfaces en verre. */
+                border: 0.5px solid color-mix(in oklab, var(--dvc-btn-tint) 62%, #fff);
                 box-shadow:
                     0 1px 2px rgba(0, 0, 0, 0.06),
                     0 8px 20px color-mix(in oklab, var(--dvc-btn-tint) 32%, transparent),
@@ -266,8 +268,15 @@ export class ActionButtons extends LitElement {
                 color: var(--dvc-action-danger-fg, var(--text-primary-color, #fff));
             }
 
+            /* Secondaire en verre, comme les chips/onglets : un aplat
+               --secondary-background-color jurait sur les thèmes translucides. */
             .action-btn.secondary {
-                background: var(--secondary-background-color, #374151);
+                background: var(
+                    --dvc-glass-tint,
+                    color-mix(in oklab, var(--primary-text-color, #000) 7%, transparent)
+                );
+                -webkit-backdrop-filter: var(--dvc-glass-blur);
+                backdrop-filter: var(--dvc-glass-blur);
                 color: var(--primary-text-color);
                 border: 0.5px solid var(--dvc-hairline);
                 box-shadow: var(--dvc-shadow-1);

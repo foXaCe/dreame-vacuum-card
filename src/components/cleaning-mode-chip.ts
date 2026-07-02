@@ -384,7 +384,10 @@ export class CleaningModeChip extends LitElement {
                 max-width: calc(100% - 2 * var(--dvc-chip-menu-inset, 14px));
                 z-index: 7;
                 padding: 5px;
-                background: var(--dvc-glass-tint-strong, var(--card-background-color, #fff));
+                /* Surface OPAQUE du thème (convention des dialogs HA) : le menu flotte
+                   au-dessus de la map, un fond dérivé de --ha-card-background serait
+                   illisible sur les thèmes à cartes translucides. */
+                background: color-mix(in oklab, var(--card-background-color, #fff) 94%, transparent);
                 -webkit-backdrop-filter: var(--dvc-glass-blur);
                 backdrop-filter: var(--dvc-glass-blur);
                 border: 0.5px solid var(--dvc-hairline, transparent);
