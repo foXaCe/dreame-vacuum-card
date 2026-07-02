@@ -271,10 +271,7 @@ export class ActionButtons extends LitElement {
             /* Secondaire en verre, comme les chips/onglets : un aplat
                --secondary-background-color jurait sur les thèmes translucides. */
             .action-btn.secondary {
-                background: var(
-                    --dvc-glass-tint,
-                    color-mix(in oklab, var(--primary-text-color, #000) 7%, transparent)
-                );
+                background: var(--dvc-glass-tint, color-mix(in oklab, var(--primary-text-color, #000) 7%, transparent));
                 -webkit-backdrop-filter: var(--dvc-glass-blur);
                 backdrop-filter: var(--dvc-glass-blur);
                 color: var(--primary-text-color);
