@@ -24,6 +24,7 @@ const AVAILABLE_LANGUAGES = [
     { value: "is", label: "Icelandic" },
     { value: "it", label: "Italian" },
     { value: "lv", label: "Latvian" },
+    { value: "nb-NO", label: "Norwegian Bokmål" },
     { value: "nl", label: "Dutch" },
     { value: "pl", label: "Polish" },
     { value: "pt", label: "Portuguese" },
