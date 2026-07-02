@@ -204,6 +204,11 @@ export class CleaningModeChip extends LitElement {
                 filter: brightness(0.96);
             }
 
+            .mode-chip:focus-visible {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+            }
+
             .mode-chip.unavailable {
                 opacity: 0.45;
                 cursor: default;
@@ -226,7 +231,7 @@ export class CleaningModeChip extends LitElement {
                 gap: 2px;
                 padding: 4px 6px;
                 border-radius: var(--dvc-radius-pill, 980px);
-                background: color-mix(in srgb, var(--primary-color, #0a84ff) 12%, transparent);
+                background: color-mix(in oklab, var(--primary-color, #0a84ff) 12%, transparent);
             }
 
             .mode-icon {

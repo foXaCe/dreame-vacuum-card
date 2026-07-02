@@ -357,10 +357,15 @@
             "robot_overlay": "Robot overlay — anti-flash (optional)",
             "map_source": "Map source",
             "display": "Display",
-            "map_behavior": "Map behavior"
+            "map_behavior": "Map behavior",
+            "appearance": "Appearance"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"
+        },
+        "option": {
+            "appearance_premium": "Premium (translucent effects)",
+            "appearance_minimal": "Minimal (opaque, no ambient animations)"
         }
     }
 }

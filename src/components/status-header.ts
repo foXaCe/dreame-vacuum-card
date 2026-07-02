@@ -168,6 +168,7 @@ export class StatusHeader extends LitElement {
                 font-weight: 600;
                 letter-spacing: -0.02em;
                 color: var(--primary-text-color);
+                text-wrap: pretty;
             }
 
             .status {
@@ -187,8 +188,9 @@ export class StatusHeader extends LitElement {
                 vertical-align: 1px;
                 border-radius: 50%;
                 background: var(--success-color, #34c759);
-                box-shadow: 0 0 6px color-mix(in srgb, var(--success-color, #34c759) 60%, transparent);
+                box-shadow: 0 0 6px color-mix(in oklab, var(--success-color, #34c759) 60%, transparent);
                 animation: dvc-live-pulse 2s ease-in-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
             }
 
             @keyframes dvc-live-pulse {
@@ -214,7 +216,7 @@ export class StatusHeader extends LitElement {
                 padding: var(--dvc-stats-padding, 8px 16px);
                 background: var(
                     --dvc-glass-tint,
-                    color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent)
+                    color-mix(in oklab, var(--card-background-color, #fff) 70%, transparent)
                 );
                 backdrop-filter: var(--dvc-glass-blur, blur(8px));
                 -webkit-backdrop-filter: var(--dvc-glass-blur, blur(8px));

@@ -120,6 +120,9 @@ export class XiaomiVacuumMapCard extends LitElement {
     @state() private mapLocked = true;
     @state() private configErrors: string[] = [];
     @state() private connected = false;
+    /** Premier chargement de l'image de map effectué — pilote le skeleton (jamais
+     *  ré-armé sur les rafraîchissements caméra pour éviter tout flicker). */
+    @state() private mapLoaded = false;
     @state() public internalVariables = {};
     private currentPreset!: CardPresetConfig;
     private watchedEntities: string[] = [];
@@ -481,6 +484,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
                     @load="${() => {
+                        this.mapLoaded = true;
                         this._calculateBasicScale();
                         this._buildPickCanvas();
                     }}"
@@ -521,14 +525,17 @@ export class XiaomiVacuumMapCard extends LitElement {
         `;
 
         return html`
-            <ha-card style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};">
+            <ha-card
+                data-appearance="${this.config.appearance ?? "premium"}"
+                style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};"
+            >
                 <div class="map-wrapper" part="map-wrapper">
                     <dreame-status-header
                         .hass=${this.hass}
                         .entityId=${preset.entity}
                         .showTitle=${this.config.show_title ?? false}
                     ></dreame-status-header>
-                    <div class="map-container" part="map">
+                    <div class="map-container ${this.mapLoaded ? "" : "map-loading"}" part="map">
                         <pinch-zoom
                             min-scale="0.5"
                             id="map-zoomer"
@@ -540,6 +547,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                         >
                             ${mapZoomerContent}
                         </pinch-zoom>
+                        ${this.mapLoaded ? null : html`<div id="map-skeleton" aria-hidden="true"></div>`}
                     </div>
                     <div id="map-zoomer-overlay">
                         <div class="map-zoom-icons">
@@ -790,6 +798,8 @@ export class XiaomiVacuumMapCard extends LitElement {
             this._displayedMapUrl = undefined;
             this._pendingMapUrl = undefined;
             this.lastValidMapUrl = undefined;
+            // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
+            this.mapLoaded = false;
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne

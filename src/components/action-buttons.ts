@@ -246,13 +246,13 @@ export class ActionButtons extends LitElement {
                 --dvc-btn-tint: var(--dvc-action-primary-bg, var(--success-color, #4ade80));
                 background: linear-gradient(
                     180deg,
-                    color-mix(in srgb, var(--dvc-btn-tint) 88%, #fff) 0%,
+                    color-mix(in oklab, var(--dvc-btn-tint) 88%, #fff) 0%,
                     var(--dvc-btn-tint) 100%
                 );
                 color: var(--dvc-action-primary-fg, var(--text-primary-color, #000));
                 box-shadow:
                     0 1px 2px rgba(0, 0, 0, 0.06),
-                    0 8px 20px color-mix(in srgb, var(--dvc-btn-tint) 32%, transparent),
+                    0 8px 20px color-mix(in oklab, var(--dvc-btn-tint) 32%, transparent),
                     inset 0 1px 0 rgba(255, 255, 255, 0.22);
             }
 

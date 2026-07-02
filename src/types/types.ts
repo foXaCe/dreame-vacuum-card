@@ -40,6 +40,11 @@ export interface XiaomiVacuumMapCardConfig extends LovelaceCardConfig, CardPrese
     readonly language?: Language;
     readonly debug?: boolean;
     readonly action_handler_id?: string;
+    /**
+     * Finition visuelle : `premium` (défaut — verre translucide, micro-animations
+     * ambiantes) ou `minimal` (surfaces opaques, animations ambiantes coupées).
+     */
+    readonly appearance?: "minimal" | "premium";
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {

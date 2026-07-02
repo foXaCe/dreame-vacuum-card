@@ -25,7 +25,7 @@ export class DreameTabSelector extends LitElement {
                 gap: 4px;
                 margin: 10px 14px 4px;
                 padding: 3px;
-                background: color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent);
+                background: color-mix(in oklab, var(--primary-text-color, #000) 6%, transparent);
                 border: 0.5px solid var(--dvc-hairline, transparent);
                 border-radius: 14px;
             }
@@ -76,6 +76,11 @@ export class DreameTabSelector extends LitElement {
             }
             .tab:active {
                 transform: scale(0.96);
+            }
+            .tab:focus-visible {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+                border-radius: var(--dvc-radius-pill, 980px);
             }
             .tab.active {
                 color: var(--primary-text-color);

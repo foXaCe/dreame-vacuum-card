@@ -12,6 +12,8 @@ export const cardStyles: CSSResultGroup = css`
     ha-card {
         overflow: hidden;
         display: flow-root;
+        /* Stacking context propre : les blends/backdrop-filters internes ne fuient pas. */
+        isolation: isolate;
         container-type: inline-size;
         container-name: vacuum-card;
         --map-card-internal-primary-color: var(--map-card-primary-color, var(--slider-color));
@@ -242,8 +244,8 @@ export const cardStyles: CSSResultGroup = css`
            costs roughly half the GPU time (backdrop sampling scales with radius²). */
         --dvc-glass-blur: saturate(180%) blur(14px);
         /* Hairline separators (Apple 0.5px translucent borders). */
-        --dvc-hairline: color-mix(in srgb, var(--primary-text-color, #000) 9%, transparent);
-        --dvc-hairline-strong: color-mix(in srgb, var(--primary-text-color, #000) 14%, transparent);
+        --dvc-hairline: color-mix(in oklab, var(--primary-text-color, #000) 9%, transparent);
+        --dvc-hairline-strong: color-mix(in oklab, var(--primary-text-color, #000) 14%, transparent);
         /* Soft, layered elevation. */
         --dvc-shadow-1:
             0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px rgba(0, 0, 0, 0.1), inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
@@ -263,6 +265,16 @@ export const cardStyles: CSSResultGroup = css`
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
         letter-spacing: -0.01em;
+    }
+
+    /* Apparence "minimal" (config appearance: minimal) : surfaces opaques, pas de
+       blur, animations ambiantes en pause. Les tokens héritent dans les shadow roots
+       des sous-composants. */
+    ha-card[data-appearance="minimal"] {
+        --dvc-glass-blur: blur(0px);
+        --dvc-glass-tint: var(--secondary-background-color);
+        --dvc-glass-tint-strong: var(--card-background-color);
+        --dvc-anim-state: paused;
     }
 
     /* Accessibility: collapse decorative motion when the user opted out (this scope only;
@@ -378,6 +390,34 @@ export const cardStyles: CSSResultGroup = css`
         position: relative;
     }
 
+    /* Skeleton du premier chargement de la map : shimmer discret sur une zone
+       réservée (évite le layout-shift), retiré définitivement au premier @load. */
+    .map-container.map-loading {
+        min-height: 240px;
+    }
+
+    #map-skeleton {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: linear-gradient(
+            100deg,
+            color-mix(in oklab, var(--primary-text-color, #000) 5%, transparent) 30%,
+            color-mix(in oklab, var(--primary-text-color, #000) 10%, transparent) 50%,
+            color-mix(in oklab, var(--primary-text-color, #000) 5%, transparent) 70%
+        );
+        background-size: 200% 100%;
+        animation: dvc-skeleton-shimmer 1.4s linear infinite;
+        animation-play-state: var(--dvc-anim-state, running);
+    }
+
+    @keyframes dvc-skeleton-shimmer {
+        to {
+            background-position: -200% 0;
+        }
+    }
+
     #map-zoomer {
         overflow: hidden;
         display: block;
@@ -486,7 +526,7 @@ export const cardStyles: CSSResultGroup = css`
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: color-mix(in srgb, rgb(var(--rgb-warning-color, 255, 152, 0)) 82%, transparent);
+        background: color-mix(in oklab, rgb(var(--rgb-warning-color, 255, 152, 0)) 82%, transparent);
         -webkit-backdrop-filter: var(--dvc-glass-blur);
         backdrop-filter: var(--dvc-glass-blur);
         border: 0.5px solid rgba(255, 255, 255, 0.18);

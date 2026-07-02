@@ -183,6 +183,7 @@ export class RobotAnimation extends LitElement {
                 color: rgba(255, 255, 255, 0.85);
                 text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
                 animation: zzz-float 2.4s ease-in-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
                 opacity: 0;
             }
 
