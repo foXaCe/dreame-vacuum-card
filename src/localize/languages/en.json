@@ -311,7 +311,7 @@
             "append": "Add to cleaning"
         },
         "mode": {
-            "cycle_tooltip": "Click to cycle mode ({0} options)"
+            "manual_section": "Manual modes"
         },
         "map": {
             "lock": "Lock map",

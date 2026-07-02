@@ -419,61 +419,80 @@ describe("dreame-cleaning-mode-chip", () => {
         expect(el.shadowRoot!.querySelectorAll(".mode-icon")).toHaveLength(2);
     });
 
-    it("clicking the chip cycles to the next option via select.select_option", async () => {
+    it("clicking the chip opens the selection menu (aria-expanded + listbox)", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass({}, ["sweeping", "mopping"], "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const chip = el.shadowRoot!.querySelector(".mode-chip") as HTMLElement;
+        expect(chip.getAttribute("aria-expanded")).toBe("false");
+        chip.click();
+        await el.updateComplete;
+        expect(chip.getAttribute("aria-expanded")).toBe("true");
+        const menu = el.shadowRoot!.querySelector(".mode-menu");
+        expect(menu).not.toBeNull();
+        const items = el.shadowRoot!.querySelectorAll(".menu-item");
+        expect(items).toHaveLength(2);
+    });
+
+    it("selecting a manual option calls select.select_option and closes the menu", async () => {
         const callService = vi.fn();
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
-        el.hass = chipHass({ callService }, ["sweeping", "mopping", "sweeping and mopping"], "sweeping");
+        el.hass = chipHass({ callService }, ["sweeping", "mopping"], "sweeping");
         el.entityId = VACUUM_ID;
         await mount(el);
         (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+        items[1].click(); // "mopping"
+        await el.updateComplete;
         expect(callService).toHaveBeenCalledWith(
             "select",
             "select_option",
             { option: "mopping" },
             { entity_id: SELECT_ID }
         );
+        expect(el.shadowRoot!.querySelector(".mode-menu")).toBeNull();
     });
 
-    it("wraps around to the first option when on the last", async () => {
-        const callService = vi.fn();
-        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
-        el.hass = chipHass({ callService }, ["sweeping", "mopping"], "mopping");
-        el.entityId = VACUUM_ID;
-        await mount(el);
-        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
-        expect(callService).toHaveBeenCalledWith(
-            "select",
-            "select_option",
-            { option: "sweeping" },
-            { entity_id: SELECT_ID }
-        );
-    });
-
-    it("pressing Enter triggers the same cycle as click", async () => {
+    it("re-selecting the current option is a no-op (no service call)", async () => {
         const callService = vi.fn();
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
         el.hass = chipHass({ callService }, ["sweeping", "mopping"], "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+        items[0].click(); // option courante "sweeping"
+        await el.updateComplete;
+        expect(callService).not.toHaveBeenCalled();
+    });
+
+    it("pressing Enter opens the menu, Escape closes it", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass({}, ["sweeping", "mopping"], "sweeping");
         el.entityId = VACUUM_ID;
         await mount(el);
         const chip = el.shadowRoot!.querySelector(".mode-chip") as HTMLElement;
         chip.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-        expect(callService).toHaveBeenCalledWith(
-            "select",
-            "select_option",
-            { option: "mopping" },
-            { entity_id: SELECT_ID }
-        );
+        await el.updateComplete;
+        expect(el.shadowRoot!.querySelector(".mode-menu")).not.toBeNull();
+        chip.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        await el.updateComplete;
+        expect(el.shadowRoot!.querySelector(".mode-menu")).toBeNull();
     });
 
-    it("pressing Space triggers the cycle", async () => {
-        const callService = vi.fn();
+    it("clicking the backdrop closes the menu", async () => {
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
-        el.hass = chipHass({ callService }, ["sweeping", "mopping"], "sweeping");
+        el.hass = chipHass({}, ["sweeping", "mopping"], "sweeping");
         el.entityId = VACUUM_ID;
         await mount(el);
-        const chip = el.shadowRoot!.querySelector(".mode-chip") as HTMLElement;
-        chip.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
-        expect(callService).toHaveBeenCalledTimes(1);
+        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        (el.shadowRoot!.querySelector(".menu-backdrop") as HTMLElement).click();
+        await el.updateComplete;
+        expect(el.shadowRoot!.querySelector(".mode-menu")).toBeNull();
     });
 
     it("ignores other keys (e.g. Tab)", async () => {
@@ -484,14 +503,98 @@ describe("dreame-cleaning-mode-chip", () => {
         await mount(el);
         const chip = el.shadowRoot!.querySelector(".mode-chip") as HTMLElement;
         chip.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+        await el.updateComplete;
         expect(callService).not.toHaveBeenCalled();
+        expect(el.shadowRoot!.querySelector(".mode-menu")).toBeNull();
     });
 
-    it("does not call the service when the select has no options", async () => {
+    // -- CleanGenius ---------------------------------------------------------
+
+    const CG_ID = "select.robot_cleangenius";
+
+    function cgHass(overrides: Partial<HomeAssistantFixed> = {}, cgState = "routine_cleaning", modeState = "unavailable") {
+        return makeHass({
+            states: {
+                [VACUUM_ID]: { state: "docked", attributes: {} } as never,
+                [SELECT_ID]: {
+                    entity_id: SELECT_ID,
+                    state: modeState,
+                    attributes: { options: ["sweeping", "mopping"] },
+                } as never,
+                [CG_ID]: {
+                    entity_id: CG_ID,
+                    state: cgState,
+                    attributes: { options: ["off", "routine_cleaning", "deep_cleaning"] },
+                } as never,
+            },
+            entities: {
+                [VACUUM_ID]: { device_id: "dev1" },
+                [SELECT_ID]: { device_id: "dev1" },
+                [CG_ID]: { device_id: "dev1" },
+            } as never,
+            ...overrides,
+        });
+    }
+
+    it("shows CleanGenius with its active option and opens a sectioned menu", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = cgHass();
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const label = el.shadowRoot!.querySelector(".mode-label")!;
+        expect(label.textContent).toContain("CleanGenius");
+        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        // 2 options CleanGenius (off exclu) + 2 modes manuels, 2 titres de section
+        expect(el.shadowRoot!.querySelectorAll(".menu-item")).toHaveLength(4);
+        expect(el.shadowRoot!.querySelectorAll(".menu-section")).toHaveLength(2);
+    });
+
+    it("selecting the other CleanGenius option calls select_option on the cleangenius entity", async () => {
         const callService = vi.fn();
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
-        // Render requires the chip to exist, so give options for render but test the click path
-        // with an empty options array applied just before clicking.
+        el.hass = cgHass({ callService });
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+        items[1].click(); // deep_cleaning
+        await el.updateComplete;
+        expect(callService).toHaveBeenCalledWith(
+            "select",
+            "select_option",
+            { option: "deep_cleaning" },
+            { entity_id: CG_ID }
+        );
+    });
+
+    it("selecting a manual mode while CleanGenius is active turns it off first, then applies the mode", async () => {
+        const calls: unknown[][] = [];
+        const callService = vi.fn((...args: unknown[]) => {
+            calls.push(args);
+            return Promise.resolve();
+        });
+        // Le select de mode est DISPONIBLE dans la fixture pour que la boucle
+        // d'attente post-desactivation retombe immediatement.
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = cgHass({ callService }, "routine_cleaning", "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+        await el.updateComplete;
+        const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+        items[3].click(); // "mopping" (2 cg + sweeping + mopping)
+        // _selectChoice est async : laisser les awaits se derouler
+        await new Promise((r) => setTimeout(r, 10));
+        expect(calls).toHaveLength(2);
+        expect(calls[0]).toEqual(["select", "select_option", { option: "off" }, { entity_id: CG_ID }]);
+        expect(calls[1]).toEqual(["select", "select_option", { option: "mopping" }, { entity_id: SELECT_ID }]);
+    });
+
+    it("does not open the menu when the select has no options", async () => {
+        const callService = vi.fn();
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
         el.hass = makeHass({
             states: {
                 [VACUUM_ID]: { state: "docked", attributes: {} } as never,
@@ -507,6 +610,8 @@ describe("dreame-cleaning-mode-chip", () => {
         await mount(el);
         const chip = el.shadowRoot!.querySelector(".mode-chip") as HTMLElement;
         chip.click();
+        await el.updateComplete;
+        expect(el.shadowRoot!.querySelector(".mode-menu")).toBeNull();
         expect(callService).not.toHaveBeenCalled();
     });
 });

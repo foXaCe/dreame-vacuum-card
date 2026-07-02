@@ -311,7 +311,7 @@
             "append": "Ajouter au nettoyage"
         },
         "mode": {
-            "cycle_tooltip": "Cliquer pour changer de mode ({0} options)"
+            "manual_section": "Modes manuels"
         },
         "map": {
             "lock": "Verrouiller la carte",
