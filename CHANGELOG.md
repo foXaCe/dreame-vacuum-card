@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.9.0] - 2026-07-02
+
+### Added
+- Compact single-row status header: status on the left (with the live dot), session stats on the right — frees ~26px of vertical space for the map. When the battery is full the header now shows "Ready" instead of the redundant "Charging completed".
+- Cleaning mode selection menu: tapping the (now compact) mode chip opens a menu listing CleanGenius levels (Routine/Deep) and the manual modes; selecting a manual mode automatically turns CleanGenius off before applying it. Fully keyboard accessible (Escape, backdrop, `aria-haspopup`/`expanded`).
+- `appearance` option (`premium` default, `minimal`) in YAML and the visual editor: minimal switches to opaque surfaces and pauses ambient animations.
+- Skeleton shimmer while the first map image loads (reserved area, no layout shift, never re-armed on camera refreshes).
+- Full WAI-ARIA tabs pattern on the tab selector: ArrowLeft/ArrowRight with wrap, Home/End, roving tabindex; robot status changes are announced via `aria-live`.
+- Live preview in the dashboard card picker (`preview: true`), card listed as "Dreame Vacuum Card".
+- Norwegian Bokmål (nb-NO) in the editor language selector.
+- Light/dark screenshots in the README.
+
+### Changed
+- Sections view: `getGridOptions()` now returns `rows: "auto"` — the card takes its natural content height instead of being clipped at a fixed 10 rows (`ha-card` uses `overflow: hidden`).
+- The map area background outside the floor plan now blends with the card background (the camera PNG is transparent there) — the plan floats on the card in both light and dark themes.
+- Color blending moved from sRGB to OKLab for perceptually correct tints; remaining `ease` transitions wired to the spring easing token.
+- Toolchain: explicit ES2022 terser target, `engines.node >= 20`, lockfile resynced, Prettier applied to css templates (68 pre-existing warnings cleared).
+
+### Fixed
+- Room mode dimming is now masked by the map image alpha: the veil no longer darkens the area outside the floor plan (which showed as a dark slab, especially with dark themes).
+- The visual editor no longer drops unmanaged config keys (e.g. `grid_options`, `vacuum_platform`) when saving — covered by new tests.
+
 ## [5.8.1] - 2026-06-23
 
 ### Changed
