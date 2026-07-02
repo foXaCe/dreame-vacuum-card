@@ -92,8 +92,11 @@ const windowWithCards = window as unknown as Window & { customCards: unknown[] }
 windowWithCards.customCards = windowWithCards.customCards || [];
 windowWithCards.customCards.push({
     type: CARD_CUSTOM_ELEMENT_NAME,
-    name: "Vacuum Map Card",
+    name: "Dreame Vacuum Card",
     description: localize("common.description"),
+    // Aperçu live dans le card picker via getStubConfig ; si aucune config n'est
+    // possible (pas de vacuum/caméra), HA retombe proprement sur la description.
+    preview: true,
     documentationURL: "https://github.com/foXaCe/dreame-vacuum-card",
     // HA 2026.6+ : auto-suggestion dans le card picker pour les entités vacuum.*
     // (seulement si une source de carte caméra/image existe — cf. suggestForEntity).
@@ -246,16 +249,18 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     /** API HA 2024.10+ : sections layout grid options.
      *  La grille d'une section HA fait 12 colonnes : `max_columns` est donc borné à 12
-     *  (pleine largeur), au-delà la valeur est sans effet. Les `rows` ne sont pas
-     *  plafonnées par la grille, d'où un `max_rows` plus large adapté à cette carte
-     *  « map ». La méthode legacy `getLayoutOptions()` reste exposée comme fallback
-     *  pour HA < 2024.10. */
+     *  (pleine largeur). `rows: "auto"` car la carte est content-driven (la hauteur de
+     *  la map dépend du ratio de l'image caméra + contrôles) : un nombre fixe la
+     *  clipperait via `.fit-rows` (ha-card est en overflow:hidden). `min/max_rows`
+     *  restent des garde-fous si l'utilisateur force une hauteur via la poignée
+     *  d'édition (sa `grid_options` gagne sur ce défaut). La méthode legacy
+     *  `getLayoutOptions()` reste exposée comme fallback pour HA < 2024.10. */
     public getGridOptions() {
         return {
             columns: 12,
             min_columns: 6,
             max_columns: 12,
-            rows: 10,
+            rows: "auto" as const,
             min_rows: 6,
             max_rows: 20,
         };
