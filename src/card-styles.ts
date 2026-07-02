@@ -415,7 +415,7 @@ export const cardStyles: CSSResultGroup = css`
         height: 100%;
         z-index: 1;
         pointer-events: none;
-        transition: opacity 0.3s ease;
+        transition: opacity 280ms var(--dvc-ease);
     }
 
     #map-image-overlay {

@@ -151,7 +151,7 @@ export class RobotAnimation extends LitElement {
                 z-index: 3;
                 pointer-events: none;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 280ms var(--dvc-ease, ease);
             }
 
             #lottie-wrapper.centered {
