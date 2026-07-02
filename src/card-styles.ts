@@ -292,14 +292,14 @@ export const cardStyles: CSSResultGroup = css`
     /* Responsive: small cards (< 350px) */
     @container vacuum-card (max-width: 349px) {
         ha-card {
-            --dvc-header-section-padding: 8px 10px 4px;
-            --dvc-header-name-size: 15px;
-            --dvc-header-status-size: 12px;
-            --dvc-stats-gap: 14px;
-            --dvc-stats-padding: 6px 10px;
-            --dvc-stat-gap: 4px;
-            --dvc-stat-font-size: 11px;
-            --dvc-stat-icon-size: 15px;
+            --dvc-header-row-height: 40px;
+            --dvc-header-section-padding: 4px 12px;
+            --dvc-header-gap: 8px;
+            --dvc-header-name-size: 14px;
+            --dvc-header-status-size: 13px;
+            --dvc-stat-gap: 5px;
+            --dvc-stat-font-size: 11.5px;
+            --dvc-stat-icon-size: 14px;
             --dvc-action-host-padding: 6px 10px 12px;
             --dvc-action-gap: 8px;
             --dvc-action-btn-padding: 10px;
@@ -318,7 +318,10 @@ export const cardStyles: CSSResultGroup = css`
             --dvc-progress-font-size: 11px;
         }
         .map-wrapper {
-            padding-top: 56px;
+            padding-top: 40px;
+        }
+        .map-wrapper.with-title {
+            padding-top: 52px;
         }
         .controls-wrapper {
             margin: 10px;
@@ -348,15 +351,21 @@ export const cardStyles: CSSResultGroup = css`
     /* Responsive: large cards (> 500px) */
     @container vacuum-card (min-width: 501px) {
         ha-card {
-            --dvc-header-section-padding: 16px 20px 10px;
-            --dvc-header-name-size: 20px;
-            --dvc-stats-gap: 28px;
+            --dvc-header-row-height: 50px;
+            --dvc-header-section-padding: 8px 20px;
+            --dvc-header-name-size: 17px;
+            --dvc-header-status-size: 16px;
+            --dvc-stat-gap: 9px;
+            --dvc-stat-font-size: 14px;
             --dvc-action-host-padding: 10px 20px 20px;
             --dvc-action-gap: 14px;
             --dvc-action-btn-padding: 16px;
         }
         .map-wrapper {
-            padding-top: 80px;
+            padding-top: 50px;
+        }
+        .map-wrapper.with-title {
+            padding-top: 64px;
         }
         .controls-wrapper {
             margin: 20px;
@@ -383,7 +392,12 @@ export const cardStyles: CSSResultGroup = css`
     .map-wrapper {
         position: relative;
         height: max-content;
-        padding-top: 70px;
+        padding-top: 44px;
+    }
+
+    /* Le nom d'appareil ajoute une seconde ligne au header compact. */
+    .map-wrapper.with-title {
+        padding-top: 58px;
     }
 
     .map-container {

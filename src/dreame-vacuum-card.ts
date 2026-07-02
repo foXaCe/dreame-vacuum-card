@@ -529,7 +529,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                 data-appearance="${this.config.appearance ?? "premium"}"
                 style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};"
             >
-                <div class="map-wrapper" part="map-wrapper">
+                <div class="map-wrapper ${this.config.show_title ? "with-title" : ""}" part="map-wrapper">
                     <dreame-status-header
                         .hass=${this.hass}
                         .entityId=${preset.entity}

@@ -319,6 +319,9 @@
             "add_rectangle": "Ajouter une zone",
             "cycle_repeats": "Changer le nombre de répétitions",
             "recenter": "Recentrer la carte"
+        },
+        "status": {
+            "ready": "Prêt"
         }
     },
     "editor": {

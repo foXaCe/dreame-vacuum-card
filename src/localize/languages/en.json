@@ -319,6 +319,9 @@
             "add_rectangle": "Add rectangle",
             "cycle_repeats": "Cycle repeat count",
             "recenter": "Recenter map"
+        },
+        "status": {
+            "ready": "Ready"
         }
     },
     "editor": {

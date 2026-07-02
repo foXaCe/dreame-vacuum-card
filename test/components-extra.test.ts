@@ -110,7 +110,7 @@ describe("dreame-status-header", () => {
 
     it("renders nothing without hass or entityId", async () => {
         const el = await mount(document.createElement("dreame-status-header") as StatusHeader);
-        expect(el.shadowRoot?.querySelector(".header-section")).toBeNull();
+        expect(el.shadowRoot?.querySelector(".header-row")).toBeNull();
     });
 
     it("renders nothing when the entity is missing from hass.states", async () => {
@@ -118,7 +118,7 @@ describe("dreame-status-header", () => {
         el.hass = makeHass({ states: {} });
         el.entityId = VACUUM_ID;
         await mount(el);
-        expect(el.shadowRoot?.querySelector(".header-section")).toBeNull();
+        expect(el.shadowRoot?.querySelector(".header-row")).toBeNull();
     });
 
     it("renders the status from the dedicated _state sensor (raw state via fallthrough)", async () => {
@@ -128,6 +128,19 @@ describe("dreame-status-header", () => {
         await mount(el);
         const status = el.shadowRoot!.querySelector(".status");
         expect(status?.textContent?.trim()).toBe("mopping");
+    });
+
+    it("displays the localized 'Ready' label instead of 'charging completed' (redundant with 100% battery)", async () => {
+        const el = document.createElement("dreame-status-header") as StatusHeader;
+        el.hass = makeHass({
+            states: {
+                [VACUUM_ID]: { entity_id: VACUUM_ID, state: "charging_completed", attributes: {} } as never,
+            },
+            entities: { [VACUUM_ID]: { device_id: "dev1" } } as never,
+        });
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        expect(el.shadowRoot!.querySelector(".status")?.textContent?.trim()).toBe("Ready");
     });
 
     it("falls back to the vacuum state when no _state sibling exists", async () => {
