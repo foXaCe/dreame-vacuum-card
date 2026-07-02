@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.9.2] - 2026-07-02
+
+### Fixed
+- The cleaning-mode menu now uses the theme's opaque card surface (`--card-background-color`, HA dialog convention) instead of a translucent tint: its options were unreadable over the map on themes with translucent cards.
+- Action buttons harmonized with the glass design system: the secondary button (Dock) switches from a flat `--secondary-background-color` slab to a glass tint with hairline border, and the primary button gains a tinted hairline.
+
 ## [5.9.1] - 2026-07-02
 
 ### Fixed
