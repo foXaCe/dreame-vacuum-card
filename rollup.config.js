@@ -18,7 +18,12 @@ const plugins = [
     }),
     typescript(),
     json(),
-    terser(),
+    terser({
+        ecma: 2022,
+        module: true,
+        compress: { passes: 2 },
+        format: { comments: false },
+    }),
 ];
 
 export default [

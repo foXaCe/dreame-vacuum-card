@@ -12,6 +12,9 @@
     ],
     "type": "module",
     "module": "dreame-vacuum-card.js",
+    "engines": {
+        "node": ">=20"
+    },
     "repository": "git@github.com:foXaCe/dreame-vacuum-card.git",
     "author": "Piotr Machowski <piotr.machowski.dev@gmail.com>",
     "license": "MIT",
