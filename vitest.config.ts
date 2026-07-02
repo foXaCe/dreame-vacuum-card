@@ -10,7 +10,13 @@ export default defineConfig({
             provider: "v8",
             reporter: ["text", "html"],
             include: ["src/**/*.ts"],
-            exclude: ["src/**/*.d.ts", "src/assets/**", "src/localize/languages/**"],
+            exclude: [
+                "src/**/*.d.ts",
+                "src/assets/**",
+                "src/localize/languages/**",
+                // Port vendored de <pinch-zoom> (GoogleChromeLabs), hors périmètre de test du projet.
+                "src/pinch-zoom/**",
+            ],
         },
     },
 });

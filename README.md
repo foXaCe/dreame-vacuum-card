@@ -10,6 +10,10 @@
 
 A custom Lovelace card for Home Assistant that provides a Dreame-app-style interface for controlling Dreame vacuum robots. Built as a fork of [Xiaomi Vacuum Map Card](https://github.com/PiotrMachowski/lovelace-xiaomi-vacuum-map-card) by Piotr Machowski, completely redesigned with a native Dreame look and feel.
 
+|                   Light                    |                   Dark                   |
+| :----------------------------------------: | :--------------------------------------: |
+| ![Light theme](docs/screenshot-light.png) | ![Dark theme](docs/screenshot-dark.png) |
+
 ## Features
 
 ### Dreame-style UI
@@ -114,6 +118,7 @@ vacuum_platform: tasshackDreameVacuum
 | `two_finger_pan` | boolean | `false` | Require two fingers to pan |
 | `clean_selection_on_start` | boolean | `true` | Clear the current selection when a clean starts |
 | `robot_overlay` | boolean | `false` | Draw the robot as a smooth HTML overlay (anti-flash). See [Robot overlay](#robot-overlay-anti-flash) |
+| `appearance` | string | `premium` | Visual finish: `premium` (translucent glass, ambient micro-animations) or `minimal` (opaque surfaces, ambient animations paused) |
 | `language` | string | HA language | Override language for labels |
 
 ### Required integration

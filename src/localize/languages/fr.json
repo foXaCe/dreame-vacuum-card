@@ -311,7 +311,7 @@
             "append": "Ajouter au nettoyage"
         },
         "mode": {
-            "cycle_tooltip": "Cliquer pour changer de mode ({0} options)"
+            "manual_section": "Modes manuels"
         },
         "map": {
             "lock": "Verrouiller la carte",
@@ -319,6 +319,9 @@
             "add_rectangle": "Ajouter une zone",
             "cycle_repeats": "Changer le nombre de répétitions",
             "recenter": "Recentrer la carte"
+        },
+        "status": {
+            "ready": "Prêt"
         }
     },
     "editor": {
@@ -357,10 +360,15 @@
             "robot_overlay": "Superposition du robot — anti-clignotement (optionnel)",
             "map_source": "Source de la carte",
             "display": "Affichage",
-            "map_behavior": "Comportement de la carte"
+            "map_behavior": "Comportement de la carte",
+            "appearance": "Apparence"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"
+        },
+        "option": {
+            "appearance_premium": "Premium (effets translucides)",
+            "appearance_minimal": "Minimale (opaque, sans animations ambiantes)"
         }
     }
 }

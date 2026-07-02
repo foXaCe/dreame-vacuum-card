@@ -92,8 +92,11 @@ const windowWithCards = window as unknown as Window & { customCards: unknown[] }
 windowWithCards.customCards = windowWithCards.customCards || [];
 windowWithCards.customCards.push({
     type: CARD_CUSTOM_ELEMENT_NAME,
-    name: "Vacuum Map Card",
+    name: "Dreame Vacuum Card",
     description: localize("common.description"),
+    // Aperçu live dans le card picker via getStubConfig ; si aucune config n'est
+    // possible (pas de vacuum/caméra), HA retombe proprement sur la description.
+    preview: true,
     documentationURL: "https://github.com/foXaCe/dreame-vacuum-card",
     // HA 2026.6+ : auto-suggestion dans le card picker pour les entités vacuum.*
     // (seulement si une source de carte caméra/image existe — cf. suggestForEntity).
@@ -117,6 +120,9 @@ export class XiaomiVacuumMapCard extends LitElement {
     @state() private mapLocked = true;
     @state() private configErrors: string[] = [];
     @state() private connected = false;
+    /** Premier chargement de l'image de map effectué — pilote le skeleton (jamais
+     *  ré-armé sur les rafraîchissements caméra pour éviter tout flicker). */
+    @state() private mapLoaded = false;
     @state() public internalVariables = {};
     private currentPreset!: CardPresetConfig;
     private watchedEntities: string[] = [];
@@ -155,6 +161,11 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _rawToRoomId = new Map<number, string | number>();
     private _rawToRoomIdCacheKey?: string;
     private _overlaySmallCanvas?: HTMLCanvasElement;
+    /** Masque alpha du PNG de map à la résolution du pick buffer : le voile du mode
+     *  pièce ne doit assombrir QUE le plan (le PNG est transparent hors pièces —
+     *  sans masque, le voile fabrique une dalle sombre sur le fond de la carte). */
+    private _mapAlphaMask?: Uint8ClampedArray;
+    private _mapAlphaMaskKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
 
@@ -246,16 +257,18 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     /** API HA 2024.10+ : sections layout grid options.
      *  La grille d'une section HA fait 12 colonnes : `max_columns` est donc borné à 12
-     *  (pleine largeur), au-delà la valeur est sans effet. Les `rows` ne sont pas
-     *  plafonnées par la grille, d'où un `max_rows` plus large adapté à cette carte
-     *  « map ». La méthode legacy `getLayoutOptions()` reste exposée comme fallback
-     *  pour HA < 2024.10. */
+     *  (pleine largeur). `rows: "auto"` car la carte est content-driven (la hauteur de
+     *  la map dépend du ratio de l'image caméra + contrôles) : un nombre fixe la
+     *  clipperait via `.fit-rows` (ha-card est en overflow:hidden). `min/max_rows`
+     *  restent des garde-fous si l'utilisateur force une hauteur via la poignée
+     *  d'édition (sa `grid_options` gagne sur ce défaut). La méthode legacy
+     *  `getLayoutOptions()` reste exposée comme fallback pour HA < 2024.10. */
     public getGridOptions() {
         return {
             columns: 12,
             min_columns: 6,
             max_columns: 12,
-            rows: 10,
+            rows: "auto" as const,
             min_rows: 6,
             max_rows: 20,
         };
@@ -476,6 +489,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
                     @load="${() => {
+                        this.mapLoaded = true;
                         this._calculateBasicScale();
                         this._buildPickCanvas();
                     }}"
@@ -516,14 +530,17 @@ export class XiaomiVacuumMapCard extends LitElement {
         `;
 
         return html`
-            <ha-card style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};">
-                <div class="map-wrapper" part="map-wrapper">
+            <ha-card
+                data-appearance="${this.config.appearance ?? "premium"}"
+                style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};"
+            >
+                <div class="map-wrapper ${this.config.show_title ? "with-title" : ""}" part="map-wrapper">
                     <dreame-status-header
                         .hass=${this.hass}
                         .entityId=${preset.entity}
                         .showTitle=${this.config.show_title ?? false}
                     ></dreame-status-header>
-                    <div class="map-container" part="map">
+                    <div class="map-container ${this.mapLoaded ? "" : "map-loading"}" part="map">
                         <pinch-zoom
                             min-scale="0.5"
                             id="map-zoomer"
@@ -535,6 +552,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                         >
                             ${mapZoomerContent}
                         </pinch-zoom>
+                        ${this.mapLoaded ? null : html`<div id="map-skeleton" aria-hidden="true"></div>`}
                     </div>
                     <div id="map-zoomer-overlay">
                         <div class="map-zoom-icons">
@@ -550,34 +568,38 @@ export class XiaomiVacuumMapCard extends LitElement {
                                 @click="${this._toggleMapLock}"
                                 @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._toggleMapLock)}"
                             ></ha-icon>
-                            ${this.activeTab === "zone"
-                                ? html`
-                                      <ha-icon
-                                          icon="mdi:plus"
-                                          class="icon-on-map clickable ripple"
-                                          role="button"
-                                          tabindex="0"
-                                          aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
-                                          @click="${() => this._addRectangle()}"
-                                          @keydown="${(e: KeyboardEvent) =>
-                                              this._handleIconKey(e, () => this._addRectangle())}"
-                                      ></ha-icon>
-                                  `
-                                : null}
-                            ${this.activeTab === "zone" || this.activeTab === "room"
-                                ? html`
-                                      <div
-                                          class="icon-on-map clickable ripple cycle-counter"
-                                          role="button"
-                                          tabindex="0"
-                                          aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
-                                          @click="${this._cycleRepeats}"
-                                          @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
-                                      >
-                                          x${this.repeats}
-                                      </div>
-                                  `
-                                : null}
+                            ${
+                                this.activeTab === "zone"
+                                    ? html`
+                                          <ha-icon
+                                              icon="mdi:plus"
+                                              class="icon-on-map clickable ripple"
+                                              role="button"
+                                              tabindex="0"
+                                              aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
+                                              @click="${() => this._addRectangle()}"
+                                              @keydown="${(e: KeyboardEvent) =>
+                                                  this._handleIconKey(e, () => this._addRectangle())}"
+                                          ></ha-icon>
+                                      `
+                                    : null
+                            }
+                            ${
+                                this.activeTab === "zone" || this.activeTab === "room"
+                                    ? html`
+                                          <div
+                                              class="icon-on-map clickable ripple cycle-counter"
+                                              role="button"
+                                              tabindex="0"
+                                              aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
+                                              @click="${this._cycleRepeats}"
+                                              @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
+                                          >
+                                              x${this.repeats}
+                                          </div>
+                                      `
+                                    : null
+                            }
                             <ha-icon
                                 icon="mdi:image-filter-center-focus"
                                 class="icon-on-map clickable ripple"
@@ -785,6 +807,8 @@ export class XiaomiVacuumMapCard extends LitElement {
             this._displayedMapUrl = undefined;
             this._pendingMapUrl = undefined;
             this.lastValidMapUrl = undefined;
+            // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
+            this.mapLoaded = false;
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
@@ -1724,8 +1748,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         const config = this._getCurrentPreset();
         const roomsAttr = config.map_source?.camera
             ? (this.hass?.states?.[config.map_source.camera]?.attributes?.["rooms"] as
-                  | Record<string, MapExtractorRoom>
-                  | undefined)
+                  Record<string, MapExtractorRoom> | undefined)
             : undefined;
 
         const w = mapImage.naturalWidth;
@@ -1911,6 +1934,28 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         const pickData = this._pickData;
 
+        // Masque alpha du plan (échantillonné à la résolution du pick buffer). Rebâti
+        // seulement quand l'image ou la géométrie change — pas à chaque toggle de pièce.
+        const maskKey = `${mapImg.currentSrc}|${pickW}x${pickH}`;
+        if (this._mapAlphaMaskKey !== maskKey || !this._mapAlphaMask) {
+            const maskCanvas = document.createElement("canvas");
+            maskCanvas.width = pickW;
+            maskCanvas.height = pickH;
+            const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+            if (maskCtx) {
+                try {
+                    maskCtx.drawImage(mapImg, 0, 0, pickW, pickH);
+                    this._mapAlphaMask = maskCtx.getImageData(0, 0, pickW, pickH).data;
+                    this._mapAlphaMaskKey = maskKey;
+                } catch {
+                    // Image cross-origin non lisible → pas de masque (voile plein cadre).
+                    this._mapAlphaMask = undefined;
+                    this._mapAlphaMaskKey = undefined;
+                }
+            }
+        }
+        const alphaMask = this._mapAlphaMask;
+
         // Construire l'overlay à la résolution du segment_map (petite) puis upscaler avec lissage.
         // Cela produit des bords lisses au lieu de marches d'escalier.
         // Canvas intermédiaire réutilisé entre les redraws (pas d'allocation par toggle de pièce).
@@ -1929,6 +1974,12 @@ export class XiaomiVacuumMapCard extends LitElement {
 
                 if (hasSelection && raw > 0 && selectedRawValues.has(raw)) {
                     // Pièce sélectionnée → transparent (pas de dim)
+                    continue;
+                }
+
+                // Hors du plan (PNG transparent) → pas de voile : le fond de la
+                // carte reste net, seul le plan est assombri.
+                if (alphaMask && alphaMask[pi + 3] < 24) {
                     continue;
                 }
 

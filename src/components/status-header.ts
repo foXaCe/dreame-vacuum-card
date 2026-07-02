@@ -77,11 +77,19 @@ export class StatusHeader extends LitElement {
         // Status: read from dedicated _state sensor, display HA-translated value
         const stateSensorId = this._resolveSibling("state", "_state");
         let statusDisplay: string;
+        let rawStatus: string;
         if (stateSensorId && this.hass.states[stateSensorId]) {
             const stateSensor = this.hass.states[stateSensorId];
+            rawStatus = stateSensor.state;
             statusDisplay = computeStateDisplay(this.hass.localize, stateSensor, this.hass.locale, this.hass.entities);
         } else {
+            rawStatus = stateObj.state;
             statusDisplay = stateObj.state;
+        }
+        // « Charge terminée » + batterie 100 % dans la même ligne = redondant :
+        // la stat batterie porte déjà l'info, on affiche « Prêt ».
+        if (rawStatus === "charging_completed" || rawStatus === "charging_complete") {
+            statusDisplay = localize("dreame_ui.status.ready", lang);
         }
 
         const cleanedArea: number | undefined =
@@ -102,40 +110,46 @@ export class StatusHeader extends LitElement {
         const isActive = ACTIVE_VACUUM_STATES.includes(stateObj.state);
 
         return html`
-            <div class="header-section" part="header">
-                ${this.showTitle ? html`<div class="device-name">${friendlyName}</div>` : ""}
-                <div class="status">
-                    ${isActive ? html`<span class="live-dot" aria-hidden="true"></span>` : nothing}${statusDisplay}
+            <div class="header-row ${this.showTitle ? "with-title" : ""}" part="header">
+                <div class="status-cluster">
+                    ${this.showTitle ? html`<div class="device-name">${friendlyName}</div>` : nothing}
+                    <div class="status" aria-live="polite">
+                        ${isActive ? html`<span class="live-dot" aria-hidden="true"></span>` : nothing}${statusDisplay}
+                    </div>
                 </div>
-            </div>
-            <div class="stats-bar" part="stats">
-                ${cleanedArea !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="mdi:ruler-square"></ha-icon>
-                              <span class="stat-value">${cleanedArea}</span>
-                              <span class="stat-unit">${localize("unit.meter_squared_shortcut", lang)}</span>
-                          </div>
-                      `
-                    : nothing}
-                ${cleaningTime !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="mdi:timer-outline"></ha-icon>
-                              <span class="stat-value">${cleaningTime}</span>
-                              <span class="stat-unit">${localize("unit.minute_shortcut", lang)}</span>
-                          </div>
-                      `
-                    : nothing}
-                ${batteryLevel !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="${batteryIcon}"></ha-icon>
-                              <span class="stat-value">${batteryLevel}</span>
-                              <span class="stat-unit">%</span>
-                          </div>
-                      `
-                    : nothing}
+                <div class="stats" part="stats">
+                    ${
+                        cleanedArea !== undefined
+                            ? html`
+                                  <div class="stat">
+                                      <span class="stat-value">${cleanedArea}</span>
+                                      <span class="stat-unit">${localize("unit.meter_squared_shortcut", lang)}</span>
+                                  </div>
+                              `
+                            : nothing
+                    }
+                    ${
+                        cleaningTime !== undefined
+                            ? html`
+                                  <div class="stat">
+                                      <span class="stat-value">${cleaningTime}</span>
+                                      <span class="stat-unit">${localize("unit.minute_shortcut", lang)}</span>
+                                  </div>
+                              `
+                            : nothing
+                    }
+                    ${
+                        batteryLevel !== undefined
+                            ? html`
+                                  <div class="stat">
+                                      <ha-icon icon="${batteryIcon}"></ha-icon>
+                                      <span class="stat-value">${batteryLevel}</span>
+                                      <span class="stat-unit">%</span>
+                                  </div>
+                              `
+                            : nothing
+                    }
+                </div>
             </div>
         `;
     }
@@ -144,7 +158,7 @@ export class StatusHeader extends LitElement {
         return css`
             :host {
                 display: block;
-                text-align: center;
+                text-align: left;
                 position: absolute;
                 top: 0;
                 left: 0;
@@ -153,29 +167,55 @@ export class StatusHeader extends LitElement {
                 pointer-events: none;
             }
 
-            .header-section {
-                padding: var(--dvc-header-section-padding, 12px 16px 8px);
+            /* Ligne unique : statut à gauche, stats à droite — hauteur ~44px
+               (~56px avec le nom d'appareil). Fond qui fond vers la map. */
+            .header-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--dvc-header-gap, 12px);
+                min-height: var(--dvc-header-row-height, 44px);
+                padding: var(--dvc-header-section-padding, 6px 16px);
+                box-sizing: border-box;
                 background: linear-gradient(
                     to bottom,
                     var(--card-background-color, rgba(255, 255, 255, 0.85)) 0%,
-                    var(--card-background-color, rgba(255, 255, 255, 0.6)) 60%,
+                    var(--card-background-color, rgba(255, 255, 255, 0.7)) 72%,
                     transparent 100%
                 );
             }
 
+            .status-cluster {
+                min-width: 0;
+            }
+
             .device-name {
-                font-size: var(--dvc-header-name-size, 18px);
+                font-size: var(--dvc-header-name-size, 15px);
                 font-weight: 600;
                 letter-spacing: -0.02em;
                 color: var(--primary-text-color);
+                text-wrap: pretty;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .status {
-                font-size: var(--dvc-header-status-size, 14px);
-                font-weight: 510;
+                font-size: var(--dvc-header-status-size, 15px);
+                font-weight: 600;
                 letter-spacing: -0.01em;
+                color: var(--primary-text-color);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* Avec le nom affiché, le statut redevient une ligne secondaire. */
+            .with-title .status {
+                font-size: 12.5px;
+                font-weight: 510;
                 color: var(--secondary-text-color);
-                margin-top: 2px;
+                margin-top: 1px;
             }
 
             /* Pastille "live" : le robot travaille (pulsation douce, type indicateur d'appel). */
@@ -187,8 +227,9 @@ export class StatusHeader extends LitElement {
                 vertical-align: 1px;
                 border-radius: 50%;
                 background: var(--success-color, #34c759);
-                box-shadow: 0 0 6px color-mix(in srgb, var(--success-color, #34c759) 60%, transparent);
+                box-shadow: 0 0 6px color-mix(in oklab, var(--success-color, #34c759) 60%, transparent);
                 animation: dvc-live-pulse 2s ease-in-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
             }
 
             @keyframes dvc-live-pulse {
@@ -207,31 +248,32 @@ export class StatusHeader extends LitElement {
                 }
             }
 
-            .stats-bar {
+            .stats {
                 display: flex;
-                justify-content: center;
-                gap: var(--dvc-stats-gap, 24px);
-                padding: var(--dvc-stats-padding, 8px 16px);
-                background: var(
-                    --dvc-glass-tint,
-                    color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent)
-                );
-                backdrop-filter: var(--dvc-glass-blur, blur(8px));
-                -webkit-backdrop-filter: var(--dvc-glass-blur, blur(8px));
-                border-top: 0.5px solid var(--dvc-hairline, transparent);
+                align-items: center;
+                flex-shrink: 0;
             }
 
             .stat {
                 display: flex;
                 align-items: center;
-                gap: var(--dvc-stat-gap, 6px);
+                gap: 3px;
                 font-size: var(--dvc-stat-font-size, 13px);
                 color: var(--secondary-text-color);
             }
 
+            /* Séparateur médian entre les stats (à la « 12 m² · 25 min · 100 % »). */
+            .stat + .stat::before {
+                content: "·";
+                margin: 0 var(--dvc-stat-gap, 7px);
+                color: var(--secondary-text-color);
+                opacity: 0.5;
+            }
+
             .stat ha-icon {
-                --mdc-icon-size: var(--dvc-stat-icon-size, 18px);
+                --mdc-icon-size: var(--dvc-stat-icon-size, 16px);
                 opacity: 0.8;
+                margin-right: 1px;
             }
 
             .stat-value {

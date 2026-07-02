@@ -112,6 +112,7 @@ export class RobotMarker extends LitElement {
                 z-index: -1;
                 pointer-events: none;
                 animation: dvc-robot-pulse 2.6s ease-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
             }
 
             @keyframes dvc-robot-pulse {

@@ -25,7 +25,7 @@ export class DreameTabSelector extends LitElement {
                 gap: 4px;
                 margin: 10px 14px 4px;
                 padding: 3px;
-                background: color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent);
+                background: color-mix(in oklab, var(--primary-text-color, #000) 6%, transparent);
                 border: 0.5px solid var(--dvc-hairline, transparent);
                 border-radius: 14px;
             }
@@ -77,6 +77,11 @@ export class DreameTabSelector extends LitElement {
             .tab:active {
                 transform: scale(0.96);
             }
+            .tab:focus-visible {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+                border-radius: var(--dvc-radius-pill, 980px);
+            }
             .tab.active {
                 color: var(--primary-text-color);
                 font-weight: 600;
@@ -100,13 +105,20 @@ export class DreameTabSelector extends LitElement {
     protected render(): TemplateResult {
         const tabIndex = Math.max(0, DreameTabSelector._TAB_ORDER.indexOf(this.activeTab));
         return html`
-            <div class="tabs" part="tabs" role="tablist" style="--dvc-tab-index: ${tabIndex}">
+            <div
+                class="tabs"
+                part="tabs"
+                role="tablist"
+                style="--dvc-tab-index: ${tabIndex}"
+                @keydown=${this._handleTablistKeydown}
+            >
                 <div class="tab-indicator" aria-hidden="true"></div>
                 <button
                     class="tab ${this.activeTab === "room" ? "active" : ""}"
                     part="tab tab-room${this.activeTab === "room" ? " tab-active" : ""}"
                     role="tab"
                     aria-selected=${this.activeTab === "room"}
+                    tabindex=${this.activeTab === "room" ? "0" : "-1"}
                     @click=${(): void => this._selectTab("room")}
                 >
                     <ha-icon icon="mdi:floor-plan"></ha-icon>
@@ -117,6 +129,7 @@ export class DreameTabSelector extends LitElement {
                     part="tab tab-all${this.activeTab === "all" ? " tab-active" : ""}"
                     role="tab"
                     aria-selected=${this.activeTab === "all"}
+                    tabindex=${this.activeTab === "all" ? "0" : "-1"}
                     @click=${(): void => this._selectTab("all")}
                 >
                     <ha-icon icon="mdi:home"></ha-icon>
@@ -127,6 +140,7 @@ export class DreameTabSelector extends LitElement {
                     part="tab tab-zone${this.activeTab === "zone" ? " tab-active" : ""}"
                     role="tab"
                     aria-selected=${this.activeTab === "zone"}
+                    tabindex=${this.activeTab === "zone" ? "0" : "-1"}
                     @click=${(): void => this._selectTab("zone")}
                 >
                     <ha-icon icon="mdi:select-drag"></ha-icon>
@@ -134,6 +148,35 @@ export class DreameTabSelector extends LitElement {
                 </button>
             </div>
         `;
+    }
+
+    /** Pattern WAI-ARIA tabs : flèches gauche/droite (avec wrap) + Home/End. */
+    private _handleTablistKeydown(ev: KeyboardEvent): void {
+        const order = DreameTabSelector._TAB_ORDER;
+        const current = order.indexOf(this.activeTab);
+        let next: number;
+        switch (ev.key) {
+            case "ArrowRight":
+                next = (current + 1) % order.length;
+                break;
+            case "ArrowLeft":
+                next = (current - 1 + order.length) % order.length;
+                break;
+            case "Home":
+                next = 0;
+                break;
+            case "End":
+                next = order.length - 1;
+                break;
+            default:
+                return;
+        }
+        ev.preventDefault();
+        this._selectTab(order[next]);
+        // Déplace le focus sur l'onglet nouvellement actif (roving focus).
+        this.updateComplete.then(() => {
+            (this.shadowRoot?.querySelectorAll<HTMLButtonElement>(".tab") ?? [])[next]?.focus();
+        });
     }
 
     private _selectTab(tab: string): void {

@@ -129,13 +129,15 @@ export class RobotAnimation extends LitElement {
 
         return html`<div id="lottie-wrapper" class="${hasPosition ? "positioned" : "centered"}" style="${posStyle}">
             ${isLottie ? html`<div id="lottie-container"></div>` : nothing}
-            ${isZzz
-                ? html`<div class="zzz-container">
-                      <span class="z z1">Z</span>
-                      <span class="z z2">Z</span>
-                      <span class="z z3">Z</span>
-                  </div>`
-                : nothing}
+            ${
+                isZzz
+                    ? html`<div class="zzz-container">
+                          <span class="z z1">Z</span>
+                          <span class="z z2">Z</span>
+                          <span class="z z3">Z</span>
+                      </div>`
+                    : nothing
+            }
         </div>`;
     }
 
@@ -151,7 +153,7 @@ export class RobotAnimation extends LitElement {
                 z-index: 3;
                 pointer-events: none;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 280ms var(--dvc-ease, ease);
             }
 
             #lottie-wrapper.centered {
@@ -183,6 +185,7 @@ export class RobotAnimation extends LitElement {
                 color: rgba(255, 255, 255, 0.85);
                 text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
                 animation: zzz-float 2.4s ease-in-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
                 opacity: 0;
             }
 

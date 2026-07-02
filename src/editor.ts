@@ -24,6 +24,7 @@ const AVAILABLE_LANGUAGES = [
     { value: "is", label: "Icelandic" },
     { value: "it", label: "Italian" },
     { value: "lv", label: "Latvian" },
+    { value: "nb-NO", label: "Norwegian Bokmål" },
     { value: "nl", label: "Dutch" },
     { value: "pl", label: "Polish" },
     { value: "pt", label: "Portuguese" },
@@ -80,6 +81,18 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
         schema: [
             { name: "show_title", selector: { boolean: {} } },
             {
+                name: "appearance",
+                selector: {
+                    select: {
+                        mode: "dropdown",
+                        options: [
+                            { value: "premium", label: t("editor.option.appearance_premium") },
+                            { value: "minimal", label: t("editor.option.appearance_minimal") },
+                        ],
+                    },
+                },
+            },
+            {
                 name: "language",
                 selector: {
                     select: {
@@ -123,6 +136,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             map_source: this._config.map_source ?? { camera: "" },
             display: {
                 show_title: this._config.show_title ?? false,
+                appearance: this._config.appearance ?? "premium",
                 language: this._config.language ?? "",
             },
             map_behavior: {
@@ -155,7 +169,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
         const value = ev.detail.value as {
             entity?: string;
             map_source?: { camera?: string };
-            display?: { show_title?: boolean; language?: string };
+            display?: { show_title?: boolean; appearance?: string; language?: string };
             map_behavior?: {
                 map_locked?: boolean;
                 two_finger_pan?: boolean;
@@ -171,6 +185,8 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             entity: value.entity ?? this._config.entity,
             map_source: value.map_source ?? this._config.map_source,
             show_title: value.display?.show_title,
+            // On ne stocke que l'écart au défaut (premium) pour garder le YAML propre.
+            appearance: value.display?.appearance === "minimal" ? "minimal" : undefined,
             language: value.display?.language || undefined,
             map_locked: value.map_behavior?.map_locked,
             two_finger_pan: value.map_behavior?.two_finger_pan,

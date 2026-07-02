@@ -71,7 +71,7 @@ export class CleaningProgressBar extends LitElement {
             .progress-bar {
                 flex: 1;
                 height: 6px;
-                background: color-mix(in srgb, var(--primary-text-color, #000) 10%, transparent);
+                background: color-mix(in oklab, var(--primary-text-color, #000) 10%, transparent);
                 border-radius: 980px;
                 overflow: hidden;
             }
@@ -83,7 +83,11 @@ export class CleaningProgressBar extends LitElement {
                 border-radius: 980px;
                 background: linear-gradient(
                     90deg,
-                    color-mix(in srgb, var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 78%, #fff),
+                    color-mix(
+                        in oklab,
+                        var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 78%,
+                        #fff
+                    ),
                     var(--map-card-internal-primary-color, var(--primary-color, #0a84ff))
                 );
                 box-shadow: 0 0 8px
@@ -103,6 +107,7 @@ export class CleaningProgressBar extends LitElement {
                 background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
                 background-size: 200% 100%;
                 animation: dvc-progress-shimmer 2.4s ease-in-out infinite;
+                animation-play-state: var(--dvc-anim-state, running);
             }
 
             @keyframes dvc-progress-shimmer {

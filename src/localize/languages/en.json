@@ -311,7 +311,7 @@
             "append": "Add to cleaning"
         },
         "mode": {
-            "cycle_tooltip": "Click to cycle mode ({0} options)"
+            "manual_section": "Manual modes"
         },
         "map": {
             "lock": "Lock map",
@@ -319,6 +319,9 @@
             "add_rectangle": "Add rectangle",
             "cycle_repeats": "Cycle repeat count",
             "recenter": "Recenter map"
+        },
+        "status": {
+            "ready": "Ready"
         }
     },
     "editor": {
@@ -357,10 +360,15 @@
             "robot_overlay": "Robot overlay — anti-flash (optional)",
             "map_source": "Map source",
             "display": "Display",
-            "map_behavior": "Map behavior"
+            "map_behavior": "Map behavior",
+            "appearance": "Appearance"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"
+        },
+        "option": {
+            "appearance_premium": "Premium (translucent effects)",
+            "appearance_minimal": "Minimal (opaque, no ambient animations)"
         }
     }
 }

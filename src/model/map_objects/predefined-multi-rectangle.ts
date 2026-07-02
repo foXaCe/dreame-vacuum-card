@@ -147,8 +147,8 @@ export class PredefinedMultiRectangle extends PredefinedMapObject {
                 fill: var(--map-card-internal-predefined-rectangle-fill-color);
                 stroke-width: calc(var(--map-card-internal-predefined-rectangle-line-width) / var(--map-scale));
                 transition:
-                    stroke var(--map-card-internal-transitions-duration) ease,
-                    fill var(--map-card-internal-transitions-duration) ease;
+                    stroke var(--map-card-internal-transitions-duration) var(--dvc-ease, ease),
+                    fill var(--map-card-internal-transitions-duration) var(--dvc-ease, ease);
                 pointer-events: none;
             }
 
@@ -172,8 +172,8 @@ export class PredefinedMultiRectangle extends PredefinedMapObject {
                 color: var(--map-card-internal-predefined-rectangle-icon-color);
                 --mdc-icon-size: var(--map-card-internal-predefined-rectangle-icon-size);
                 transition:
-                    color var(--map-card-internal-transitions-duration) ease,
-                    background var(--map-card-internal-transitions-duration) ease;
+                    color var(--map-card-internal-transitions-duration) var(--dvc-ease, ease),
+                    background var(--map-card-internal-transitions-duration) var(--dvc-ease, ease);
                 pointer-events: none;
             }
 
@@ -188,8 +188,8 @@ export class PredefinedMultiRectangle extends PredefinedMapObject {
                 font-size: calc(var(--map-card-internal-predefined-rectangle-label-font-size) / var(--map-scale));
                 fill: var(--map-card-internal-predefined-rectangle-label-color);
                 transition:
-                    color var(--map-card-internal-transitions-duration) ease,
-                    background var(--map-card-internal-transitions-duration) ease;
+                    color var(--map-card-internal-transitions-duration) var(--dvc-ease, ease),
+                    background var(--map-card-internal-transitions-duration) var(--dvc-ease, ease);
             }
 
             .predefined-rectangle-wrapper.selected > .predefined-rectangle {
