@@ -161,6 +161,11 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _rawToRoomId = new Map<number, string | number>();
     private _rawToRoomIdCacheKey?: string;
     private _overlaySmallCanvas?: HTMLCanvasElement;
+    /** Masque alpha du PNG de map à la résolution du pick buffer : le voile du mode
+     *  pièce ne doit assombrir QUE le plan (le PNG est transparent hors pièces —
+     *  sans masque, le voile fabrique une dalle sombre sur le fond de la carte). */
+    private _mapAlphaMask?: Uint8ClampedArray;
+    private _mapAlphaMaskKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
 
@@ -1929,6 +1934,28 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         const pickData = this._pickData;
 
+        // Masque alpha du plan (échantillonné à la résolution du pick buffer). Rebâti
+        // seulement quand l'image ou la géométrie change — pas à chaque toggle de pièce.
+        const maskKey = `${mapImg.currentSrc}|${pickW}x${pickH}`;
+        if (this._mapAlphaMaskKey !== maskKey || !this._mapAlphaMask) {
+            const maskCanvas = document.createElement("canvas");
+            maskCanvas.width = pickW;
+            maskCanvas.height = pickH;
+            const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+            if (maskCtx) {
+                try {
+                    maskCtx.drawImage(mapImg, 0, 0, pickW, pickH);
+                    this._mapAlphaMask = maskCtx.getImageData(0, 0, pickW, pickH).data;
+                    this._mapAlphaMaskKey = maskKey;
+                } catch {
+                    // Image cross-origin non lisible → pas de masque (voile plein cadre).
+                    this._mapAlphaMask = undefined;
+                    this._mapAlphaMaskKey = undefined;
+                }
+            }
+        }
+        const alphaMask = this._mapAlphaMask;
+
         // Construire l'overlay à la résolution du segment_map (petite) puis upscaler avec lissage.
         // Cela produit des bords lisses au lieu de marches d'escalier.
         // Canvas intermédiaire réutilisé entre les redraws (pas d'allocation par toggle de pièce).
@@ -1947,6 +1974,12 @@ export class XiaomiVacuumMapCard extends LitElement {
 
                 if (hasSelection && raw > 0 && selectedRawValues.has(raw)) {
                     // Pièce sélectionnée → transparent (pas de dim)
+                    continue;
+                }
+
+                // Hors du plan (PNG transparent) → pas de voile : le fond de la
+                // carte reste net, seul le plan est assombri.
+                if (alphaMask && alphaMask[pi + 3] < 24) {
                     continue;
                 }
 
