@@ -129,15 +129,13 @@ export class RobotAnimation extends LitElement {
 
         return html`<div id="lottie-wrapper" class="${hasPosition ? "positioned" : "centered"}" style="${posStyle}">
             ${isLottie ? html`<div id="lottie-container"></div>` : nothing}
-            ${
-                isZzz
-                    ? html`<div class="zzz-container">
-                          <span class="z z1">Z</span>
-                          <span class="z z2">Z</span>
-                          <span class="z z3">Z</span>
-                      </div>`
-                    : nothing
-            }
+            ${isZzz
+                ? html`<div class="zzz-container">
+                      <span class="z z1">Z</span>
+                      <span class="z z2">Z</span>
+                      <span class="z z3">Z</span>
+                  </div>`
+                : nothing}
         </div>`;
     }
 

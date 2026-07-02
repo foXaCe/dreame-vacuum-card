@@ -568,38 +568,34 @@ export class XiaomiVacuumMapCard extends LitElement {
                                 @click="${this._toggleMapLock}"
                                 @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._toggleMapLock)}"
                             ></ha-icon>
-                            ${
-                                this.activeTab === "zone"
-                                    ? html`
-                                          <ha-icon
-                                              icon="mdi:plus"
-                                              class="icon-on-map clickable ripple"
-                                              role="button"
-                                              tabindex="0"
-                                              aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
-                                              @click="${() => this._addRectangle()}"
-                                              @keydown="${(e: KeyboardEvent) =>
-                                                  this._handleIconKey(e, () => this._addRectangle())}"
-                                          ></ha-icon>
-                                      `
-                                    : null
-                            }
-                            ${
-                                this.activeTab === "zone" || this.activeTab === "room"
-                                    ? html`
-                                          <div
-                                              class="icon-on-map clickable ripple cycle-counter"
-                                              role="button"
-                                              tabindex="0"
-                                              aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
-                                              @click="${this._cycleRepeats}"
-                                              @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
-                                          >
-                                              x${this.repeats}
-                                          </div>
-                                      `
-                                    : null
-                            }
+                            ${this.activeTab === "zone"
+                                ? html`
+                                      <ha-icon
+                                          icon="mdi:plus"
+                                          class="icon-on-map clickable ripple"
+                                          role="button"
+                                          tabindex="0"
+                                          aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
+                                          @click="${() => this._addRectangle()}"
+                                          @keydown="${(e: KeyboardEvent) =>
+                                              this._handleIconKey(e, () => this._addRectangle())}"
+                                      ></ha-icon>
+                                  `
+                                : null}
+                            ${this.activeTab === "zone" || this.activeTab === "room"
+                                ? html`
+                                      <div
+                                          class="icon-on-map clickable ripple cycle-counter"
+                                          role="button"
+                                          tabindex="0"
+                                          aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
+                                          @click="${this._cycleRepeats}"
+                                          @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
+                                      >
+                                          x${this.repeats}
+                                      </div>
+                                  `
+                                : null}
                             <ha-icon
                                 icon="mdi:image-filter-center-focus"
                                 class="icon-on-map clickable ripple"
@@ -1748,7 +1744,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         const config = this._getCurrentPreset();
         const roomsAttr = config.map_source?.camera
             ? (this.hass?.states?.[config.map_source.camera]?.attributes?.["rooms"] as
-                  Record<string, MapExtractorRoom> | undefined)
+                  | Record<string, MapExtractorRoom>
+                  | undefined)
             : undefined;
 
         const w = mapImage.naturalWidth;

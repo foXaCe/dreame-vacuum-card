@@ -228,11 +228,9 @@ export class CleaningModeChip extends LitElement {
         const manualChoices = choices.filter((c) => c.kind === "manual");
 
         return html`
-            ${
-                this._menuOpen
-                    ? html`<div class="menu-backdrop" @click="${() => (this._menuOpen = false)}"></div>`
-                    : nothing
-            }
+            ${this._menuOpen
+                ? html`<div class="menu-backdrop" @click="${() => (this._menuOpen = false)}"></div>`
+                : nothing}
             <div
                 class="mode-chip ${dimmed ? "unavailable" : ""}"
                 part="mode-chip"
@@ -250,28 +248,20 @@ export class CleaningModeChip extends LitElement {
                 <span class="mode-label">${valueText}</span>
                 <ha-icon class="mode-arrow ${this._menuOpen ? "open" : ""}" icon="mdi:chevron-down"></ha-icon>
             </div>
-            ${
-                this._menuOpen
-                    ? html`
-                          <div class="mode-menu" role="listbox" aria-label="${modeLabel}">
-                              ${
-                                  cgChoices.length > 0
-                                      ? html`<div class="menu-section">CleanGenius</div>
-                                            ${cgChoices.map((c) => this._renderChoice(c))}`
-                                      : nothing
-                              }
-                              ${
-                                  manualChoices.length > 0
-                                      ? html`<div class="menu-section">
-                                                ${localize("dreame_ui.mode.manual_section", lang)}
-                                            </div>
-                                            ${manualChoices.map((c) => this._renderChoice(c))}`
-                                      : nothing
-                              }
-                          </div>
-                      `
-                    : nothing
-            }
+            ${this._menuOpen
+                ? html`
+                      <div class="mode-menu" role="listbox" aria-label="${modeLabel}">
+                          ${cgChoices.length > 0
+                              ? html`<div class="menu-section">CleanGenius</div>
+                                    ${cgChoices.map((c) => this._renderChoice(c))}`
+                              : nothing}
+                          ${manualChoices.length > 0
+                              ? html`<div class="menu-section">${localize("dreame_ui.mode.manual_section", lang)}</div>
+                                    ${manualChoices.map((c) => this._renderChoice(c))}`
+                              : nothing}
+                      </div>
+                  `
+                : nothing}
         `;
     }
 
