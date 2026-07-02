@@ -153,9 +153,14 @@ export class CleaningModeChip extends LitElement {
                 aria-label="${displayLabel}"
                 @click="${this._handleClick}"
                 @keydown="${this._handleKeydown}"
-                title="${interactive && options
-                    ? localize(["dreame_ui.mode.cycle_tooltip", "{0}", `${options.length}`], this.hass.locale?.language)
-                    : ""}"
+                title="${
+                    interactive && options
+                        ? localize(
+                              ["dreame_ui.mode.cycle_tooltip", "{0}", `${options.length}`],
+                              this.hass.locale?.language
+                          )
+                        : ""
+                }"
             >
                 <div class="mode-icons">
                     ${icons.map((icon) => html`<ha-icon class="mode-icon" icon="${icon}"></ha-icon>`)}

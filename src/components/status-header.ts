@@ -109,33 +109,39 @@ export class StatusHeader extends LitElement {
                 </div>
             </div>
             <div class="stats-bar" part="stats">
-                ${cleanedArea !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="mdi:ruler-square"></ha-icon>
-                              <span class="stat-value">${cleanedArea}</span>
-                              <span class="stat-unit">${localize("unit.meter_squared_shortcut", lang)}</span>
-                          </div>
-                      `
-                    : nothing}
-                ${cleaningTime !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="mdi:timer-outline"></ha-icon>
-                              <span class="stat-value">${cleaningTime}</span>
-                              <span class="stat-unit">${localize("unit.minute_shortcut", lang)}</span>
-                          </div>
-                      `
-                    : nothing}
-                ${batteryLevel !== undefined
-                    ? html`
-                          <div class="stat">
-                              <ha-icon icon="${batteryIcon}"></ha-icon>
-                              <span class="stat-value">${batteryLevel}</span>
-                              <span class="stat-unit">%</span>
-                          </div>
-                      `
-                    : nothing}
+                ${
+                    cleanedArea !== undefined
+                        ? html`
+                              <div class="stat">
+                                  <ha-icon icon="mdi:ruler-square"></ha-icon>
+                                  <span class="stat-value">${cleanedArea}</span>
+                                  <span class="stat-unit">${localize("unit.meter_squared_shortcut", lang)}</span>
+                              </div>
+                          `
+                        : nothing
+                }
+                ${
+                    cleaningTime !== undefined
+                        ? html`
+                              <div class="stat">
+                                  <ha-icon icon="mdi:timer-outline"></ha-icon>
+                                  <span class="stat-value">${cleaningTime}</span>
+                                  <span class="stat-unit">${localize("unit.minute_shortcut", lang)}</span>
+                              </div>
+                          `
+                        : nothing
+                }
+                ${
+                    batteryLevel !== undefined
+                        ? html`
+                              <div class="stat">
+                                  <ha-icon icon="${batteryIcon}"></ha-icon>
+                                  <span class="stat-value">${batteryLevel}</span>
+                                  <span class="stat-unit">%</span>
+                              </div>
+                          `
+                        : nothing
+                }
             </div>
         `;
     }

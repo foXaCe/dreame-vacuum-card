@@ -83,7 +83,11 @@ export class CleaningProgressBar extends LitElement {
                 border-radius: 980px;
                 background: linear-gradient(
                     90deg,
-                    color-mix(in oklab, var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 78%, #fff),
+                    color-mix(
+                        in oklab,
+                        var(--map-card-internal-primary-color, var(--primary-color, #0a84ff)) 78%,
+                        #fff
+                    ),
                     var(--map-card-internal-primary-color, var(--primary-color, #0a84ff))
                 );
                 box-shadow: 0 0 8px
