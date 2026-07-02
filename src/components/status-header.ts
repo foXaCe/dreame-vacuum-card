@@ -104,7 +104,7 @@ export class StatusHeader extends LitElement {
         return html`
             <div class="header-section" part="header">
                 ${this.showTitle ? html`<div class="device-name">${friendlyName}</div>` : ""}
-                <div class="status">
+                <div class="status" aria-live="polite">
                     ${isActive ? html`<span class="live-dot" aria-hidden="true"></span>` : nothing}${statusDisplay}
                 </div>
             </div>
