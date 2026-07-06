@@ -265,6 +265,26 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   correct. Le robot était docké lors du constat, validation impossible ; à faire lors d'un
   vrai nettoyage (§7.6). C'est aussi le préalable à activer proprement l'overlay robot
   dynamique de la carte (`robot_in_map=false` en masquant l'objet `robot`).
+- **G. Passe en cours dans une pièce multi-passes** (demande utilisateur, 2026-07-06) :
+  quand une pièce est nettoyée avec `repeats` > 1, RIEN n'expose aujourd'hui « le robot
+  en est à la passe N sur M » (vérifié en live sur le device : le vacuum n'a que
+  `cleaning_progress` global, `current_segment`/`current_room`, `active_segments`,
+  `segment_cleaning` — aucune notion de passe). **À livrer côté intégration**, deux
+  pistes par ordre de préférence :
+  1. le protocole Dreame l'expose peut-être déjà (le `cleanset` de la map porte les
+     répétitions configurées par segment ; certains firmwares remontent l'avancement
+     par segment) — voie propre, à investiguer d'abord ;
+  2. sinon **l'inférer côté serveur** : l'intégration voit le path et les transitions
+     de `current_segment` — une ré-entrée dans un segment déjà terminé du même job =
+     passe suivante. Robuste en Python (historique du job) ; impossible à faire
+     proprement côté carte.
+  **Format de contrat proposé** (nouvel attribut, à promouvoir en §3.8 à la livraison,
+  procédure §6) : `segment_pass: { current: 2, total: 3 }` sur le vacuum ou la caméra.
+  `null`/absent hors nettoyage segmenté ; `total` = repeats effectifs du segment en
+  cours ; mise à jour au changement de segment ou de passe UNIQUEMENT (pas à chaque
+  tick — cf. backlog D, ne pas provoquer de re-render carte inutile).
+  **2ᵉ temps carte (après livraison)** : badge « Passe N/M » dans le header de statut /
+  barre de progression — travail d'affichage trivial, comme les transferts précédents.
 
 ### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
 
