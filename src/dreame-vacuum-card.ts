@@ -56,7 +56,6 @@ import {
     getWatchedEntities,
     hasConfigOrAnyEntityChanged,
     stopEvent,
-    unwrapAngleDeg,
 } from "./utils";
 import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
@@ -69,6 +68,7 @@ import { RepeatsType } from "./model/map_mode/repeats-type";
 import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
 import { resolveCalibration } from "./model/map/calibration-resolver";
+import { computeRobotOverlayGeometry, INITIAL_ROBOT_SAMPLE, RobotSample } from "./model/map/robot-overlay-geometry";
 import { MapObject } from "./model/map_objects/map-object";
 import { MousePosition } from "./model/map_objects/mouse-position";
 import { HomeAssistantFixed } from "./types/fixes";
@@ -171,11 +171,9 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
     /** Interpolation du marqueur robot : cadence mesurée des échantillons vacuum_position
-     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). */
-    private _lastRobotPosKey?: string;
-    private _lastRobotPosTs = 0;
-    private _robotGlideMs = 400;
-    private _lastRobotHeadingDeg?: number;
+     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). Voir
+     *  `model/map/robot-overlay-geometry.ts` pour le calcul pur associé. */
+    private _robotSample: RobotSample = INITIAL_ROBOT_SAMPLE;
 
     constructor() {
         super();
@@ -430,11 +428,6 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
 
         // Compute robot position/heading as percentage of map image (option 2 anti-flash).
-        let robotXPct = -1;
-        let robotYPct = -1;
-        let robotHeadingDeg = 0;
-        let robotVisible = false;
-        let robotIconUrl: string | undefined;
         // Résolution de l'overlay robot client-side :
         //  - un réglage explicite (preset puis config) est toujours respecté ;
         //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
@@ -442,56 +435,31 @@ export class XiaomiVacuumMapCard extends LitElement {
         //    fluide (le marqueur glisse en CSS, sans recharger l'<img> à chaque déplacement).
         //    Les installs avec un réglage explicite restent inchangées.
         const robotOverlayCfg = preset.robot_overlay ?? this.config?.robot_overlay;
+        const robotCamState = preset.map_source?.camera ? this.hass.states[preset.map_source.camera] : undefined;
         let robotOverlayEnabled: boolean;
         if (typeof robotOverlayCfg === "boolean") {
             robotOverlayEnabled = robotOverlayCfg;
         } else {
-            const cam = preset.map_source?.camera ? this.hass?.states[preset.map_source.camera] : undefined;
-            robotOverlayEnabled = cam?.attributes?.["robot_in_map"] === false;
+            robotOverlayEnabled = robotCamState?.attributes?.["robot_in_map"] === false;
         }
-        if (robotOverlayEnabled && this.coordinatesConverter?.calibrated && preset.map_source?.camera) {
-            const camState = this.hass.states[preset.map_source.camera];
-            // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
-            robotIconUrl = camState?.attributes?.robot_icon as string | undefined;
-            const robotPos = camState?.attributes?.vacuum_position;
-            if (robotPos && robotPos.x != null && robotPos.y != null) {
-                const p0 = this.coordinatesConverter.vacuumToMap(robotPos.x, robotPos.y);
-                const natW = this.realImageWidth;
-                const natH = this.realImageHeight;
-                if (natW && natH) {
-                    robotXPct = (p0[0] / natW) * 100;
-                    robotYPct = (p0[1] / natH) * 100;
-                    // Cap exprimé en angle ÉCRAN : on transforme un petit vecteur de direction
-                    // par la même calibration que la position, puis atan2 -> correct quelle que
-                    // soit la rotation/perspective de la carte, sans connaître la convention interne.
-                    const aRad = ((robotPos.a ?? 0) * Math.PI) / 180;
-                    const p1 = this.coordinatesConverter.vacuumToMap(
-                        robotPos.x + Math.cos(aRad),
-                        robotPos.y + Math.sin(aRad)
-                    );
-                    robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
-                    // Déroule le cap : évite qu'une transition CSS `rotate()` fasse un tour
-                    // complet dans le mauvais sens quand le cap réel franchit ±180°.
-                    robotHeadingDeg = unwrapAngleDeg(this._lastRobotHeadingDeg, robotHeadingDeg);
-                    this._lastRobotHeadingDeg = robotHeadingDeg;
-                    robotVisible = true;
-
-                    // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
-                    // cf. contrat §5.D) : le marqueur glisse sur ~90 % de l'intervalle mesuré
-                    // pour un mouvement continu (au lieu de 0,4 s de glisse puis une pause).
-                    const posKey = `${robotPos.x},${robotPos.y}`;
-                    if (posKey !== this._lastRobotPosKey) {
-                        const now = Date.now();
-                        if (this._lastRobotPosKey !== undefined) {
-                            const interval = now - this._lastRobotPosTs;
-                            this._robotGlideMs = Math.min(4000, Math.max(400, Math.round(interval * 0.9)));
-                        }
-                        this._lastRobotPosKey = posKey;
-                        this._lastRobotPosTs = now;
-                    }
-                }
-            }
-        }
+        // Le calcul de position/cap/cadence de glisse est délégué à une fonction pure
+        // (voir model/map/robot-overlay-geometry.ts) ; seul l'état `_robotSample` persiste
+        // d'un rendu à l'autre.
+        const robotGeometry = computeRobotOverlayGeometry({
+            camState: robotCamState,
+            converter: this.coordinatesConverter,
+            natW: this.realImageWidth,
+            natH: this.realImageHeight,
+            robotOverlayEnabled,
+            prevSample: this._robotSample,
+            nowMs: Date.now(),
+        });
+        this._robotSample = robotGeometry.nextSample;
+        const robotXPct = robotGeometry.xPct;
+        const robotYPct = robotGeometry.yPct;
+        const robotHeadingDeg = robotGeometry.headingDeg;
+        const robotVisible = robotGeometry.visible;
+        const robotIconUrl = robotGeometry.iconUrl;
 
         const mapSrc = this._getMapSrc(preset);
         const platformsWithDefaultCalibration = PlatformGenerator.getPlatformsWithDefaultCalibration();
@@ -557,7 +525,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .xPercent=${robotXPct}
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
-                    .transitionMs=${this._robotGlideMs}
+                    .transitionMs=${robotGeometry.glideMs}
                     .iconUrl=${robotIconUrl}
                 ></dreame-robot-marker>
             </div>
@@ -805,8 +773,10 @@ export class XiaomiVacuumMapCard extends LitElement {
             this.lastValidMapUrl = undefined;
             // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
             this.mapLoaded = false;
-            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement.
-            this._lastRobotHeadingDeg = undefined;
+            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement (seul
+            // le cap est réinitialisé ; posKey/posTs/glideMs survivent, comme avant migration
+            // vers `_robotSample`).
+            this._robotSample = { ...this._robotSample, headingDeg: undefined };
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
