@@ -42,15 +42,34 @@ jobs:
       - name: Verify output
         run: test -f dist/dreame-vacuum-card.js
 
-      - name: Package zip release (HACS zip_release)
+      - name: Package zip release (archive chunkée complète)
         # dist/ contient désormais le bundle principal + les chunks lottie chargés à
-        # la demande (voir plan 013) : HACS doit récupérer tout le répertoire, pas un
-        # fichier unique. Exécuté après add-version pour ne pas figer le placeholder,
-        # et avant tout .zip pour ne jamais s'auto-inclure dans l'archive.
+        # la demande (voir plan 013) : cette archive complète permet une installation
+        # manuelle "tout le dossier". Exécuté après add-version pour ne pas figer le
+        # placeholder, et avant tout .zip pour ne jamais s'auto-inclure dans l'archive.
         run: cd dist && zip -r dreame-vacuum-card.zip . -x '*.zip'
 
+      - name: Build single-file (asset HACS)
+        # hacs.json (filename: dreame-vacuum-card.js) pointe sur un fichier UNIQUE :
+        # HACS ne télécharge que cet asset de release, donc il doit être autonome
+        # (dynamic imports inlinés, y compris le moteur Lottie) plutôt que le bundle
+        # chunké de dist/, dont les chunks manqueraient à l'appel.
+        run: SINGLE_FILE=1 npx rollup -c
+
+      - name: Add version to single-file build
+        run: node scripts/add-version.mjs dist-release/dreame-vacuum-card.js
+
+      - name: Verify single-file output
+        run: test -f dist-release/dreame-vacuum-card.js
+
       - name: Create release
+        # hacs.json pointe sur le .js single-file ; le zip chunké est publié en
+        # parallèle — le jour où une release avec zip existe, hacs.json pourra
+        # basculer en zip_release (filename: dreame-vacuum-card.zip) pour livrer les
+        # chunks aux utilisateurs HACS, et la validation HACS restera verte.
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
-          files: dist/dreame-vacuum-card.zip
+          files: |
+            dist-release/dreame-vacuum-card.js
+            dist/dreame-vacuum-card.zip
           generate_release_notes: true

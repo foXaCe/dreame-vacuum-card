@@ -26,6 +26,33 @@ const plugins = [
     }),
 ];
 
+// Deux modes de sortie, sélectionnés par la variable d'env SINGLE_FILE :
+//
+// - par défaut (dist/, chunké) : sert l'installation raw-URL / HACS depuis le
+//   répertoire dist/ committé. Les imports dynamiques (moteur Lottie, cf. plan 013)
+//   restent des chunks séparés pour profiter du lazy-load (−33 % sur le bundle
+//   principal).
+// - SINGLE_FILE=1 (dist-release/, autonome) : produit l'asset publié sur les
+//   releases GitHub pour hacs.json (filename: dreame-vacuum-card.js). HACS ne
+//   télécharge qu'un seul fichier depuis les assets de release — s'il s'agissait
+//   du bundle chunké, les chunks manqueraient et les animations Lottie ne
+//   chargeraient jamais. `inlineDynamicImports` fusionne tout (y compris le
+//   moteur Lottie) dans un unique fichier autonome.
+const singleFile = process.env.SINGLE_FILE === "1";
+
+const output = singleFile
+    ? {
+          file: "dist-release/dreame-vacuum-card.js",
+          format: "es",
+          inlineDynamicImports: true,
+      }
+    : {
+          dir: "dist",
+          format: "es",
+          entryFileNames: "dreame-vacuum-card.js",
+          chunkFileNames: "dreame-vacuum-card.[name]-[hash].js",
+      };
+
 export default [
     {
         input: "src/dreame-vacuum-card.ts",
@@ -35,14 +62,10 @@ export default [
         // fichier d'entrée porte directement le code applicatif : `false` fusionne la
         // façade dans le chunk d'entrée (le mécanisme qui pousserait autrement le
         // code partagé vers un chunk séparé ne s'applique qu'aux exports nommés d'une
-        // entrée réutilisée ailleurs, ce qui n'est pas notre cas).
+        // entrée réutilisée ailleurs, ce qui n'est pas notre cas). Non pertinent en
+        // mode SINGLE_FILE (pas de chunks du tout, cf. inlineDynamicImports).
         preserveEntrySignatures: false,
-        output: {
-            dir: "dist",
-            format: "es",
-            entryFileNames: "dreame-vacuum-card.js",
-            chunkFileNames: "dreame-vacuum-card.[name]-[hash].js",
-        },
+        output,
         plugins,
         external: [],
     },
