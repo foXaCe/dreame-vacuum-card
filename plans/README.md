@@ -14,18 +14,18 @@ l'utilisateur contrôle git.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Retour d'échec des appels de service + fixture rejetable | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a080f7396f0960fd1` — à fusionner par l'utilisateur) |
-| 002 | Gardes de cycle de vie (`connected`, `hass`) | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a9c56719b22fb4910` — à fusionner par l'utilisateur) |
-| 003 | Déroulement de l'angle du cap robot (±180°) | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a7e0ca3fc49ba876b` — à fusionner par l'utilisateur ; note : le plan indiquait à tort `unwrapAngleDeg(0,180)=180`, la formule canonicalise vers -180, test aligné sur le réel) |
-| 004 | `shouldUpdate` des 4 composants feuilles | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-accaa88a07510e8a8` — à fusionner par l'utilisateur ; scope du plan amendé : tests du helper dans `test/utils-conditions.test.ts`, foyer canonique omis du plan initial) |
-| 005 | Épinglage SHA des GitHub Actions + preset Renovate | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-adb19357dc695f431` — à fusionner par l'utilisateur ; 25 refs épinglées, SHA contre-vérifiés upstream par le reviewer) |
-| 006 | Dé-flaker le test de glisse robot-overlay | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a14c1e735f02d9a68` — à fusionner par l'utilisateur ; 8 exécutions consécutives vertes cumulées) |
-| 007 | Durcissements mineurs (allowlist URL, condition vide) | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a9dd4cc30f8e14226` — à fusionner par l'utilisateur ; implémentation finale sans regex de pré-nettoyage, validation par schéma résolu WHATWG, plan amendé) |
-| 008 | Docs fausses + purge héritage upstream (`docs/templates/`) | P2 | S-M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a1bd732a7e6eab178` — à fusionner par l'utilisateur ; −3019 lignes de docs trompeuses) |
-| 009 | `CLAUDE.md` racine (index agents) | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ab18a57145719930a` — à fusionner par l'utilisateur) |
-| 010 | Code mort : branche « Setup », clés i18n, asset Lottie | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a36b2185b9da81797` — à fusionner par l'utilisateur ; −315 lignes) |
-| 011 | [SPIKE] Couverture navigateur + rapport fusionné | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ac51381359e60361c` — à fusionner par l'utilisateur ; couverture réelle du god file : 14,58 % → 66,05 % stmts, baseline pour le plan 014) |
-| 012 | Tests caractérisation : calibration dégradée + overlay pixels | P2 | M | — | IN PROGRESS |
+| 001 | Retour d'échec des appels de service + fixture rejetable | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a080f7396f0960fd1`, intégré dans la PR #37) |
+| 002 | Gardes de cycle de vie (`connected`, `hass`) | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a9c56719b22fb4910`, intégré dans la PR #37) |
+| 003 | Déroulement de l'angle du cap robot (±180°) | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a7e0ca3fc49ba876b`, intégré dans la PR #37 ; note : le plan indiquait à tort `unwrapAngleDeg(0,180)=180`, la formule canonicalise vers -180, test aligné sur le réel) |
+| 004 | `shouldUpdate` des 4 composants feuilles | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-accaa88a07510e8a8`, intégré dans la PR #37 ; scope du plan amendé : tests du helper dans `test/utils-conditions.test.ts`, foyer canonique omis du plan initial) |
+| 005 | Épinglage SHA des GitHub Actions + preset Renovate | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-adb19357dc695f431`, intégré dans la PR #37 ; 25 refs épinglées, SHA contre-vérifiés upstream par le reviewer) |
+| 006 | Dé-flaker le test de glisse robot-overlay | P1 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a14c1e735f02d9a68`, intégré dans la PR #37 ; 8 exécutions consécutives vertes cumulées) |
+| 007 | Durcissements mineurs (allowlist URL, condition vide) | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a9dd4cc30f8e14226`, intégré dans la PR #37 ; implémentation finale sans regex de pré-nettoyage, validation par schéma résolu WHATWG, plan amendé) |
+| 008 | Docs fausses + purge héritage upstream (`docs/templates/`) | P2 | S-M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a1bd732a7e6eab178`, intégré dans la PR #37 ; −3019 lignes de docs trompeuses) |
+| 009 | `CLAUDE.md` racine (index agents) | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ab18a57145719930a`, intégré dans la PR #37) |
+| 010 | Code mort : branche « Setup », clés i18n, asset Lottie | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a36b2185b9da81797`, intégré dans la PR #37 ; −315 lignes) |
+| 011 | [SPIKE] Couverture navigateur + rapport fusionné | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ac51381359e60361c`, intégré dans la PR #37 ; couverture réelle du god file : 14,58 % → 66,05 % stmts, baseline pour le plan 014) |
+| 012 | Tests caractérisation : calibration dégradée + overlay pixels | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a21600c0503585e24`, intégré dans la PR #37 ; +10 tests navigateur ; a révélé le constat « calibration cassée = faux calibrated:true », voir ci-dessous) |
 | 013 | Lazy-load Lottie (~1/3 du bundle) + livrable zip HACS | P3 | L | 005, 010 | TODO |
 | 014 | Découpage du god file en 4 modules `src/model/map/` | P3 | L | 002, 003, 010 (durs) ; 011, 012 (recommandés) | TODO |
 | 015 | CI sans matrice + renommage `Xiaomi*` → `Dreame*` | P3 | S+M | 005 ; partie B **en dernier de tout** | TODO |
@@ -48,6 +48,20 @@ REJECTED (avec justification en une ligne).
   tous les autres plans.
 - 001 et 006 modifient tous deux des fichiers de `test-browser/` mais pas les mêmes
   zones — pas de conflit réel.
+
+## Nouveau constat (issu de l'exécution du plan 012, 2026-07-06)
+
+- **Calibration cassée indistinguable d'une calibration absente** :
+  `CoordinatesConverter(undefined)` pose `calibrated = true` (identité implicite,
+  `src/model/map_objects/coordinates-converter.ts:35-39`). Quand
+  `calibration_source.entity` renvoie `"unknown"` ou un JSON invalide,
+  `_getCalibration()` retourne `undefined` sans exception (bien), mais la carte se
+  croit alors calibrée en identité map=vacuum — presque certainement faux sur une
+  vraie carte. Comportement figé tel quel par `test-browser/calibration-fallback.test.ts`
+  (commentaire détaillé en tête de fichier). Candidat pour un futur plan : distinguer
+  « pas de calibration nécessaire (plateforme) » de « source de calibration en échec »
+  (ex. `calibrated = false` + message utilisateur dans le second cas). Impact M,
+  effort S-M, confiance HIGH (vérifié par exécution réelle).
 
 ## Findings considered and rejected
 
