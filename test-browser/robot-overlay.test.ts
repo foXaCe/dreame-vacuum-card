@@ -157,12 +157,22 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
         // Avant toute cadence mesurée : durée de glisse par défaut.
         expect(marker.transitionMs).toBe(400);
 
-        // Échantillon suivant ~650 ms plus tard → glisse ≈ 90 % de l'intervalle mesuré.
+        // Encadre l'intervalle réellement vu par le composant : il démarre au plus tard
+        // quand `visible` passe à true (t0 pris après), et se termine au plus tôt juste
+        // avant le push (t1 pris avant) — bornes valides même sur un runner CI lent.
+        const t0 = Date.now();
         await new Promise((r) => setTimeout(r, 650));
+        const t1 = Date.now();
         pushRobotPosition(card, hass, { ...base, x: base.x + 300 });
         await until(() => marker.transitionMs > 400);
-        expect(marker.transitionMs).toBeGreaterThan(400);
-        expect(marker.transitionMs).toBeLessThan(1500);
+        const t2 = Date.now();
+
+        // borne basse : 90 % du temps minimal écoulé (t1 - t0), plancher 400 ;
+        // borne haute : 90 % du temps maximal écoulé (t2 - t0 + marge), plafond 4000.
+        const lower = Math.max(400, Math.floor((t1 - t0) * 0.9) - 50);
+        const upper = Math.min(4000, Math.ceil((t2 - t0) * 0.9) + 200);
+        expect(marker.transitionMs).toBeGreaterThanOrEqual(lower);
+        expect(marker.transitionMs).toBeLessThanOrEqual(upper);
 
         // La transition CSS est bien pilotée par la variable posée en style inline.
         const markerDiv = marker.shadowRoot!.querySelector<HTMLElement>("#marker")!;
