@@ -24,6 +24,8 @@ import { RobotAnimation } from "../src/components/robot-animation";
  * Minimal hass mock builder. `callService` is a vitest spy so tests can assert
  * service calls. `localize` returns "" (falsy) on purpose so that
  * computeStateDisplay falls through to the raw entity state (deterministic).
+ * The default resolves (like the real `hass.callService`, which always returns
+ * a Promise) — components now chain `.then()`/`await` on it for haptic feedback.
  */
 function makeHass(overrides: Partial<HomeAssistantFixed> = {}): HomeAssistantFixed {
     return {
@@ -31,7 +33,7 @@ function makeHass(overrides: Partial<HomeAssistantFixed> = {}): HomeAssistantFix
         entities: {},
         locale: { language: "en" },
         localize: () => "",
-        callService: vi.fn(),
+        callService: vi.fn().mockResolvedValue(undefined),
         ...overrides,
     } as unknown as HomeAssistantFixed;
 }
@@ -137,7 +139,7 @@ describe("dreame-action-buttons", () => {
     });
 
     it("clicking the primary button while docked calls vacuum.start via target", async () => {
-        const callService = vi.fn();
+        const callService = vi.fn().mockResolvedValue(undefined);
         const el = document.createElement("dreame-action-buttons") as ActionButtons;
         el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never }, callService });
         el.entityId = "vacuum.test";
@@ -148,7 +150,7 @@ describe("dreame-action-buttons", () => {
     });
 
     it("clicking secondary while docked calls return_to_base", async () => {
-        const callService = vi.fn();
+        const callService = vi.fn().mockResolvedValue(undefined);
         const el = document.createElement("dreame-action-buttons") as ActionButtons;
         el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never }, callService });
         el.entityId = "vacuum.test";
@@ -159,7 +161,7 @@ describe("dreame-action-buttons", () => {
     });
 
     it("clicking pause while cleaning calls vacuum.pause", async () => {
-        const callService = vi.fn();
+        const callService = vi.fn().mockResolvedValue(undefined);
         const el = document.createElement("dreame-action-buttons") as ActionButtons;
         el.hass = makeHass({ states: { "vacuum.test": { state: "cleaning" } as never }, callService });
         el.entityId = "vacuum.test";
@@ -167,6 +169,44 @@ describe("dreame-action-buttons", () => {
         const buttons = Array.from(el.shadowRoot!.querySelectorAll("button"));
         buttons[0].click();
         expect(callService).toHaveBeenCalledWith("vacuum", "pause", undefined, { entity_id: "vacuum.test" });
+    });
+
+    it("emits a light haptic then a success haptic when callService resolves", async () => {
+        const callService = vi.fn().mockResolvedValue(undefined);
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never }, callService });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const haptics: unknown[] = [];
+        const onHaptic = (e: Event) => haptics.push((e as CustomEvent).detail);
+        window.addEventListener("haptic", onHaptic);
+        try {
+            const buttons = Array.from(el.shadowRoot!.querySelectorAll("button"));
+            buttons[0].click(); // "start"
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(haptics).toEqual(["light", "success"]);
+        } finally {
+            window.removeEventListener("haptic", onHaptic);
+        }
+    });
+
+    it("emits a light haptic then a failure haptic when callService rejects (no unhandled rejection)", async () => {
+        const callService = vi.fn().mockRejectedValue(new Error("robot offline (test)"));
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "cleaning" } as never }, callService });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const haptics: unknown[] = [];
+        const onHaptic = (e: Event) => haptics.push((e as CustomEvent).detail);
+        window.addEventListener("haptic", onHaptic);
+        try {
+            const buttons = Array.from(el.shadowRoot!.querySelectorAll("button"));
+            buttons[0].click(); // "pause"
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(haptics).toEqual(["light", "failure"]);
+        } finally {
+            window.removeEventListener("haptic", onHaptic);
+        }
     });
 
     it("shows selection buttons (Clean + count / Cancel) when room tab has a selection", async () => {
@@ -261,6 +301,41 @@ describe("dreame-action-buttons", () => {
         // "all" never uses selection buttons -> state buttons.
         expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Clean", "Dock"]);
     });
+
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never } });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new buttons when the watched vacuum entity changes", async () => {
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never } });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = { ...prevHass, states: { ...prevHass.states, "vacuum.test": { state: "cleaning" } as never } };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        const buttons = Array.from(el.shadowRoot!.querySelectorAll("button"));
+        expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Pause", "Stop"]);
+    });
 });
 
 // ===========================================================================
@@ -350,7 +425,11 @@ describe("dreame-cleaning-mode-chip", () => {
     const SELECT_ID = "select.robot_cleaning_mode";
     const VACUUM_ID = "vacuum.robot";
 
-    function chipHass(overrides: Partial<HomeAssistantFixed> = {}, options = ["sweeping", "mopping"], current = "sweeping") {
+    function chipHass(
+        overrides: Partial<HomeAssistantFixed> = {},
+        options = ["sweeping", "mopping"],
+        current = "sweeping"
+    ) {
         return makeHass({
             states: {
                 [VACUUM_ID]: { state: "docked", attributes: {} } as never,
@@ -512,7 +591,11 @@ describe("dreame-cleaning-mode-chip", () => {
 
     const CG_ID = "select.robot_cleangenius";
 
-    function cgHass(overrides: Partial<HomeAssistantFixed> = {}, cgState = "routine_cleaning", modeState = "unavailable") {
+    function cgHass(
+        overrides: Partial<HomeAssistantFixed> = {},
+        cgState = "routine_cleaning",
+        modeState = "unavailable"
+    ) {
         return makeHass({
             states: {
                 [VACUUM_ID]: { state: "docked", attributes: {} } as never,
@@ -551,7 +634,7 @@ describe("dreame-cleaning-mode-chip", () => {
     });
 
     it("selecting the other CleanGenius option calls select_option on the cleangenius entity", async () => {
-        const callService = vi.fn();
+        const callService = vi.fn().mockResolvedValue(undefined);
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
         el.hass = cgHass({ callService });
         el.entityId = VACUUM_ID;
@@ -590,6 +673,92 @@ describe("dreame-cleaning-mode-chip", () => {
         expect(calls).toHaveLength(2);
         expect(calls[0]).toEqual(["select", "select_option", { option: "off" }, { entity_id: CG_ID }]);
         expect(calls[1]).toEqual(["select", "select_option", { option: "mopping" }, { entity_id: SELECT_ID }]);
+    });
+
+    it("emits a failure haptic (no unhandled rejection) when the CleanGenius select_option rejects", async () => {
+        const callService = vi.fn().mockRejectedValue(new Error("robot offline (test)"));
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = cgHass({ callService });
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const haptics: unknown[] = [];
+        const onHaptic = (e: Event) => haptics.push((e as CustomEvent).detail);
+        window.addEventListener("haptic", onHaptic);
+        try {
+            (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+            await el.updateComplete;
+            const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+            items[1].click(); // deep_cleaning (autre option CleanGenius)
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            expect(haptics).toEqual(["failure"]);
+        } finally {
+            window.removeEventListener("haptic", onHaptic);
+        }
+    });
+
+    it("emits a failure haptic (no unhandled rejection) when applying a manual mode rejects", async () => {
+        const callService = vi.fn().mockRejectedValue(new Error("robot offline (test)"));
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass({ callService }, ["sweeping", "mopping"], "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const haptics: unknown[] = [];
+        const onHaptic = (e: Event) => haptics.push((e as CustomEvent).detail);
+        window.addEventListener("haptic", onHaptic);
+        try {
+            (el.shadowRoot!.querySelector(".mode-chip") as HTMLElement).click();
+            await el.updateComplete;
+            const items = Array.from(el.shadowRoot!.querySelectorAll(".menu-item")) as HTMLElement[];
+            items[1].click(); // "mopping"
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            expect(haptics).toEqual(["failure"]);
+        } finally {
+            window.removeEventListener("haptic", onHaptic);
+        }
+    });
+
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass();
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new value when the resolved mode select changes reference", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass({}, ["sweeping", "mopping"], "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: {
+                ...prevHass.states,
+                [SELECT_ID]: {
+                    entity_id: SELECT_ID,
+                    state: "mopping",
+                    attributes: { options: ["sweeping", "mopping"] },
+                },
+            } as never,
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        expect(el.shadowRoot!.querySelector(".mode-label")?.textContent?.trim()).toBe("mopping");
     });
 
     it("does not open the menu when the select has no options", async () => {

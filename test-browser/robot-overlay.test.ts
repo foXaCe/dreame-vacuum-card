@@ -157,12 +157,22 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
         // Avant toute cadence mesurée : durée de glisse par défaut.
         expect(marker.transitionMs).toBe(400);
 
-        // Échantillon suivant ~650 ms plus tard → glisse ≈ 90 % de l'intervalle mesuré.
+        // Encadre l'intervalle réellement vu par le composant : il démarre au plus tard
+        // quand `visible` passe à true (t0 pris après), et se termine au plus tôt juste
+        // avant le push (t1 pris avant) — bornes valides même sur un runner CI lent.
+        const t0 = Date.now();
         await new Promise((r) => setTimeout(r, 650));
+        const t1 = Date.now();
         pushRobotPosition(card, hass, { ...base, x: base.x + 300 });
         await until(() => marker.transitionMs > 400);
-        expect(marker.transitionMs).toBeGreaterThan(400);
-        expect(marker.transitionMs).toBeLessThan(1500);
+        const t2 = Date.now();
+
+        // borne basse : 90 % du temps minimal écoulé (t1 - t0), plancher 400 ;
+        // borne haute : 90 % du temps maximal écoulé (t2 - t0 + marge), plafond 4000.
+        const lower = Math.max(400, Math.floor((t1 - t0) * 0.9) - 50);
+        const upper = Math.min(4000, Math.ceil((t2 - t0) * 0.9) + 200);
+        expect(marker.transitionMs).toBeGreaterThanOrEqual(lower);
+        expect(marker.transitionMs).toBeLessThanOrEqual(upper);
 
         // La transition CSS est bien pilotée par la variable posée en style inline.
         const markerDiv = marker.shadowRoot!.querySelector<HTMLElement>("#marker")!;
@@ -171,5 +181,35 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
         // Échantillon quasi immédiat → borne basse (clamp à 400 ms, jamais en dessous).
         pushRobotPosition(card, hass, { ...base, x: base.x + 600 });
         await until(() => marker.transitionMs === 400);
+    });
+});
+
+describe("dreame-robot-marker — déroulé du cap (évite le tour complet à ±180°)", () => {
+    it("garde le cap continu quand la valeur brute franchit +178° -> -175°", async () => {
+        // Calibration de test = pur scale ×10 sans rotation -> le cap écran suit
+        // directement `robotPos.a`, donc on peut choisir `a` pour franchir la limite
+        // de atan2 (178° -> -175° est une rotation physique de ~7°, pas ~353°).
+        const base = { x: ROOM_1_CENTER_PX.x * 10, y: ROOM_1_CENTER_PX.y * 10, a: 178 };
+        const { card, hass } = mountCardWithRobotPosition("cleaning", base);
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            headingDeg: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+        expect(marker.headingDeg).toBeCloseTo(178, 5);
+        const before = marker.headingDeg;
+
+        pushRobotPosition(card, hass, { ...base, a: -175 });
+        await until(() => marker.headingDeg !== before);
+        const after = marker.headingDeg;
+
+        // Continuité : le delta appliqué doit être le petit virage (~7°), pas le grand
+        // tour (~353°) qu'un simple atan2 non déroulé produirait.
+        expect(Math.abs(after - before)).toBeLessThan(180);
+        expect(after).toBeCloseTo(185, 5);
     });
 });

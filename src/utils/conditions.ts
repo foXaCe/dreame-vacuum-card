@@ -14,10 +14,10 @@ export function isConditionMet(
         if (!entity) return false;
         currentValue = condition.attribute ? entity.attributes[condition.attribute] : entity.state;
     }
-    if (condition.value) {
+    if (condition.value !== undefined) {
         return String(currentValue) === String(condition.value);
     }
-    if (condition.value_not) {
+    if (condition.value_not !== undefined) {
         return String(currentValue) !== String(condition.value_not);
     }
     return false;

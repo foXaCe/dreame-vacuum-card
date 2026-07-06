@@ -1,10 +1,11 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { computeStateDisplay } from "../localize/hass/compute_state_display";
 import { ACTIVE_VACUUM_STATES } from "../const";
+import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
 @customElement("dreame-status-header")
 export class StatusHeader extends LitElement {
@@ -47,6 +48,19 @@ export class StatusHeader extends LitElement {
         }
         this._siblingCache.set(cacheKey, found);
         return found;
+    }
+
+    /** Seules l'entité vacuum et les sensors frères déjà résolus (cache) conditionnent
+     *  l'affichage : un tick `hass` qui ne touche aucun d'eux n'a rien de neuf à
+     *  peindre ici. Tant que le cache est vide (siblings pas encore résolus, ex.
+     *  premier rendu avorté avant la résolution), on laisse passer pour ne pas rater
+     *  la première résolution. */
+    protected shouldUpdate(changedProps: PropertyValues): boolean {
+        if (this._siblingCache.size === 0) return true;
+        return shouldUpdateForEntities(changedProps, this.hass, [
+            this.entityId,
+            ...Array.from(this._siblingCache.values()),
+        ]);
     }
 
     protected render(): TemplateResult | typeof nothing {

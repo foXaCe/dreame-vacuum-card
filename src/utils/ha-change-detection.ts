@@ -41,3 +41,18 @@ export function checkIfEntitiesChanged(
     const changedEntities = entities.filter((entity) => oldHass.states[entity] !== newHass.states[entity]);
     return changedEntities.length > 0;
 }
+
+/** shouldUpdate pour un composant feuille qui ne lit que quelques entités de `hass` :
+ *  si SEUL `hass` a changé, ne re-rendre que si l'une des entités listées a changé
+ *  de référence. Tout autre changement de propriété force le rendu. */
+export function shouldUpdateForEntities(
+    changedProps: PropertyValues,
+    newHass: HomeAssistantFixed | undefined,
+    entityIds: (string | null | undefined)[]
+): boolean {
+    const keys = Array.from(changedProps.keys());
+    if (!(keys.length === 1 && keys[0] === "hass")) return true;
+    const oldHass = changedProps.get("hass") as HomeAssistantFixed | undefined;
+    if (!oldHass || !newHass) return true;
+    return entityIds.some((id) => !!id && oldHass.states[id] !== newHass.states[id]);
+}

@@ -56,6 +56,7 @@ import {
     getWatchedEntities,
     hasConfigOrAnyEntityChanged,
     stopEvent,
+    unwrapAngleDeg,
 } from "./utils";
 import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
@@ -173,6 +174,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _lastRobotPosKey?: string;
     private _lastRobotPosTs = 0;
     private _robotGlideMs = 400;
+    private _lastRobotHeadingDeg?: number;
 
     constructor() {
         super();
@@ -391,6 +393,10 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (this.configErrors.length > 0) {
             return this._showConfigErrors(this.configErrors);
         }
+        // hass peut ne pas être encore assigné (setConfig → premier render, preview éditeur).
+        if (!this.hass) {
+            return;
+        }
         const invalidEntities = areAllEntitiesDefined(this.watchedEntities, this.hass);
         if (invalidEntities.length > 0) {
             return this._showInvalidEntities(invalidEntities);
@@ -463,6 +469,10 @@ export class XiaomiVacuumMapCard extends LitElement {
                         robotPos.y + Math.sin(aRad)
                     );
                     robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
+                    // Déroule le cap : évite qu'une transition CSS `rotate()` fasse un tour
+                    // complet dans le mauvais sens quand le cap réel franchit ±180°.
+                    robotHeadingDeg = unwrapAngleDeg(this._lastRobotHeadingDeg, robotHeadingDeg);
+                    this._lastRobotHeadingDeg = robotHeadingDeg;
                     robotVisible = true;
 
                     // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
@@ -816,7 +826,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _getModes(config: CardPresetConfig) {
         const vacuumPlatform = PlatformGenerator.getPlatformName(config.vacuum_platform);
         return (
-            (config.map_modes?.length ?? -1) === -1 || vacuumPlatform.startsWith("Setup")
+            (config.map_modes?.length ?? -1) === -1
                 ? PlatformGenerator.generateDefaultModes(vacuumPlatform)
                 : (config.map_modes ?? [EMPTY_MAP_MODE])
         ).map((m) => new MapMode(vacuumPlatform, m, this.config.language));
@@ -832,6 +842,8 @@ export class XiaomiVacuumMapCard extends LitElement {
             this.lastValidMapUrl = undefined;
             // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
             this.mapLoaded = false;
+            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement.
+            this._lastRobotHeadingDeg = undefined;
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
@@ -1226,6 +1238,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _getRoomsConfig(): RoomConfigEventData | undefined {
+        if (!this.hass) return undefined;
         const config = this._getCurrentPreset();
         const rooms = this.hass.states[config.map_source?.camera ?? ""]?.attributes["rooms"] as Record<
             string,
@@ -1582,6 +1595,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _initializeRoomsRetries = 0;
 
     private _initializeRooms(): void {
+        // Instance déconnectée : ne pas poursuivre la chaîne de retries (cf. connectedCallback).
+        if (!this.connected) return;
         if (!this.modes || this.modes.length === 0) {
             if (this._initializeRoomsRetries >= 20) return;
             this._initializeRoomsRetries++;

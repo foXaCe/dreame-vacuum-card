@@ -175,7 +175,7 @@ npm install
 npm run build
 
 # Development build with watch
-npm run dev
+npm start
 ```
 
 ## Acknowledgments

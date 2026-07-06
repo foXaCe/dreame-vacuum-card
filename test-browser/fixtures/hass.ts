@@ -86,18 +86,51 @@ export interface ServiceCall {
     data: Record<string, unknown>;
 }
 
+/** Comportement mutable du mock `callService`, partagé par référence avec les tests :
+ *  bascule `rejectCalls` à `true` pour exercer un chemin d'échec de service (haptic
+ *  "failure", pas de unhandled rejection) sans changer le défaut (résolution). */
+export interface HassBehavior {
+    rejectCalls: boolean;
+}
+
 export interface TestHass {
     // Typé lâche exprès : la carte consomme HomeAssistantFixed (interface vendored
     // minimale) — les tests castent via `as unknown as`.
     hass: Record<string, unknown>;
     calls: ServiceCall[];
     images: TestImages;
+    behavior: HassBehavior;
 }
 
-export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<string, unknown> = {}): TestHass {
+/** État additionnel injecté tel quel dans `hass.states` (ex. `sensor.cal` pour les
+ *  tests de fallback de calibration). Minimal exprès : pas de `last_updated` custom,
+ *  pas de `device_id` — ajoute-les via `attributes` si un test en a besoin. */
+export interface ExtraStateSpec {
+    state: string;
+    attributes?: Record<string, unknown>;
+}
+
+export function makeHass(
+    vacuumState = "docked",
+    extraVacuumAttributes: Record<string, unknown> = {},
+    extraStates: Record<string, ExtraStateSpec> = {}
+): TestHass {
     const images = makeTestImages();
     const calls: ServiceCall[] = [];
+    const behavior: HassBehavior = { rejectCalls: false };
     const now = new Date().toISOString();
+    const extraStateEntries = Object.fromEntries(
+        Object.entries(extraStates).map(([entityId, spec]) => [
+            entityId,
+            {
+                entity_id: entityId,
+                state: spec.state,
+                attributes: spec.attributes ?? {},
+                last_updated: now,
+                last_changed: now,
+            },
+        ])
+    );
     const hass = {
         language: "en",
         locale: { language: "en" },
@@ -131,6 +164,7 @@ export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<s
                 last_updated: now,
                 last_changed: now,
             },
+            ...extraStateEntries,
         },
         entities: {
             "vacuum.test": { device_id: "device_test" },
@@ -138,10 +172,10 @@ export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<s
         },
         callService: (domain: string, service: string, data: Record<string, unknown>) => {
             calls.push({ domain, service, data });
-            return Promise.resolve();
+            return behavior.rejectCalls ? Promise.reject(new Error("service failed (test)")) : Promise.resolve();
         },
     };
-    return { hass, calls, images };
+    return { hass, calls, images, behavior };
 }
 
 export function makeCardConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -184,14 +218,21 @@ export interface CardElement extends HTMLElement {
 export function mountCard(
     config: Record<string, unknown> = makeCardConfig(),
     vacuumState = "docked",
-    extraVacuumAttributes: Record<string, unknown> = {}
-): { card: CardElement; hass: Record<string, unknown>; calls: ServiceCall[]; images: TestImages } {
-    const { hass, calls, images } = makeHass(vacuumState, extraVacuumAttributes);
+    extraVacuumAttributes: Record<string, unknown> = {},
+    extraStates: Record<string, ExtraStateSpec> = {}
+): {
+    card: CardElement;
+    hass: Record<string, unknown>;
+    calls: ServiceCall[];
+    images: TestImages;
+    behavior: HassBehavior;
+} {
+    const { hass, calls, images, behavior } = makeHass(vacuumState, extraVacuumAttributes, extraStates);
     const card = document.createElement("dreame-vacuum-card") as CardElement;
     card.setConfig(config);
     card.hass = hass;
     document.body.appendChild(card);
-    return { card, hass, calls, images };
+    return { card, hass, calls, images, behavior };
 }
 
 /** Deuxième image de carte, visuellement distincte de `makeTestImages().mapDataUrl` — sert à

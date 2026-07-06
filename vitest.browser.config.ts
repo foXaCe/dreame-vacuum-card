@@ -27,5 +27,18 @@ export default defineConfig({
             }),
             instances: [{ browser: "chromium" }],
         },
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "json"],
+            reportsDirectory: "coverage/browser",
+            include: ["src/**/*.ts"],
+            exclude: [
+                "src/**/*.d.ts",
+                "src/assets/**",
+                "src/localize/languages/**",
+                // Port vendored de <pinch-zoom> (GoogleChromeLabs), hors périmètre de test du projet.
+                "src/pinch-zoom/**",
+            ],
+        },
     },
 });

@@ -327,6 +327,80 @@ describe("dreame-status-header", () => {
         expect(el.shadowRoot!.querySelectorAll(".stat")).toHaveLength(0);
     });
 
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-status-header") as StatusHeader;
+        el.hass = headerHass();
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new value when the watched vacuum entity changes", async () => {
+        // No _state sibling here: the raw vacuum state is rendered directly, so a
+        // reference change on the vacuum entity itself is unambiguously observable.
+        const el = document.createElement("dreame-status-header") as StatusHeader;
+        el.hass = makeHass({
+            states: { [VACUUM_ID]: { entity_id: VACUUM_ID, state: "cleaning", attributes: {} } as never },
+            entities: { [VACUUM_ID]: { device_id: "dev1" } } as never,
+        });
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        expect(el.shadowRoot!.querySelector(".status")?.textContent?.trim()).toBe("cleaning");
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: {
+                ...prevHass.states,
+                [VACUUM_ID]: { entity_id: VACUUM_ID, state: "docked", attributes: {} },
+            } as never,
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        expect(el.shadowRoot!.querySelector(".status")?.textContent?.trim()).toBe("docked");
+    });
+
+    it("re-renders when a sibling sensor (battery) changes reference", async () => {
+        const el = document.createElement("dreame-status-header") as StatusHeader;
+        el.hass = headerHass();
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: {
+                ...prevHass.states,
+                "sensor.robot_battery_level": {
+                    entity_id: "sensor.robot_battery_level",
+                    state: "55",
+                    attributes: { icon: "mdi:battery-50" },
+                },
+            } as never,
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        const batteryStat = Array.from(el.shadowRoot!.querySelectorAll(".stat")).find(
+            (s) => s.querySelector(".stat-unit")?.textContent?.trim() === "%"
+        );
+        expect(batteryStat?.querySelector(".stat-value")?.textContent?.trim()).toBe("55");
+    });
+
     it("resolves a sibling sensor by translation_key when the suffix does not match", async () => {
         const el = document.createElement("dreame-status-header") as StatusHeader;
         el.hass = makeHass({
@@ -465,6 +539,46 @@ describe("dreame-cleaning-progress-bar", () => {
         el.entityId = VACUUM_ID;
         await mount(el);
         expect(el.shadowRoot?.querySelector(".progress-container")).toBeNull();
+    });
+
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-cleaning-progress-bar") as CleaningProgressBar;
+        el.hass = progressHass("42");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new value when the progress sensor changes reference", async () => {
+        const el = document.createElement("dreame-cleaning-progress-bar") as CleaningProgressBar;
+        el.hass = progressHass("42");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: {
+                ...prevHass.states,
+                [PROGRESS_ID]: { entity_id: PROGRESS_ID, state: "77", attributes: {} },
+            } as never,
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        expect(el.shadowRoot!.querySelector(".progress-text")?.textContent?.trim()).toBe("77%");
     });
 });
 

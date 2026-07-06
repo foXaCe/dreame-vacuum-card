@@ -1,6 +1,7 @@
 type: custom:dreame-vacuum-card
-entity: vacuum.roborock_vacuum_s5
+entity: vacuum.your_dreame_vacuum
 map_source:
-  camera: camera.xiaomi_cloud_map_extractor
+  camera: camera.your_dreame_vacuum_map
 calibration_source:
   camera: true
+vacuum_platform: tasshackDreameVacuum
