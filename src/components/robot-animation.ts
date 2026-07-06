@@ -1,31 +1,47 @@
 import { LitElement, html, css, nothing, CSSResultGroup } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import lottie, { AnimationItem } from "lottie-web/build/player/lottie_light";
+import type { AnimationItem } from "lottie-web/build/player/lottie_light";
 
-import animDrying from "../assets/lottie/anim_drying.json";
-import animWashing from "../assets/lottie/anim_washing.json";
-import animDustCollect from "../assets/lottie/anim_dust_collect.json";
+// Le moteur lottie-web (~168 Ko minifié) et les 3 JSON d'animation (~43 Ko) ne sont
+// utiles que pendant les états lavage/séchage/vidage (robots avec station). On les
+// charge à la demande via import() dynamique au lieu d'un import statique : Rollup en
+// fait des chunks séparés, sortis du chemin critique du bundle principal (voir
+// rollup.config.js `chunkFileNames`).
+type LottieModule = typeof import("lottie-web/build/player/lottie_light");
 
-const STATE_LOTTIE_MAP: Record<string, unknown> = {
+const loadDrying = () => import("../assets/lottie/anim_drying.json").then((m) => m.default);
+const loadWashing = () => import("../assets/lottie/anim_washing.json").then((m) => m.default);
+const loadDustCollect = () => import("../assets/lottie/anim_dust_collect.json").then((m) => m.default);
+
+// `Partial<Record<...>>` (plutôt que `Record<...>`) pour que l'accès indexé soit
+// typé `(() => Promise<unknown>) | undefined` : sans ça, TS considère l'accès
+// toujours défini et refuse les tests de vérité (`if (loader)`) sur un type fonction.
+const STATE_ANIM_LOADER: Partial<Record<string, () => Promise<unknown>>> = {
     // Drying states
-    drying: animDrying,
-    dust_bag_drying: animDrying,
-    dust_bag_drying_paused: animDrying,
-    sanitizing_with_dry: animDrying,
+    drying: loadDrying,
+    dust_bag_drying: loadDrying,
+    dust_bag_drying_paused: loadDrying,
+    sanitizing_with_dry: loadDrying,
     // Washing states
-    washing: animWashing,
-    washing_paused: animWashing,
-    clean_add_water: animWashing,
-    station_cleaning: animWashing,
-    sanitizing: animWashing,
-    initial_deep_cleaning: animWashing,
-    initial_deep_cleaning_paused: animWashing,
+    washing: loadWashing,
+    washing_paused: loadWashing,
+    clean_add_water: loadWashing,
+    station_cleaning: loadWashing,
+    sanitizing: loadWashing,
+    initial_deep_cleaning: loadWashing,
+    initial_deep_cleaning_paused: loadWashing,
     // Dust collecting states
-    auto_emptying: animDustCollect,
-    emptying: animDustCollect,
+    auto_emptying: loadDustCollect,
+    emptying: loadDustCollect,
 };
 
 const ZZZ_STATES = new Set(["charging", "charging_completed", "idle"]);
+
+let lottiePromise: Promise<LottieModule["default"]> | undefined;
+function loadLottie(): Promise<LottieModule["default"]> {
+    lottiePromise ??= import("lottie-web/build/player/lottie_light").then((m) => m.default);
+    return lottiePromise;
+}
 
 @customElement("dreame-robot-animation")
 export class RobotAnimation extends LitElement {
@@ -42,7 +58,10 @@ export class RobotAnimation extends LitElement {
     private _currentState = "";
     private _loadedState = "";
     private _timerId = 0;
-    private _pendingAnimData: unknown = null;
+    // État pour lequel un chargement (lottie + JSON) est en cours ou en attente de
+    // reconnexion. Remplace l'ancien `_pendingAnimData` : on ne connaît plus la donnée
+    // tout de suite (elle arrive de façon asynchrone), seulement l'état visé.
+    private _pendingState: string | null = null;
 
     protected willUpdate(): void {
         // Dérive l'état AVANT le rendu pour que le markup (#lottie-container / .zzz-container)
@@ -52,8 +71,8 @@ export class RobotAnimation extends LitElement {
 
     public connectedCallback(): void {
         super.connectedCallback();
-        if (this._pendingAnimData && !this._animation) {
-            this._scheduleLoad(this._pendingAnimData);
+        if (this._pendingState && !this._animation) {
+            this._scheduleLoad(this._pendingState);
         }
     }
 
@@ -72,44 +91,61 @@ export class RobotAnimation extends LitElement {
         this._destroyAnimation();
         clearTimeout(this._timerId);
 
-        const animData = STATE_LOTTIE_MAP[this._currentState];
+        const loader = STATE_ANIM_LOADER[this._currentState];
         const isZzz = ZZZ_STATES.has(this._currentState);
 
-        if (!animData && !isZzz) {
-            this._pendingAnimData = null;
+        if (!loader && !isZzz) {
+            this._pendingState = null;
             this.style.opacity = "0";
             return;
         }
 
         this.style.opacity = "1";
 
-        if (animData) {
-            this._pendingAnimData = animData;
-            this._scheduleLoad(animData);
+        if (loader) {
+            this._pendingState = this._currentState;
+            this._scheduleLoad(this._currentState);
         }
     }
 
-    private _scheduleLoad(animData: unknown, retries = 40): void {
+    private _scheduleLoad(state: string, retries = 40): void {
         clearTimeout(this._timerId);
         this._timerId = window.setTimeout(() => {
             if (!this.isConnected) return;
             const container = this.shadowRoot?.getElementById("lottie-container");
             if (!container) {
-                if (retries > 0) this._scheduleLoad(animData, retries - 1);
+                if (retries > 0) this._scheduleLoad(state, retries - 1);
                 return;
             }
-            try {
-                this._animation = lottie.loadAnimation({
-                    container,
-                    renderer: "svg",
-                    loop: true,
-                    autoplay: true,
-                    animationData: animData,
+            const loader = STATE_ANIM_LOADER[state];
+            if (!loader) return;
+
+            Promise.all([loadLottie(), loader()])
+                .then(([lottie, animData]) => {
+                    // L'état courant a pu changer (ou l'élément se déconnecter) pendant
+                    // le chargement asynchrone : ne jamais afficher une animation périmée.
+                    if (!this.isConnected || this._currentState !== state) return;
+                    const freshContainer = this.shadowRoot?.getElementById("lottie-container");
+                    if (!freshContainer) {
+                        if (retries > 0) this._scheduleLoad(state, retries - 1);
+                        return;
+                    }
+                    try {
+                        this._animation = lottie.loadAnimation({
+                            container: freshContainer,
+                            renderer: "svg",
+                            loop: true,
+                            autoplay: true,
+                            animationData: animData,
+                        });
+                        this._pendingState = null;
+                    } catch {
+                        if (retries > 0) this._scheduleLoad(state, retries - 1);
+                    }
+                })
+                .catch(() => {
+                    if (retries > 0) this._scheduleLoad(state, retries - 1);
                 });
-                this._pendingAnimData = null;
-            } catch {
-                if (retries > 0) this._scheduleLoad(animData, retries - 1);
-            }
         }, 50);
     }
 
@@ -125,7 +161,7 @@ export class RobotAnimation extends LitElement {
         const posStyle = hasPosition ? `left: ${this.chargerX}%; top: ${this.chargerY}%;` : "";
         const targetState = this._currentState;
         const isZzz = ZZZ_STATES.has(targetState);
-        const isLottie = !!STATE_LOTTIE_MAP[targetState];
+        const isLottie = !!STATE_ANIM_LOADER[targetState];
 
         return html`<div id="lottie-wrapper" class="${hasPosition ? "positioned" : "centered"}" style="${posStyle}">
             ${isLottie ? html`<div id="lottie-container"></div>` : nothing}

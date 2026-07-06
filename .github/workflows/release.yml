@@ -42,8 +42,15 @@ jobs:
       - name: Verify output
         run: test -f dist/dreame-vacuum-card.js
 
+      - name: Package zip release (HACS zip_release)
+        # dist/ contient désormais le bundle principal + les chunks lottie chargés à
+        # la demande (voir plan 013) : HACS doit récupérer tout le répertoire, pas un
+        # fichier unique. Exécuté après add-version pour ne pas figer le placeholder,
+        # et avant tout .zip pour ne jamais s'auto-inclure dans l'archive.
+        run: cd dist && zip -r dreame-vacuum-card.zip . -x '*.zip'
+
       - name: Create release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
-          files: dist/dreame-vacuum-card.js
+          files: dist/dreame-vacuum-card.zip
           generate_release_notes: true

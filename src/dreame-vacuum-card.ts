@@ -1,5 +1,6 @@
 import { CSSResultGroup, html, LitElement, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import type { HassEntity } from "home-assistant-js-websocket";
 import { forwardHaptic, LovelaceCard, LovelaceCardEditor } from "./ha";
 
 import "./editor";
@@ -16,7 +17,6 @@ import {
     CalibrationPoint,
     CardPresetConfig,
     MapExtractorRoom,
-    PointType,
     PredefinedZoneConfig,
     TranslatableString,
     VariablesStorage,
@@ -26,7 +26,6 @@ import {
     ACTIVE_VACUUM_STATES,
     CARD_CUSTOM_ELEMENT_NAME,
     CARD_VERSION,
-    DISCONNECTED_IMAGE,
     DISCONNECTION_TIME,
     EDITOR_CUSTOM_ELEMENT_NAME,
     EMPTY_MAP_MODE,
@@ -56,7 +55,6 @@ import {
     getWatchedEntities,
     hasConfigOrAnyEntityChanged,
     stopEvent,
-    unwrapAngleDeg,
 } from "./utils";
 import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
@@ -68,6 +66,10 @@ import { SelectionType } from "./model/map_mode/selection-type";
 import { RepeatsType } from "./model/map_mode/repeats-type";
 import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
+import { resolveCalibration } from "./model/map/calibration-resolver";
+import { computeRobotOverlayGeometry, INITIAL_ROBOT_SAMPLE, RobotSample } from "./model/map/robot-overlay-geometry";
+import { MapImageBuffer } from "./model/map/map-image-buffer";
+import { RoomPickEngine } from "./model/map/room-pick-engine";
 import { MapObject } from "./model/map_objects/map-object";
 import { MousePosition } from "./model/map_objects/mouse-position";
 import { HomeAssistantFixed } from "./types/fixes";
@@ -142,39 +144,37 @@ export class XiaomiVacuumMapCard extends LitElement {
     private shouldHandleMouseUp!: boolean;
     private lastHassUpdate!: Date;
     public isInEditor = false;
-    private lastValidMapUrl?: string;
-    // Double-buffering de l'image de carte : URL réellement affichée vs URL en cours de
-    // préchargement. On ne bascule l'<img> visible qu'une fois la nouvelle image décodée.
-    private _displayedMapUrl?: string;
-    private _pendingMapUrl?: string;
+    // Double-buffering de l'image de carte (URL affichée vs préchargement en cours) :
+    // voir `model/map/map-image-buffer.ts`. On ne bascule l'<img> visible qu'une fois la
+    // nouvelle image décodée.
+    private readonly _mapImageBuffer = new MapImageBuffer({
+        resolveUrl: (path) => this.hass.hassUrl(path),
+        onSwapped: () => this.requestUpdate(),
+    });
     private _overlayDirty = false;
     private _cachedContext: Context | undefined;
-    private _pickCanvas: HTMLCanvasElement | null = null;
-    private _pickCtx: CanvasRenderingContext2D | null = null;
-    private _lastPickCacheKey?: string;
-    private _pickLoadingKey?: string;
-    private _pickData?: Uint8ClampedArray;
-    private _pickDataCacheKey?: string;
-    /** Mapping raw pixel value (canal bleu du segment_map) → room_id, reconstruit quand
-     *  la structure des rooms change. L'intégration dreame_vacuum expose `segment_id`
-     *  sur chaque room pour gérer les devices où raw ≠ room_id
-     *  (ex. Kitchen room_id=2 mais segment raw=11). Absent ⇒ on suppose raw == room_id. */
-    private _rawToRoomId = new Map<number, string | number>();
-    private _rawToRoomIdCacheKey?: string;
-    private _overlaySmallCanvas?: HTMLCanvasElement;
-    /** Masque alpha du PNG de map à la résolution du pick buffer : le voile du mode
-     *  pièce ne doit assombrir QUE le plan (le PNG est transparent hors pièces —
-     *  sans masque, le voile fabrique une dalle sombre sur le fond de la carte). */
-    private _mapAlphaMask?: Uint8ClampedArray;
-    private _mapAlphaMaskKey?: string;
+    // Pick-canvas / hit-test / overlay de sélection des pièces : voir
+    // `model/map/room-pick-engine.ts`. L'engine possède ses propres canvases off-screen et
+    // caches ; le composant ne fournit que les accesseurs live (hass, converter, image DOM).
+    private readonly _roomPickEngine = new RoomPickEngine({
+        getMapImage: () => this._getMapImage(),
+        getCameraState: () => this._getCameraState(),
+        getConverter: () => this.coordinatesConverter,
+    });
+    /** Compat : `test-browser/{room-selection,segment-map-fallback,room-overlay-pixels}.test.ts`
+     *  attendent la disponibilité du pick canvas via un cast direct sur l'instance de carte
+     *  (`card._pickCanvas`). L'état réel vit désormais dans `_roomPickEngine` ; pas de modificateur
+     *  `private` ici (accès externe volontaire) — sinon `noUnusedLocals` le signale comme mort
+     *  puisque rien, à l'intérieur de la classe, ne le lit. */
+    get _pickCanvas(): HTMLCanvasElement | null {
+        return this._roomPickEngine.currentPickCanvas;
+    }
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
     /** Interpolation du marqueur robot : cadence mesurée des échantillons vacuum_position
-     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). */
-    private _lastRobotPosKey?: string;
-    private _lastRobotPosTs = 0;
-    private _robotGlideMs = 400;
-    private _lastRobotHeadingDeg?: number;
+     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). Voir
+     *  `model/map/robot-overlay-geometry.ts` pour le calcul pur associé. */
+    private _robotSample: RobotSample = INITIAL_ROBOT_SAMPLE;
 
     constructor() {
         super();
@@ -429,11 +429,6 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
 
         // Compute robot position/heading as percentage of map image (option 2 anti-flash).
-        let robotXPct = -1;
-        let robotYPct = -1;
-        let robotHeadingDeg = 0;
-        let robotVisible = false;
-        let robotIconUrl: string | undefined;
         // Résolution de l'overlay robot client-side :
         //  - un réglage explicite (preset puis config) est toujours respecté ;
         //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
@@ -441,56 +436,31 @@ export class XiaomiVacuumMapCard extends LitElement {
         //    fluide (le marqueur glisse en CSS, sans recharger l'<img> à chaque déplacement).
         //    Les installs avec un réglage explicite restent inchangées.
         const robotOverlayCfg = preset.robot_overlay ?? this.config?.robot_overlay;
+        const robotCamState = preset.map_source?.camera ? this.hass.states[preset.map_source.camera] : undefined;
         let robotOverlayEnabled: boolean;
         if (typeof robotOverlayCfg === "boolean") {
             robotOverlayEnabled = robotOverlayCfg;
         } else {
-            const cam = preset.map_source?.camera ? this.hass?.states[preset.map_source.camera] : undefined;
-            robotOverlayEnabled = cam?.attributes?.["robot_in_map"] === false;
+            robotOverlayEnabled = robotCamState?.attributes?.["robot_in_map"] === false;
         }
-        if (robotOverlayEnabled && this.coordinatesConverter?.calibrated && preset.map_source?.camera) {
-            const camState = this.hass.states[preset.map_source.camera];
-            // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
-            robotIconUrl = camState?.attributes?.robot_icon as string | undefined;
-            const robotPos = camState?.attributes?.vacuum_position;
-            if (robotPos && robotPos.x != null && robotPos.y != null) {
-                const p0 = this.coordinatesConverter.vacuumToMap(robotPos.x, robotPos.y);
-                const natW = this.realImageWidth;
-                const natH = this.realImageHeight;
-                if (natW && natH) {
-                    robotXPct = (p0[0] / natW) * 100;
-                    robotYPct = (p0[1] / natH) * 100;
-                    // Cap exprimé en angle ÉCRAN : on transforme un petit vecteur de direction
-                    // par la même calibration que la position, puis atan2 -> correct quelle que
-                    // soit la rotation/perspective de la carte, sans connaître la convention interne.
-                    const aRad = ((robotPos.a ?? 0) * Math.PI) / 180;
-                    const p1 = this.coordinatesConverter.vacuumToMap(
-                        robotPos.x + Math.cos(aRad),
-                        robotPos.y + Math.sin(aRad)
-                    );
-                    robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
-                    // Déroule le cap : évite qu'une transition CSS `rotate()` fasse un tour
-                    // complet dans le mauvais sens quand le cap réel franchit ±180°.
-                    robotHeadingDeg = unwrapAngleDeg(this._lastRobotHeadingDeg, robotHeadingDeg);
-                    this._lastRobotHeadingDeg = robotHeadingDeg;
-                    robotVisible = true;
-
-                    // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
-                    // cf. contrat §5.D) : le marqueur glisse sur ~90 % de l'intervalle mesuré
-                    // pour un mouvement continu (au lieu de 0,4 s de glisse puis une pause).
-                    const posKey = `${robotPos.x},${robotPos.y}`;
-                    if (posKey !== this._lastRobotPosKey) {
-                        const now = Date.now();
-                        if (this._lastRobotPosKey !== undefined) {
-                            const interval = now - this._lastRobotPosTs;
-                            this._robotGlideMs = Math.min(4000, Math.max(400, Math.round(interval * 0.9)));
-                        }
-                        this._lastRobotPosKey = posKey;
-                        this._lastRobotPosTs = now;
-                    }
-                }
-            }
-        }
+        // Le calcul de position/cap/cadence de glisse est délégué à une fonction pure
+        // (voir model/map/robot-overlay-geometry.ts) ; seul l'état `_robotSample` persiste
+        // d'un rendu à l'autre.
+        const robotGeometry = computeRobotOverlayGeometry({
+            camState: robotCamState,
+            converter: this.coordinatesConverter,
+            natW: this.realImageWidth,
+            natH: this.realImageHeight,
+            robotOverlayEnabled,
+            prevSample: this._robotSample,
+            nowMs: Date.now(),
+        });
+        this._robotSample = robotGeometry.nextSample;
+        const robotXPct = robotGeometry.xPct;
+        const robotYPct = robotGeometry.yPct;
+        const robotHeadingDeg = robotGeometry.headingDeg;
+        const robotVisible = robotGeometry.visible;
+        const robotIconUrl = robotGeometry.iconUrl;
 
         const mapSrc = this._getMapSrc(preset);
         const platformsWithDefaultCalibration = PlatformGenerator.getPlatformsWithDefaultCalibration();
@@ -556,7 +526,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .xPercent=${robotXPct}
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
-                    .transitionMs=${this._robotGlideMs}
+                    .transitionMs=${robotGeometry.glideMs}
                     .iconUrl=${robotIconUrl}
                 ></dreame-robot-marker>
             </div>
@@ -739,46 +709,15 @@ export class XiaomiVacuumMapCard extends LitElement {
         return this.currentPreset;
     }
 
+    /** État de l'entité caméra du preset courant, résolu à la demande — accesseur live
+     *  injecté dans `_roomPickEngine` (voir model/map/room-pick-engine.ts). */
+    private _getCameraState(): HassEntity | undefined {
+        const cameraEntity = this._getCurrentPreset().map_source?.camera;
+        return cameraEntity ? this.hass?.states[cameraEntity] : undefined;
+    }
+
     private _getCalibration(config: CardPresetConfig): CalibrationPoint[] | undefined {
-        if (config.calibration_source?.identity) {
-            return [
-                { map: { x: 0, y: 0 }, vacuum: { x: 0, y: 0 } },
-                { map: { x: 1, y: 0 }, vacuum: { x: 1, y: 0 } },
-                { map: { x: 0, y: 1 }, vacuum: { x: 0, y: 1 } },
-            ];
-        }
-        if (
-            config.calibration_source?.calibration_points &&
-            [3, 4].includes(config.calibration_source.calibration_points.length)
-        ) {
-            return config.calibration_source.calibration_points;
-        }
-        if (!this.hass) {
-            return undefined;
-        }
-        if (config.calibration_source?.entity && !config.calibration_source?.attribute) {
-            try {
-                const state = this.hass.states[config.calibration_source.entity]?.state;
-                if (!state || state === "unavailable" || state === "unknown") return undefined;
-                return JSON.parse(state);
-            } catch {
-                return undefined;
-            }
-        }
-        if (config.calibration_source?.entity && config.calibration_source?.attribute) {
-            return this.hass.states[config.calibration_source.entity]?.attributes[config.calibration_source.attribute];
-        }
-        if (config.calibration_source?.camera) {
-            return this.hass.states[config.map_source?.camera ?? ""]?.attributes["calibration_points"];
-        }
-        if (config.calibration_source?.platform) {
-            return PlatformGenerator.getCalibration(config.calibration_source.platform);
-        }
-        const platformCalibration = PlatformGenerator.getCalibration(config.vacuum_platform);
-        if (platformCalibration) {
-            return platformCalibration;
-        }
-        return undefined;
+        return resolveCalibration(config, this.hass);
     }
 
     private _firstHass(): void {
@@ -835,15 +774,15 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _setPreset(config: CardPresetConfig): void {
         // Si la caméra change (preset multi-caméras), on purge les buffers d'image pour ne
         // jamais afficher transitoirement la carte de l'ancien robot/preset le temps que la
-        // nouvelle image se décode (cf. double-buffering dans _getMapSrc/_preloadMapImage).
+        // nouvelle image se décode (cf. double-buffering dans model/map/map-image-buffer.ts).
         if (this.currentPreset?.map_source?.camera !== config.map_source?.camera) {
-            this._displayedMapUrl = undefined;
-            this._pendingMapUrl = undefined;
-            this.lastValidMapUrl = undefined;
+            this._mapImageBuffer.reset();
             // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
             this.mapLoaded = false;
-            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement.
-            this._lastRobotHeadingDeg = undefined;
+            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement (seul
+            // le cap est réinitialisé ; posKey/posTs/glideMs survivent, comme avant migration
+            // vers `_robotSample`).
+            this._robotSample = { ...this._robotSample, headingDeg: undefined };
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
@@ -864,76 +803,17 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _getMapSrc(config: CardPresetConfig): string {
-        if (config.map_source.camera) {
-            const cameraState = this.hass?.states?.[config.map_source.camera];
-            const entityPicture = cameraState?.attributes?.entity_picture;
-            if (
-                this.connected &&
-                this.lastHassUpdate &&
-                this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime() &&
-                entityPicture
-            ) {
-                // `entity_picture` de l'intégration contient DÉJÀ un cache-buster `?v=int(last_updated)`
-                // qui ne change que lorsque la carte/position change réellement. On n'ajoute donc plus
-                // de second `&v=${last_updated}` (qui forçait un re-fetch à chaque écriture d'état, même
-                // image identique). Couplé au double-buffering ci-dessous, cela supprime le flash.
-                const fullUrl = this.hass.hassUrl(entityPicture);
-                this.lastValidMapUrl = fullUrl;
-                this._preloadMapImage(fullUrl);
-                // Tant que la nouvelle image n'est pas décodée, on garde l'URL déjà affichée :
-                // l'<img> visible ne pointe jamais vers une ressource non prête -> aucun blanc.
-                return this._displayedMapUrl ?? fullUrl;
-            }
-            // Return cached map instead of disconnected image
-            if (this._displayedMapUrl) {
-                return this._displayedMapUrl;
-            }
-            if (this.lastValidMapUrl) {
-                return this.lastValidMapUrl;
-            }
-            return DISCONNECTED_IMAGE;
-        }
-        if (config.map_source.image) {
-            return `${config.map_source.image}`;
-        }
-        return DISCONNECTED_IMAGE;
-    }
-
-    /**
-     * Double-buffering : précharge l'URL de carte hors-écran et ne bascule la source
-     * affichée (`_displayedMapUrl`) qu'une fois l'image décodée. Le `<img>` visible
-     * continue d'afficher la frame précédente pendant le chargement -> pas de flash.
-     */
-    private _preloadMapImage(url: string): void {
-        if (url === this._displayedMapUrl || url === this._pendingMapUrl) {
-            return;
-        }
-        this._pendingMapUrl = url;
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        const finish = (): void => {
-            // Une URL plus récente a pris le relais entre-temps : on abandonne celle-ci.
-            if (this._pendingMapUrl !== url) {
-                return;
-            }
-            this._pendingMapUrl = undefined;
-            this._displayedMapUrl = url;
-            this.requestUpdate();
-        };
-        img.onload = finish;
-        img.onerror = (): void => {
-            if (this._pendingMapUrl === url) {
-                this._pendingMapUrl = undefined;
-            }
-        };
-        img.src = url;
-        // decode() garantit que la frame est prête à peindre (pas seulement téléchargée) ;
-        // en cas d'échec (header/navigateur) on retombe sur l'évènement onload.
-        if (img.decode) {
-            img.decode()
-                .then(finish)
-                .catch(() => undefined);
-        }
+        const cameraState = config.map_source.camera ? this.hass?.states?.[config.map_source.camera] : undefined;
+        const entityPicture = cameraState?.attributes?.entity_picture;
+        const isFresh =
+            !!this.connected &&
+            !!this.lastHassUpdate &&
+            this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime();
+        return this._mapImageBuffer.resolveSrc({
+            mapSource: config.map_source,
+            cameraEntityPicture: entityPicture,
+            isFresh,
+        });
     }
 
     private _getContext(): Context {
@@ -1224,17 +1104,6 @@ export class XiaomiVacuumMapCard extends LitElement {
         newValues[variable] = value;
         this.internalVariables = newValues;
         this.requestUpdate();
-    }
-
-    private static _polygonArea(outline: number[][]): number {
-        let area = 0;
-        const n = outline.length;
-        for (let i = 0; i < n; i++) {
-            const j = (i + 1) % n;
-            area += outline[i][0] * outline[j][1];
-            area -= outline[j][0] * outline[i][1];
-        }
-        return Math.abs(area) / 2;
     }
 
     private _getRoomsConfig(): RoomConfigEventData | undefined {
@@ -1660,427 +1529,39 @@ export class XiaomiVacuumMapCard extends LitElement {
 
     /**
      * Pick buffer : canvas dont le canal bleu encode l'ID de segment de chaque pièce.
-     * Source principale : segment_map de l'API (pixel-perfect depuis pixel_type).
-     * Fallback : polygones de l'API dessinés avec bleu = segment ID.
+     * Délègue à `_roomPickEngine` (voir model/map/room-pick-engine.ts) — cette méthode reste
+     * un simple point d'entrée nommé pour ne pas toucher ses appelants (template `@load`,
+     * `_updateRoomSelectionOverlay`, `_hitTestRoom`).
      */
     private _buildPickCanvas(): void {
-        const config = this._getCurrentPreset();
-        const cameraEntity = config.map_source?.camera;
-        if (!cameraEntity || !this.hass?.states[cameraEntity]) return;
-
-        const entityState = this.hass.states[cameraEntity];
-        const segmentMap = entityState.attributes["segment_map"] as string | undefined;
-        // Cache basé sur la structure (segment_map ou polygones de pièces), pas sur last_updated.
-        // Pendant le cleanage la position du robot change à chaque seconde — la map elle ne bouge pas.
-        const cacheKey = segmentMap
-            ? `seg:${XiaomiVacuumMapCard._hashString(segmentMap)}`
-            : `poly:${XiaomiVacuumMapCard._hashRoomsStructure(entityState.attributes["rooms"])}`;
-
-        // Déjà prêt pour cette version
-        if (cacheKey === this._lastPickCacheKey && this._pickCanvas) return;
-        // Déjà en cours de chargement async
-        if (cacheKey === this._pickLoadingKey) return;
-
-        if (segmentMap) {
-            this._loadSegmentMap(segmentMap, cacheKey);
-        } else {
-            this._buildPickCanvasFromPolygons(cacheKey);
-        }
-    }
-
-    /** Hash rapide (djb2) pour invalider le cache sur changement réel de structure. */
-    private static _hashString(s: string): string {
-        let h = 5381;
-        // On échantillonne tous les 64 caractères pour un coût O(n/64) — suffisant pour détecter un changement.
-        for (let i = 0; i < s.length; i += 64) {
-            h = ((h << 5) + h + s.charCodeAt(i)) | 0;
-        }
-        return `${s.length}:${h}`;
-    }
-
-    private static _hashRoomsStructure(rooms: unknown): string {
-        if (!rooms || typeof rooms !== "object") return "empty";
-        const keys = Object.keys(rooms).sort();
-        const parts: string[] = [];
-        for (const k of keys) {
-            const r = (rooms as Record<string, MapExtractorRoom>)[k];
-            // Géométrie + visibility + segment_id (change avec une recalibration du segment_map).
-            parts.push(
-                `${k}:${r?.visibility ?? ""}:${r?.x0 ?? ""},${r?.y0 ?? ""},${r?.x1 ?? ""},${r?.y1 ?? ""}:${r?.outline?.length ?? 0}:${r?.segment_id ?? ""}`
-            );
-        }
-        return parts.join("|");
-    }
-
-    /**
-     * Charge le segment_map base64 depuis l'API (PNG, canal bleu = segment ID).
-     */
-    private _loadSegmentMap(b64: string, cacheKey: string): void {
-        this._pickLoadingKey = cacheKey;
-        const img = new Image();
-        img.onload = () => {
-            this._pickLoadingKey = undefined;
-            const mapImage = this._getMapImage();
-            if (!mapImage || mapImage.naturalWidth === 0) return;
-
-            // Garder la taille ORIGINALE du segment_map pour le hit-test
-            // Le segment_map encode les IDs dans les pixels, on ne doit pas étirer
-            const w = img.naturalWidth;
-            const h = img.naturalHeight;
-            const canvas = document.createElement("canvas");
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            if (!ctx) return;
-
-            ctx.drawImage(img, 0, 0);
-
-            // Certains devices exposent un `segment_map` dégénéré (PNG uniforme, typiquement
-            // tout à zéro) quand le robot n'a pas de segmentation pixel-level à jour.
-            // On détecte ce cas en échantillonnant quelques pixels (O(n), early-exit dès
-            // qu'on trouve un pixel non-nul), et si le buffer est vide on bascule sur le
-            // fallback polygon-based qui utilise la géométrie des rooms via les attrs.
-            const data = ctx.getImageData(0, 0, w, h).data;
-            let hasContent = false;
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
-                    hasContent = true;
-                    break;
-                }
-            }
-            if (!hasContent) {
-                this._buildPickCanvasFromPolygons(cacheKey);
-                return;
-            }
-
-            this._pickCanvas = canvas;
-            this._pickCtx = ctx;
-            this._lastPickCacheKey = cacheKey;
-            this._pickData = undefined;
-            this._pickDataCacheKey = undefined;
-        };
-        img.onerror = () => {
-            this._pickLoadingKey = undefined;
-            if (MapMode.debug) console.warn("[PickCanvas] segment_map failed, fallback polygons");
-            this._buildPickCanvasFromPolygons(cacheKey);
-        };
-        img.src = `data:image/png;base64,${b64}`;
-    }
-
-    /**
-     * Fallback : construit le pick canvas depuis les polygones de l'API.
-     * Canal bleu = segment_id si exposé par l'intégration, sinon parseInt(roomId).
-     * Masqué par l'image réelle ensuite.
-     */
-    private _buildPickCanvasFromPolygons(cacheKey: string): void {
-        const mapImage = this._getMapImage();
-        if (!mapImage || mapImage.naturalWidth === 0) return;
-        if (!this.coordinatesConverter) return;
-
-        const roomPolygons = this._getApiRoomPolygons();
-        if (roomPolygons.size === 0) return;
-
-        const config = this._getCurrentPreset();
-        const roomsAttr = config.map_source?.camera
-            ? (this.hass?.states?.[config.map_source.camera]?.attributes?.["rooms"] as
-                  Record<string, MapExtractorRoom> | undefined)
-            : undefined;
-
-        const w = mapImage.naturalWidth;
-        const h = mapImage.naturalHeight;
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return;
-
-        ctx.clearRect(0, 0, w, h);
-
-        // Trier par aire décroissante (painter's algorithm)
-        const entries = [...roomPolygons.entries()];
-        entries.sort((a, b) => XiaomiVacuumMapCard._polygonArea(b[1]) - XiaomiVacuumMapCard._polygonArea(a[1]));
-
-        for (const [roomId, poly] of entries) {
-            const rawFromAttr = roomsAttr?.[roomId]?.segment_id;
-            const id = typeof rawFromAttr === "number" && rawFromAttr > 0 ? rawFromAttr : parseInt(roomId) || 0;
-            if (id === 0 || id > 255) continue;
-
-            ctx.fillStyle = `rgb(0,0,${id})`;
-            ctx.beginPath();
-            ctx.moveTo(poly[0][0], poly[0][1]);
-            for (let i = 1; i < poly.length; i++) {
-                ctx.lineTo(poly[i][0], poly[i][1]);
-            }
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        // Masquer avec l'image réelle : supprimer les pixels hors-pièce
-        try {
-            const tmpCanvas = document.createElement("canvas");
-            tmpCanvas.width = w;
-            tmpCanvas.height = h;
-            const tmpCtx = tmpCanvas.getContext("2d");
-            if (tmpCtx) {
-                tmpCtx.drawImage(mapImage, 0, 0);
-                const mapPixels = tmpCtx.getImageData(0, 0, w, h).data;
-                const pickImgData = ctx.getImageData(0, 0, w, h);
-                const pd = pickImgData.data;
-                for (let i = 0; i < w * h; i++) {
-                    const off = i * 4;
-                    const mr = mapPixels[off],
-                        mg = mapPixels[off + 1],
-                        mb = mapPixels[off + 2];
-                    if (mr + mg + mb < 80 || Math.max(mr, mg, mb) - Math.min(mr, mg, mb) < 25) {
-                        pd[off] = 0;
-                        pd[off + 1] = 0;
-                        pd[off + 2] = 0;
-                        pd[off + 3] = 0;
-                    }
-                }
-                ctx.putImageData(pickImgData, 0, 0);
-            }
-        } catch (e) {
-            if (MapMode.debug) console.warn("[PickCanvas] Cannot mask (CORS?):", e);
-        }
-
-        this._pickCanvas = canvas;
-        this._pickCtx = ctx;
-        this._lastPickCacheKey = cacheKey;
-        this._pickData = undefined;
-        this._pickDataCacheKey = undefined;
-    }
-
-    /**
-     * Récupère les polygones des pièces depuis l'API (pour l'overlay visuel).
-     */
-    private _apiRoomPolygonsCache: Map<string, PointType[]> | null = null;
-    private _apiRoomPolygonsCacheKey?: string;
-
-    private _getApiRoomPolygons(): Map<string, PointType[]> {
-        if (!this.coordinatesConverter) return new Map();
-
-        const config = this._getCurrentPreset();
-        const cameraEntity = config.map_source?.camera;
-        if (!cameraEntity || !this.hass?.states[cameraEntity]) return new Map();
-
-        const entityState = this.hass.states[cameraEntity];
-        const rooms = entityState.attributes["rooms"] as Record<string, MapExtractorRoom> | undefined;
-        // Cache sur la structure rooms, pas sur last_updated (qui change à chaque tick du robot).
-        const cacheKey = XiaomiVacuumMapCard._hashRoomsStructure(rooms);
-
-        if (this._apiRoomPolygonsCache && this._apiRoomPolygonsCacheKey === cacheKey) {
-            return this._apiRoomPolygonsCache;
-        }
-
-        if (!rooms) return new Map();
-
-        const result = new Map<string, PointType[]>();
-
-        for (const roomId in rooms) {
-            if (!Object.prototype.hasOwnProperty.call(rooms, roomId)) continue;
-            const room = rooms[roomId];
-            if (room.visibility === "Hidden") continue;
-
-            const outline: PointType[] | null = room.outline
-                ? (room.outline as PointType[])
-                : room.x0 != null && room.y0 != null && room.x1 != null && room.y1 != null
-                  ? [
-                        [room.x0, room.y0],
-                        [room.x1, room.y0],
-                        [room.x1, room.y1],
-                        [room.x0, room.y1],
-                    ]
-                  : null;
-
-            if (!outline || outline.length < 3) continue;
-
-            const imagePoly = outline.map((p) => this.coordinatesConverter!.vacuumToMap(p[0], p[1]));
-            result.set(String(roomId), imagePoly);
-        }
-
-        this._apiRoomPolygonsCache = result;
-        this._apiRoomPolygonsCacheKey = cacheKey;
-        return result;
+        this._roomPickEngine.ensurePickCanvas();
     }
 
     /**
      * Overlay style Dreame : toute la carte assombrie sauf les pièces sélectionnées.
-     * Utilise le pick buffer (canal bleu = room ID) pour un cutout pixel-perfect.
+     * Résout les éléments du shadow DOM (seul le composant y a accès) puis délègue le dessin
+     * à `_roomPickEngine`.
      */
     private _updateRoomSelectionOverlay(): void {
         const overlayCanvas = this.shadowRoot?.getElementById("room-selection-overlay") as HTMLCanvasElement | null;
         if (!overlayCanvas) return;
 
-        const ctx = overlayCanvas.getContext("2d");
-        if (!ctx) return;
-
-        // Hors mode pièce → pas d'overlay
-        if (this.activeTab !== "room") {
-            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            return;
+        if (this.activeTab === "room") {
+            this._buildPickCanvas();
         }
-
-        this._buildPickCanvas();
-        if (!this._pickCtx || !this._pickCanvas) {
-            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            return;
-        }
-
         const mapImg = this.shadowRoot?.getElementById("map-image") as HTMLImageElement | null;
-        if (!mapImg || mapImg.naturalWidth === 0) return;
-
-        const outW = mapImg.naturalWidth;
-        const outH = mapImg.naturalHeight;
-
-        if (overlayCanvas.width !== outW || overlayCanvas.height !== outH) {
-            overlayCanvas.width = outW;
-            overlayCanvas.height = outH;
-        }
-
-        const pickW = this._pickCanvas.width;
-        const pickH = this._pickCanvas.height;
-
-        // Construit l'inverse du mapping : room_id → Set<raw> pour comparer directement
-        // aux valeurs lues dans le pick buffer (canal bleu). Plusieurs raw peuvent pointer
-        // vers une même room quand l'intégration expose segment_id.
-        const rawToRoomId = this._buildRawToRoomId();
-        const selectedLogicalIds = new Set<string>();
-        for (const room of this.selectedRooms) {
-            selectedLogicalIds.add(String(room.toVacuum()));
-        }
-        const selectedRawValues = new Set<number>();
-        for (const [raw, rid] of rawToRoomId) {
-            if (selectedLogicalIds.has(String(rid))) selectedRawValues.add(raw);
-        }
-        // Fallback : pas de mapping connu ⇒ raw == room_id numérique.
-        if (selectedRawValues.size === 0) {
-            for (const room of this.selectedRooms) {
-                const n = Number(room.toVacuum());
-                if (!Number.isNaN(n)) selectedRawValues.add(n);
-            }
-        }
-        const hasSelection = selectedRawValues.size > 0;
-
-        // Cache le readback GPU → CPU : getImageData est coûteux et ne change pas tant que le pickCanvas ne bouge pas.
-        if (this._pickDataCacheKey !== this._lastPickCacheKey || !this._pickData) {
-            this._pickData = this._pickCtx.getImageData(0, 0, pickW, pickH).data;
-            this._pickDataCacheKey = this._lastPickCacheKey;
-        }
-        const pickData = this._pickData;
-
-        // Masque alpha du plan (échantillonné à la résolution du pick buffer). Rebâti
-        // seulement quand l'image ou la géométrie change — pas à chaque toggle de pièce.
-        const maskKey = `${mapImg.currentSrc}|${pickW}x${pickH}`;
-        if (this._mapAlphaMaskKey !== maskKey || !this._mapAlphaMask) {
-            const maskCanvas = document.createElement("canvas");
-            maskCanvas.width = pickW;
-            maskCanvas.height = pickH;
-            const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
-            if (maskCtx) {
-                try {
-                    maskCtx.drawImage(mapImg, 0, 0, pickW, pickH);
-                    this._mapAlphaMask = maskCtx.getImageData(0, 0, pickW, pickH).data;
-                    this._mapAlphaMaskKey = maskKey;
-                } catch {
-                    // Image cross-origin non lisible → pas de masque (voile plein cadre).
-                    this._mapAlphaMask = undefined;
-                    this._mapAlphaMaskKey = undefined;
-                }
-            }
-        }
-        const alphaMask = this._mapAlphaMask;
-
-        // Construire l'overlay à la résolution du segment_map (petite) puis upscaler avec lissage.
-        // Cela produit des bords lisses au lieu de marches d'escalier.
-        // Canvas intermédiaire réutilisé entre les redraws (pas d'allocation par toggle de pièce).
-        const smallCanvas = (this._overlaySmallCanvas ??= document.createElement("canvas"));
-        if (smallCanvas.width !== pickW) smallCanvas.width = pickW;
-        if (smallCanvas.height !== pickH) smallCanvas.height = pickH;
-        const smallCtx = smallCanvas.getContext("2d");
-        if (!smallCtx) return;
-        const smallImg = smallCtx.createImageData(pickW, pickH);
-        const sd = smallImg.data;
-
-        for (let y = 0; y < pickH; y++) {
-            for (let x = 0; x < pickW; x++) {
-                const pi = (y * pickW + x) * 4;
-                const raw = pickData[pi + 2];
-
-                if (hasSelection && raw > 0 && selectedRawValues.has(raw)) {
-                    // Pièce sélectionnée → transparent (pas de dim)
-                    continue;
-                }
-
-                // Hors du plan (PNG transparent) → pas de voile : le fond de la
-                // carte reste net, seul le plan est assombri.
-                if (alphaMask && alphaMask[pi + 3] < 24) {
-                    continue;
-                }
-
-                // Tout le reste → noir semi-transparent
-                sd[pi + 3] = 100;
-            }
-        }
-
-        smallCtx.putImageData(smallImg, 0, 0);
-
-        // Upscaler avec lissage du navigateur → bords doux
-        ctx.clearRect(0, 0, outW, outH);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(smallCanvas, 0, 0, outW, outH);
+        this._roomPickEngine.drawSelectionOverlay(overlayCanvas, mapImg, this.selectedRooms, this.activeTab);
     }
 
     /**
-     * Construit le mapping raw pixel → room_id depuis les attrs de la caméra.
-     * Si l'intégration expose `segment_id` sur chaque room, on l'utilise ; sinon
-     * fallback transparent (raw == room_id).
-     */
-    private _buildRawToRoomId(): Map<number, string | number> {
-        const config = this._getCurrentPreset();
-        const cameraEntity = config.map_source?.camera;
-        const rooms = cameraEntity
-            ? (this.hass?.states?.[cameraEntity]?.attributes?.["rooms"] as Record<string, MapExtractorRoom> | undefined)
-            : undefined;
-        const cacheKey = XiaomiVacuumMapCard._hashRoomsStructure(rooms);
-        if (cacheKey === this._rawToRoomIdCacheKey) return this._rawToRoomId;
-
-        const map = new Map<number, string | number>();
-        if (rooms) {
-            for (const [roomId, room] of Object.entries(rooms)) {
-                const raw = room?.segment_id;
-                if (typeof raw === "number" && raw > 0) {
-                    map.set(raw, roomId);
-                } else {
-                    // Fallback : raw est supposé égal au room_id numérique.
-                    const rid = parseInt(roomId);
-                    if (!Number.isNaN(rid) && rid > 0) map.set(rid, roomId);
-                }
-            }
-        }
-        this._rawToRoomId = map;
-        this._rawToRoomIdCacheKey = cacheKey;
-        return map;
-    }
-
-    /** Résout une valeur raw du pick buffer vers l'id "logique" utilisé par les Room objects. */
-    private _rawToLogicalRoomId(raw: number): string | number | undefined {
-        if (raw === 0) return undefined;
-        const mapped = this._buildRawToRoomId().get(raw);
-        // Si aucune room ne déclare ce raw, on retombe sur le raw brut (compat. anciens
-        // devices où raw == room_id et `segment_id` absent partout).
-        return mapped ?? raw;
-    }
-
-    /**
-     * Hit-test pixel-perfect : canal bleu du pick buffer → room_id via segment_id.
+     * Hit-test pixel-perfect : coordonnées de clic → Room sélectionnable. La conversion en
+     * coordonnées normalisées (seule dépendance au DOM réel, `getBoundingClientRect`) reste
+     * ici ; la résolution pixel-perfect (canal bleu → room ID) est déléguée à l'engine.
      */
     private _hitTestRoom(event: MouseEvent): Room | null {
         if (this.selectableRooms.length === 0) return null;
 
         this._buildPickCanvas();
-        if (!this._pickCtx || !this._pickCanvas) return null;
 
         const mapImage = this._getMapImage();
         if (!mapImage) return null;
@@ -2088,13 +1569,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         const rect = mapImage.getBoundingClientRect();
         const relX = (event.clientX - rect.left) / rect.width;
         const relY = (event.clientY - rect.top) / rect.height;
-        const x = Math.round(relX * this._pickCanvas.width);
-        const y = Math.round(relY * this._pickCanvas.height);
 
-        if (x < 0 || y < 0 || x >= this._pickCanvas.width || y >= this._pickCanvas.height) return null;
-
-        const pixel = this._pickCtx.getImageData(x, y, 1, 1).data;
-        const logicalId = this._rawToLogicalRoomId(pixel[2]);
+        const logicalId = this._roomPickEngine.hitTest(relX, relY);
         if (logicalId === undefined) return null;
 
         return this.selectableRooms.find((r) => String(r.toVacuum()) === String(logicalId)) ?? null;

@@ -26,8 +26,8 @@ l'utilisateur contrôle git.
 | 010 | Code mort : branche « Setup », clés i18n, asset Lottie | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a36b2185b9da81797`, intégré dans la PR #37 ; −315 lignes) |
 | 011 | [SPIKE] Couverture navigateur + rapport fusionné | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ac51381359e60361c`, intégré dans la PR #37 ; couverture réelle du god file : 14,58 % → 66,05 % stmts, baseline pour le plan 014) |
 | 012 | Tests caractérisation : calibration dégradée + overlay pixels | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a21600c0503585e24`, intégré dans la PR #37 ; +10 tests navigateur ; a révélé le constat « calibration cassée = faux calibrated:true », voir ci-dessous) |
-| 013 | Lazy-load Lottie (~1/3 du bundle) + livrable zip HACS | P3 | L | 005, 010 | TODO |
-| 014 | Découpage du god file en 4 modules `src/model/map/` | P3 | L | 002, 003, 010 (durs) ; 011, 012 (recommandés) | TODO |
+| 013 | Lazy-load Lottie (~1/3 du bundle) + livrable zip HACS | P3 | L | 005, 010 | IN PROGRESS |
+| 014 | Découpage du god file en 4 modules `src/model/map/` | P3 | L | 002, 003, 010 (durs) ; 011, 012 (recommandés) | IN PROGRESS |
 | 015 | CI sans matrice + renommage `Xiaomi*` → `Dreame*` | P3 | S+M | 005 ; partie B **en dernier de tout** | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (avec raison en une ligne) |
