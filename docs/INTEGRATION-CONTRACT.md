@@ -268,7 +268,18 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
     `transitionMs` du marqueur ; linear voulu = vitesse constante entre points de passage).
     Fini le 0,4 s de glisse + 2,6 s de pause : mouvement continu à cadence cloud ~3 s.
     Verrouillé par test Chromium (`robot-overlay.test.ts` — adaptativité + clamp + variable
-    CSS). Reste la validation visuelle en nettoyage réel avec « Robot Icon » masqué (§7.6).
+    CSS).
+    ✅ **VALIDÉ EN NETTOYAGE RÉEL (2026-07-06, §7.6)** : overlay activé temporairement sur
+    le dashboard pendant un vrai nettoyage, position calculée du marqueur échantillonnée à
+    10 Hz pendant 16 s → `transitionMs` auto-calé à **2813 ms** (≈ 90 % de la cadence cloud
+    mesurée, transitions CSS actives 2,6–2,8 s), **0 saut > 15 px**, drift continu réparti
+    sur tous les échantillons (aucun motif stop-and-go), 0 erreur console. Config dashboard
+    restaurée après le test.
+    ℹ️ **Setup final utilisateur** pour profiter de l'overlay fluide en permanence :
+    masquer « Robot Icon » dans les options de l'intégration (Hidden map objects →
+    `robot_in_map: false`) ET retirer `robot_overlay: false` de la config de la carte
+    (le mode auto prend alors le relais). Sans cela, le robot reste incrusté dans le PNG
+    (saut ~3 s, aucune interpolation possible).
   - ⚠ **Prérequis d'activation** : l'overlay carte ne s'active que si `robot_in_map=false`,
     donc si l'utilisateur **masque l'objet « Robot Icon »** (réglage « Hidden map objects »).
     Tant que « Robot Icon » est visible → `robot_in_map=true` → robot incrusté dans le PNG,
