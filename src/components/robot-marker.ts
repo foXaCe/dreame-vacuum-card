@@ -31,11 +31,16 @@ export class RobotMarker extends LitElement {
     @property({ type: Boolean, reflect: true })
     public active = false;
 
+    /** Durée de glisse (ms) entre deux positions — fournie par la carte d'après la
+     *  cadence mesurée des échantillons `vacuum_position` (défaut : 400 ms). */
+    @property({ type: Number })
+    public transitionMs = 400;
+
     protected render(): unknown {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
         }
-        const pos = `left: ${this.xPercent}%; top: ${this.yPercent}%;`;
+        const pos = `left: ${this.xPercent}%; top: ${this.yPercent}%; --rm-glide: ${this.transitionMs}ms;`;
         const rot = `transform: rotate(${this.headingDeg}deg);`;
         return html`<div id="marker" style="${pos}">
             <div id="icon" style="${rot}">
@@ -62,11 +67,16 @@ export class RobotMarker extends LitElement {
                 width: 0;
                 height: 0;
                 /* translate(-50%,-50%) : centre l'icône sur le point ; la transition sur
-                   left/top interpole les mises à jour discrètes en glissement fluide. */
+                   left/top interpole les mises à jour discrètes en glissement fluide.
+                   La durée est pilotée par la carte (--rm-glide) : elle mesure la cadence
+                   réelle des échantillons vacuum_position (~3 s, push cloud Dreame) et fait
+                   glisser le marqueur sur presque tout l'intervalle — mouvement continu au
+                   lieu d'un à-coup de 0,4 s suivi d'une pause. linear voulu : vitesse
+                   constante entre deux points de passage (un easing ferait « élastiquer »). */
                 transform: translate(-50%, -50%);
                 transition:
-                    left 0.4s linear,
-                    top 0.4s linear;
+                    left var(--rm-glide, 400ms) linear,
+                    top var(--rm-glide, 400ms) linear;
                 will-change: left, top;
             }
 

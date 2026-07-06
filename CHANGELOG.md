@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the `image-rendering: crisp-edges` compensation on zoom (and the now-dead `zoomed` class): the integration renders the map at ×2 since 2026-07-06 (`map_scale` option), so zooming stays below native resolution and the browser's default smooth rendering looks better. Second step of the offload process documented in `docs/INTEGRATION-CONTRACT.md` §1.1.
 
 ### Added
-- `docs/INTEGRATION-CONTRACT.md`: shared card ↔ integration contract — division of responsibilities ("the integration renders, the card interacts"), strict camera-attribute contract, card consumption pipeline, offload backlog and cross-validation checklist.
+- `docs/INTEGRATION-CONTRACT.md`: shared card ↔ integration contract — division of responsibilities ("the integration renders, the card interacts"), strict camera-attribute contract, card consumption pipeline, offload backlog and cross-validation checklist. Since extended with: the `vacuum_position.a` heading convention validated on a real moving robot (raw device angle, standard atan2 vacuum-frame convention — the card's math was already correct as-is), and the backlog G proposal (`segment_pass` current/total) for multi-pass progress.
+- Adaptive robot-marker interpolation: the card measures the real cadence between two distinct `vacuum_position` samples (~3 s, Dreame cloud push) and glides the marker over ~90 % of that interval (clamped 400 ms – 4 s) instead of a fixed 0.4 s hop followed by a pause — continuous motion during cleaning. Locked by a Chromium test.
+- Browser test locking the polygon pick-canvas fallback when `segment_map` is absent (new integration behaviour on degenerate buffers).
 
 ## [5.10.0] - 2026-07-06
 

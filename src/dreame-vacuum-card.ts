@@ -168,6 +168,11 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _mapAlphaMaskKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
+    /** Interpolation du marqueur robot : cadence mesurée des échantillons vacuum_position
+     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). */
+    private _lastRobotPosKey?: string;
+    private _lastRobotPosTs = 0;
+    private _robotGlideMs = 400;
 
     constructor() {
         super();
@@ -456,6 +461,20 @@ export class XiaomiVacuumMapCard extends LitElement {
                     );
                     robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
                     robotVisible = true;
+
+                    // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
+                    // cf. contrat §5.D) : le marqueur glisse sur ~90 % de l'intervalle mesuré
+                    // pour un mouvement continu (au lieu de 0,4 s de glisse puis une pause).
+                    const posKey = `${robotPos.x},${robotPos.y}`;
+                    if (posKey !== this._lastRobotPosKey) {
+                        const now = Date.now();
+                        if (this._lastRobotPosKey !== undefined) {
+                            const interval = now - this._lastRobotPosTs;
+                            this._robotGlideMs = Math.min(4000, Math.max(400, Math.round(interval * 0.9)));
+                        }
+                        this._lastRobotPosKey = posKey;
+                        this._lastRobotPosTs = now;
+                    }
                 }
             }
         }
@@ -524,6 +543,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .xPercent=${robotXPct}
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
+                    .transitionMs=${this._robotGlideMs}
                 ></dreame-robot-marker>
             </div>
         `;

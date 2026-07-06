@@ -161,26 +161,27 @@ c'est **un seul produit** dont le code vit dans deux repos. Concrètement :
   que `a` est bien un angle du repère vacuum. **Convention exacte (origine, sens) à
   documenter côté intégration** : c'est le seul point du contrat jamais validé sur robot
   en mouvement réel.
-- ⚠ **FINDING intégration (2026-07-06)** : l'attribut `vacuum_position` EST bien exposé sur
-  `camera.*_map`, au format `{x, y, a}` — MAIS `a` est **l'angle BRUT du device**
-  (`robot_position.a`, offset 9 du header binaire), tel quel, sans transformation. Ce
-  n'est **PAS** le même angle que celui du renderer JSON (`camera.*_map_data`), qui
-  applique `map_data_json_renderer._convert_angle` =
-  `int((((180-a) if a<180 else (360-a+180))+270)%360)`. Exemple robot docké mesuré :
-  `vacuum_position.a = 184` alors que `_convert_angle(184) = 266`. **Deux consommateurs,
-  deux angles.** La carte doit donc valider que son calcul `(cos a, sin a)` + calibration
-  attend bien l'angle BRUT (184) et non le transformé — à confirmer sur robot en mouvement.
-  Si la carte a besoin du transformé, c'est un changement de contrat (§6) à coordonner.
-- ✅ **ANALYSE carte (2026-07-06) — le BRUT est très probablement le bon** :
+- ✅ **VALIDÉ SUR ROBOT EN MOUVEMENT (2026-07-06)** — convention confirmée empiriquement,
+  clôt la seule inconnue du contrat. `vacuum_position.a` est l'angle **BRUT** du device
+  (`robot_position.a`), en **degrés dans la convention standard `atan2(Δy, Δx)` du repère
+  vacuum** (0° = +x, sens trigonométrique vers +y). La formule de la carte `(cos a, sin a)`
+  transformée par la calibration est **CORRECTE telle quelle** — rien à changer, ni carte,
+  ni intégration. Ceci confirme l'analyse carte ci-dessous (le brut est le bon).
+  - **Méthode** : ~9 positions échantillonnées pendant un vrai nettoyage, angle `a` comparé
+    à la direction de déplacement réelle `atan2(Δy, Δx)`. Écart moyen **14,9°** (résidu
+    normal : le robot ne roule pas exactement dans son cap — virages, déports). Réfutées :
+    `a` + y-inversé = 130,6° d'écart ; `_convert_angle(a)` = 81° d'écart.
+  - ⚠ **Piège** : le renderer JSON (`camera.*_map_data`) applique `_convert_angle` =
+    `int((((180-a) if a<180 else (360-a+180))+270)%360)` — c'est une convention DIFFÉRENTE,
+    interne à ce renderer. Ne PAS l'appliquer à `vacuum_position` (que la carte lit).
+  - **Rafraîchissement** mesuré : ~toutes les 3 s pendant le nettoyage. Un « gel » observé
+    = robot **docké** (immobile, position = dock), pas un bug. Cadence OK pour l'overlay
+    interpolé ; un rafraîchissement plus fin relève du backlog D.
+- ℹ️ **ANALYSE carte (2026-07-06)** — cohérente avec la validation ci-dessus :
   la calibration de ce device mappe vacuum +x → écran +x et vacuum +y → écran −y
   (flip Y : `(0,1000)→map y 923→763`). Le calcul carte `θ_écran = atan2(M·(cos a, sin a))`
-  donne donc `θ ≈ −a`. Avec `a_brut = 184` (docké) → **θ ≈ 176° = plein ouest à l'écran**,
-  cohérent avec le dock physiquement sur le mur DROIT du Cellier (le robot recule dans le
-  dock donc regarde vers l'ouest). Avec l'angle transformé (266) → θ ≈ 94° = vers le bas,
-  incohérent. Conclusion provisoire : `vacuum_position.a` = angle CCW depuis +x du repère
-  vacuum, la carte le consomme correctement TEL QUEL ; `_convert_angle` appartient à la
-  convention interne du renderer JSON et ne doit PAS être appliqué à `vacuum_position`.
-  Reste la confirmation définitive sur robot en mouvement (§7.6).
+  donne `θ ≈ −a`. Avec `a_brut = 184` (docké) → θ ≈ 176° = ouest, cohérent avec le dock sur
+  le mur droit du Cellier ; l'angle transformé (266) donnait θ ≈ 94° (incohérent).
 
 ### 3.6 `charger_position` — `{x, y}` en coordonnées vacuum
 
@@ -245,9 +246,35 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   redondants (cf. anomalie ci-dessous, résolue). Le bon usage — **remplacer** le contour
   pixel Moore-Neighbor/Douglas-Peucker par ces vecteurs propres — reste à faire (nécessite
   de désactiver simultanément le rendu pixel des murs, chantier plus large).
-- **D. Stabilité temporelle** : avec `robot_in_map=false`, seul le path devrait faire
-  évoluer le PNG pendant un nettoyage (fréquence modérée) ; le robot est l'overlay fluide
-  de la carte. Aucun bump de `?v=` sans changement visuel réel.
+- **D. Stabilité temporelle & fluidité du déplacement** : avec `robot_in_map=false`, seul le
+  path devrait faire évoluer le PNG pendant un nettoyage (fréquence modérée) ; le robot est
+  l'overlay fluide de la carte. Aucun bump de `?v=` sans changement visuel réel.
+  - ✅ **Côté intégration : à sa limite, rien à coder** (mesuré 2026-07-06 sur robot en
+    mouvement réel). La `vacuum_position` se rafraîchit **~toutes les 3 s** — c'est la
+    **cadence de push du cloud Dreame** (frames carte relevées dans `home-assistant.log`
+    à 3 s d'intervalle : la donnée n'arrive pas plus souvent), pas une coalescence côté
+    serveur. L'intégration relaie chaque position **sans latence ajoutée** (chaîne
+    frame → `_property_changed` → coordinator → `async_write_ha_state`). Amplitude typique
+    entre deux MAJ : ~170 mm. Le no-bump-inutile du `?v=` est respecté. **On ne peut pas
+    rendre la source plus rapide côté intégration.**
+  - 🎯 **La fluidité est un travail CARTE** (interpolation) : rendre le robot **glissant**
+    entre deux échantillons espacés de ~3 s relève de l'overlay client-side
+    (`components/robot-marker.ts`, rendu ~l.420-462) — interpolation/easing de la position
+    en % de l'image entre `vacuum_position` successives, cap par transformation de vecteur
+    (convention `a` validée §3.5/F). C'est là, et uniquement là, que se gagne le rendu fluide.
+    ✅ **LIVRÉ côté carte (2026-07-06) — interpolation adaptative** : la carte mesure la
+    cadence réelle entre deux `vacuum_position` distinctes et fait glisser le marqueur sur
+    ~90 % de l'intervalle mesuré (borné 400 ms – 4 s, `--rm-glide` piloté par la prop
+    `transitionMs` du marqueur ; linear voulu = vitesse constante entre points de passage).
+    Fini le 0,4 s de glisse + 2,6 s de pause : mouvement continu à cadence cloud ~3 s.
+    Verrouillé par test Chromium (`robot-overlay.test.ts` — adaptativité + clamp + variable
+    CSS). Reste la validation visuelle en nettoyage réel avec « Robot Icon » masqué (§7.6).
+  - ⚠ **Prérequis d'activation** : l'overlay carte ne s'active que si `robot_in_map=false`,
+    donc si l'utilisateur **masque l'objet « Robot Icon »** (réglage « Hidden map objects »).
+    Tant que « Robot Icon » est visible → `robot_in_map=true` → robot incrusté dans le PNG,
+    il « saute » de ~170 mm tous les ~3 s (pas d'interpolation possible, c'est une image).
+    Le comportement de l'overlay quand `robot_in_map===false` (activation effective du
+    marqueur interpolé, cf. §3.7) est à valider côté carte sur le device réel.
 - **E. Fix du segment_map dégénéré** à la source (§3.3). ✅ **LIVRÉ** (2026-07-06) :
   `camera._build_segment_map` retourne désormais `None` quand aucune pièce ne mappe vers
   une valeur brute (buffer tout-à-zéro) → l'attribut n'est plus publié dans ce cas, et le
@@ -257,14 +284,12 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   `test-browser/segment-map-fallback.test.ts` — le fallback polygones est verrouillé de
   bout en bout (pick-canvas reconstruit depuis les bboxes `rooms`, sélection/désélection
   au clic, clic hors pièce inerte), 2 tests Chromium.
-- **F. Documentation de la convention `vacuum_position.a`** (§3.5). ⏸ **CONSTAT corrigé
-  (2026-07-06)** : `vacuum_position` **EST** exposé sur `camera.*_map` au format `{x, y, a}`
-  (cf. §3.5). L'`a` est l'angle **BRUT** du device, différent de celui du renderer JSON
-  (`_convert_angle`) — détail et exemple mesuré en §3.5. Ne reste donc qu'à **valider sur
-  robot en mouvement** quel angle (brut vs transformé) la carte doit consommer pour un cap
-  correct. Le robot était docké lors du constat, validation impossible ; à faire lors d'un
-  vrai nettoyage (§7.6). C'est aussi le préalable à activer proprement l'overlay robot
-  dynamique de la carte (`robot_in_map=false` en masquant l'objet `robot`).
+- **F. Documentation de la convention `vacuum_position.a`** (§3.5). ✅ **RÉSOLU — VALIDÉ SUR
+  ROBOT EN MOUVEMENT (2026-07-06)** : `a` = angle brut du device, convention standard
+  `atan2(Δy, Δx)` du repère vacuum ; la carte le consomme correctement TEL QUEL (écart moyen
+  mesuré 14,9° vs direction de déplacement réelle ; alternatives réfutées). Détail complet
+  et méthode en §3.5. Rien à changer côté carte ni intégration. La `vacuum_position` se
+  rafraîchit ~toutes les 3 s en nettoyage (pas de gel — un « gel » = robot docké).
 - **G. Passe en cours dans une pièce multi-passes** (demande utilisateur, 2026-07-06) :
   quand une pièce est nettoyée avec `repeats` > 1, RIEN n'expose aujourd'hui « le robot
   en est à la passe N sur M » (vérifié en live sur le device : le vacuum n'a que
