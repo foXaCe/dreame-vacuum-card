@@ -2,5 +2,6 @@
     "name": "Dreame Vacuum Card",
     "render_readme": true,
     "homeassistant": "2024.1.0",
-    "filename": "dreame-vacuum-card.js"
+    "zip_release": true,
+    "filename": "dreame-vacuum-card.zip"
 }

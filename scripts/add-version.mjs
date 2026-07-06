@@ -11,10 +11,12 @@ const packageJsonPath = join(__dirname, "../package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const version = packageJson.version;
 
-// Read hacs.json to get the filename (with hash)
-const hacsPath = join(__dirname, "../hacs.json");
-const hacsContent = JSON.parse(readFileSync(hacsPath, "utf8"));
-const filename = hacsContent.filename;
+// The version placeholder (src/const.ts) lives in the main entry chunk only — the
+// lazy-loaded lottie chunks (see robot-animation.ts / rollup.config.js) never
+// reference it. hacs.json.filename now points at the release zip archive (built
+// AFTER this script runs, see release.yml), so the JS filename is hardcoded here
+// instead of being read from hacs.json.
+const filename = "dreame-vacuum-card.js";
 
 // Read the dist file
 const distPath = join(__dirname, "../dist", filename);

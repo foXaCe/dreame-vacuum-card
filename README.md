@@ -82,8 +82,12 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 
 ### Manual Installation
 
-1. Download `dreame-vacuum-card.js` from the [latest release](https://github.com/foXaCe/dreame-vacuum-card/releases/latest)
-2. Save the file to `<ha config>/www/community/dreame-vacuum-card/`
+1. Download `dreame-vacuum-card.zip` from the [latest release](https://github.com/foXaCe/dreame-vacuum-card/releases/latest)
+2. Extract **all** its files to `<ha config>/www/community/dreame-vacuum-card/`. The
+   card lazy-loads its animation engine as separate chunk files
+   (`dreame-vacuum-card.lottie_light-*.js`, `dreame-vacuum-card.anim_*.js`) next to
+   `dreame-vacuum-card.js` — copying only the main `.js` file will break washing/drying
+   animations.
 3. Add to [Lovelace resources](https://my.home-assistant.io/redirect/lovelace_resources/):
    ```yaml
    url: /local/community/dreame-vacuum-card/dreame-vacuum-card.js

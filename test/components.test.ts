@@ -944,17 +944,21 @@ describe("dreame-robot-animation", () => {
 
     // -- _scheduleLoad / connectedCallback / _destroyAnimation (setTimeout-driven) --
     //
-    // None of the tests above ever advance real/fake macrotask timers, so the body
-    // of the `window.setTimeout(..., 50)` callback inside `_scheduleLoad` (the
-    // container-not-ready retry, the `lottie.loadAnimation` call, and its catch
-    // fallback) never actually runs. These tests use fake timers to drive it.
+    // Since robot-animation.ts lazy-loads both the lottie engine and the JSON
+    // animation data via dynamic import() (see plan 013), `_scheduleLoad` now awaits
+    // a real `Promise.all([...])` after its 50ms setTimeout fires. Fake timers only
+    // fast-forward the setTimeout; they don't reliably fast-forward the module
+    // loader's own async resolution. So these tests use REAL timers and poll for the
+    // eventual result via `vi.waitFor` (which itself uses safe/real timers to poll,
+    // per Vitest's implementation) instead of `vi.advanceTimersByTimeAsync`. The one
+    // exception ("gives up silently...") never reaches the dynamic import at all
+    // (the container check short-circuits first), so it keeps using fake timers.
     describe("_scheduleLoad timer-driven paths", () => {
         afterEach(() => {
             vi.useRealTimers();
         });
 
         it("loads the animation once the scheduled timer fires and destroys it on disconnect", async () => {
-            vi.useFakeTimers();
             const el = makeAnim();
             el.robotState = "drying";
             document.body.appendChild(el);
@@ -962,9 +966,10 @@ describe("dreame-robot-animation", () => {
             // Not yet loaded: the 50ms timer has not fired.
             expect((el as unknown as { _animation: unknown })._animation).toBeNull();
 
-            await vi.advanceTimersByTimeAsync(50);
-            expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
-            expect((el as unknown as { _pendingAnimData: unknown })._pendingAnimData).toBeNull();
+            await vi.waitFor(() => {
+                expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+            });
+            expect((el as unknown as { _pendingState: unknown })._pendingState).toBeNull();
 
             // disconnectedCallback destroys the now-loaded animation (lines otherwise
             // unreachable since no other test lets an animation actually load).
@@ -976,29 +981,28 @@ describe("dreame-robot-animation", () => {
         });
 
         it("reschedules the load from connectedCallback when reconnected before the timer fired", async () => {
-            vi.useFakeTimers();
             const el = makeAnim();
             el.robotState = "drying";
             document.body.appendChild(el);
             await el.updateComplete;
             // Pending load scheduled, but not yet fired.
-            expect((el as unknown as { _pendingAnimData: unknown })._pendingAnimData).not.toBeNull();
+            expect((el as unknown as { _pendingState: unknown })._pendingState).not.toBeNull();
 
             // Disconnect before the timer fires: clearTimeout cancels the pending load,
-            // _animation stays null, _pendingAnimData is left untouched.
+            // _animation stays null, _pendingState is left untouched.
             el.remove();
             expect((el as unknown as { _animation: unknown })._animation).toBeNull();
 
             // Reconnecting with a pending anim and no active animation re-triggers the load
-            // from connectedCallback (otherwise unreachable: on first mount _pendingAnimData
+            // from connectedCallback (otherwise unreachable: on first mount _pendingState
             // is always null when connectedCallback first runs).
             document.body.appendChild(el);
-            await vi.advanceTimersByTimeAsync(50);
-            expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+            await vi.waitFor(() => {
+                expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+            });
         });
 
         it("retries when the lottie container is not yet in the DOM", async () => {
-            vi.useFakeTimers();
             const el = makeAnim();
             // A lottie-mapped state ensures #lottie-container genuinely exists in the
             // real (unmocked) shadow DOM once the spy stops forcing a null return.
@@ -1012,13 +1016,13 @@ describe("dreame-robot-animation", () => {
 
             // Directly drive the private scheduler: first attempt finds no container and
             // retries once, second attempt (real getElementById) succeeds.
-            (el as unknown as { _scheduleLoad: (data: unknown, retries?: number) => void })._scheduleLoad(
-                { some: "anim" },
-                1
+            (el as unknown as { _scheduleLoad: (state: string, retries?: number) => void })._scheduleLoad("drying", 1);
+            await vi.waitFor(
+                () => {
+                    expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+                },
+                { timeout: 2000 }
             );
-            await vi.advanceTimersByTimeAsync(50); // container missing -> retry scheduled
-            await vi.advanceTimersByTimeAsync(50); // retry: container present -> loads
-            expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
             getByIdSpy.mockRestore();
         });
 
@@ -1029,17 +1033,16 @@ describe("dreame-robot-animation", () => {
             await el.updateComplete;
             vi.spyOn(el.shadowRoot!, "getElementById").mockReturnValue(null);
 
-            (el as unknown as { _scheduleLoad: (data: unknown, retries?: number) => void })._scheduleLoad(
-                { some: "anim" },
-                0
-            );
+            // The container is never found, so the loader is never even looked up:
+            // this path stays purely setTimeout-driven (no dynamic import involved),
+            // hence fake timers remain safe and deterministic here.
+            (el as unknown as { _scheduleLoad: (state: string, retries?: number) => void })._scheduleLoad("drying", 0);
             await vi.advanceTimersByTimeAsync(50);
             // retries exhausted (0), no further timer scheduled, no animation loaded.
             expect((el as unknown as { _animation: unknown })._animation).toBeNull();
         });
 
         it("retries when lottie.loadAnimation throws on the first attempt", async () => {
-            vi.useFakeTimers();
             const lottieModule = await import("lottie-web/build/player/lottie_light");
             const loadAnimationMock = lottieModule.default.loadAnimation as unknown as ReturnType<typeof vi.fn>;
             loadAnimationMock.mockImplementationOnce(() => {
@@ -1051,14 +1054,17 @@ describe("dreame-robot-animation", () => {
             document.body.appendChild(el);
             await el.updateComplete;
 
-            await vi.advanceTimersByTimeAsync(50); // first attempt throws -> retry scheduled
-            expect((el as unknown as { _animation: unknown })._animation).toBeNull();
-            await vi.advanceTimersByTimeAsync(50); // retry succeeds
-            expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+            // First attempt: container found, loadAnimation throws -> retry scheduled.
+            // Retry: loadAnimation succeeds. Both legs cross the async lottie/JSON load.
+            await vi.waitFor(
+                () => {
+                    expect((el as unknown as { _animation: unknown })._animation).not.toBeNull();
+                },
+                { timeout: 2000 }
+            );
         });
 
         it("does nothing when the timer fires after the element was disconnected", async () => {
-            vi.useFakeTimers();
             const el = makeAnim();
             document.body.appendChild(el);
             await el.updateComplete;
@@ -1067,10 +1073,10 @@ describe("dreame-robot-animation", () => {
 
             // Call the scheduler directly (bypassing the normal clearTimeout-on-disconnect
             // guard) to exercise the `!this.isConnected` early-return inside the timer body.
-            (el as unknown as { _scheduleLoad: (data: unknown, retries?: number) => void })._scheduleLoad({
-                some: "anim",
-            });
-            await vi.advanceTimersByTimeAsync(50);
+            (el as unknown as { _scheduleLoad: (state: string, retries?: number) => void })._scheduleLoad("drying");
+            // Real wait: long enough for the 50ms timer to fire; the early-return means
+            // no dynamic import is ever triggered, so _animation must stay null.
+            await new Promise((resolve) => setTimeout(resolve, 80));
             expect((el as unknown as { _animation: unknown })._animation).toBeNull();
         });
     });

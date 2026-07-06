@@ -29,10 +29,19 @@ const plugins = [
 export default [
     {
         input: "src/dreame-vacuum-card.ts",
+        // 'exports-only' (le défaut) crée une façade quasi vide à `entryFileNames` qui
+        // ré-exporte depuis un chunk séparé nommé via `chunkFileNames`, dès qu'un
+        // import() dynamique apparaît dans le graphe (cf. plan 013). On veut que le
+        // fichier d'entrée porte directement le code applicatif : `false` fusionne la
+        // façade dans le chunk d'entrée (le mécanisme qui pousserait autrement le
+        // code partagé vers un chunk séparé ne s'applique qu'aux exports nommés d'une
+        // entrée réutilisée ailleurs, ce qui n'est pas notre cas).
+        preserveEntrySignatures: false,
         output: {
             dir: "dist",
             format: "es",
             entryFileNames: "dreame-vacuum-card.js",
+            chunkFileNames: "dreame-vacuum-card.[name]-[hash].js",
         },
         plugins,
         external: [],
