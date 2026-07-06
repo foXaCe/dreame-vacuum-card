@@ -10,13 +10,22 @@ enum TransformMode {
 
 export class CoordinatesConverter {
     public readonly calibrated: boolean;
+    /** `true` uniquement quand une source de calibration a été explicitement configurée
+     *  (`calibration_source.entity/camera/platform/calibration_points`) mais n'a produit
+     *  aucun point exploitable (entité `unknown`/`unavailable`, JSON invalide, attribut
+     *  absent…). Distinct d'une simple absence de configuration : dans ce dernier cas,
+     *  `calibrationPoints` vaut aussi `undefined` mais l'identité implicite est légitime
+     *  (voir `calibration-resolver.ts` → `isCalibrationSourceConfigured`). Permet à la
+     *  carte d'afficher un message différent de « Invalid calibration » (qui suppose des
+     *  points géométriquement dégénérés, cf. `selfCheck`). */
+    public readonly calibrationSourceFailed: boolean;
     public readonly transformMode?: TransformMode;
     public readonly mapToVacuumMatrix?: Matrix;
     public readonly vacuumToMapMatrix?: Matrix;
     private readonly mapToVacuumTransformer: ((x: number, y: number) => [number, number]) | undefined;
     private readonly vacuumToMapTransformer: ((x: number, y: number) => [number, number]) | undefined;
 
-    constructor(calibrationPoints: CalibrationPoint[] | undefined) {
+    constructor(calibrationPoints: CalibrationPoint[] | undefined, calibrationSourceFailed = false) {
         const mapPoints = calibrationPoints?.map((cp) => cp.map);
         const vacuumPoints = calibrationPoints?.map((cp) => cp.vacuum);
         if (mapPoints && vacuumPoints) {
@@ -32,10 +41,18 @@ export class CoordinatesConverter {
                 this.vacuumToMapTransformer = transformer(vacuumMerged as QuadPoints, mapMerged as QuadPoints);
             }
             this.calibrated = this.selfCheck(mapPoints, vacuumPoints);
+            this.calibrationSourceFailed = false;
+        } else if (calibrationSourceFailed) {
+            // Une source de calibration était attendue (config explicite) mais n'a rien
+            // produit d'exploitable : on ne retombe PAS silencieusement sur l'identité, le
+            // robot et les overlays seraient presque certainement mal placés.
+            this.calibrated = false;
+            this.calibrationSourceFailed = true;
         } else {
             // For platforms with default calibration (no calibration points needed),
             // use identity transformation (map coordinates = vacuum coordinates)
             this.calibrated = true;
+            this.calibrationSourceFailed = false;
         }
     }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveCalibration } from "../src/model/map/calibration-resolver";
+import { resolveCalibration, isCalibrationSourceConfigured } from "../src/model/map/calibration-resolver";
 import type { HomeAssistantFixed } from "../src/types/fixes";
 import type { CardPresetConfig } from "../src/types/types";
 
@@ -152,5 +152,48 @@ describe("resolveCalibration", () => {
         const config = makeConfig();
         const hass = makeHass();
         expect(resolveCalibration(config, hass)).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// isCalibrationSourceConfigured — distingue "pas de calibration nécessaire" de
+// "source de calibration configurée" (voir CoordinatesConverter.calibrationSourceFailed)
+// ---------------------------------------------------------------------------
+
+describe("isCalibrationSourceConfigured", () => {
+    it("aucune calibration_source -> false (pas de calibration nécessaire)", () => {
+        expect(isCalibrationSourceConfigured(makeConfig())).toBe(false);
+    });
+
+    it("calibration_source vide ({}) -> false", () => {
+        expect(isCalibrationSourceConfigured(makeConfig({ calibration_source: {} }))).toBe(false);
+    });
+
+    it("calibration_source.identity -> false (n'échoue jamais, hors du scope de la distinction)", () => {
+        expect(isCalibrationSourceConfigured(makeConfig({ calibration_source: { identity: true } }))).toBe(false);
+    });
+
+    it("calibration_source.entity -> true", () => {
+        expect(
+            isCalibrationSourceConfigured(makeConfig({ calibration_source: { entity: "sensor.cal" } }))
+        ).toBe(true);
+    });
+
+    it("calibration_source.camera -> true", () => {
+        expect(isCalibrationSourceConfigured(makeConfig({ calibration_source: { camera: true } }))).toBe(true);
+    });
+
+    it("calibration_source.platform -> true", () => {
+        expect(isCalibrationSourceConfigured(makeConfig({ calibration_source: { platform: "Dreame" } }))).toBe(
+            true
+        );
+    });
+
+    it("calibration_source.calibration_points -> true (même si longueur invalide)", () => {
+        expect(
+            isCalibrationSourceConfigured(
+                makeConfig({ calibration_source: { calibration_points: CALIBRATION_POINTS.slice(0, 2) } })
+            )
+        ).toBe(true);
     });
 });

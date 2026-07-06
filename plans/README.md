@@ -62,6 +62,20 @@ REJECTED (avec justification en une ligne).
   « pas de calibration nécessaire (plateforme) » de « source de calibration en échec »
   (ex. `calibrated = false` + message utilisateur dans le second cas). Impact M,
   effort S-M, confiance HIGH (vérifié par exécution réelle).
+  **CORRIGÉ** (branche `fix/calibration-failed-state`, 2026-07-06) :
+  `CoordinatesConverter` accepte un second paramètre `calibrationSourceFailed` ; posé par
+  `_updateCalibration()` via `calibration-resolver.ts` → `isCalibrationSourceConfigured()`
+  (vrai seulement si `entity`/`camera`/`platform`/`calibration_points` a été explicitement
+  configuré). Source en échec → `calibrated = false` + avertissement dédié (clé
+  `validation.calibration_source_failed`, EN+FR), distinct de « Invalid calibration »
+  (points géométriquement dégénérés, `selfCheck`). Absence totale de `calibration_source`
+  → comportement inchangé (identité muette). Corrigé au passage : `validCalibration` dans
+  `dreame-vacuum-card.ts` était masqué en permanence par `platformHasDefaultCalibration`
+  (toujours vrai pour Dreame, seule plateforme supportée) — l'avertissement `selfCheck`
+  existant depuis v5.10.0 n'était donc jamais visible en pratique ; corrigé pour ne servir
+  de filet qu'avant construction du converter. `test-browser/calibration-fallback.test.ts`
+  inversé (cas 2/3) + cas 4bis et 7 ajoutés ; tests unitaires dans
+  `test/coordinates.test.ts` et `test/map-calibration-resolver.test.ts`.
 
 ## Correctif post-merge PR #38 (hors plan, 2026-07-06)
 

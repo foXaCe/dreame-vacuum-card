@@ -124,7 +124,8 @@
             }
         },
         "invalid_entities": "Entités incorrectes :",
-        "invalid_calibration": "Calibration incorrecte, vérifiez votre configuration"
+        "invalid_calibration": "Calibration incorrecte, vérifiez votre configuration",
+        "calibration_source_failed": "Source de calibration indisponible : la carte peut être désalignée jusqu'à son rétablissement"
     },
     "tile": {
         "status": {
