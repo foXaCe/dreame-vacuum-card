@@ -221,17 +221,17 @@ describe("CoordinatesConverter — calibration absente", () => {
 // ---------------------------------------------------------------------------
 
 describe("CoordinatesConverter — calibration insuffisante / dégénérée", () => {
-    it("2 points : bascule en perspective et reste 'calibré' (tolérance de la lib)", () => {
+    it("2 points : quad incomplet -> identité silencieusement fausse DÉTECTÉE (non calibré)", () => {
         const twoPoints: CalibrationPoint[] = [
             { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
             { vacuum: { x: 100, y: 0 }, map: { x: 200, y: 0 } },
         ];
         const cc = new CoordinatesConverter(twoPoints);
         expect(cc.transformMode).toBe(1); // perspective (branche else)
-        expect(cc.calibrated).toBe(true);
-        // change-perspective renvoie l'identité sur des QuadPoints incomplets.
-        expect(cc.vacuumToMap(50, 50)).toEqual([50, 50]);
-        expect(cc.mapToVacuum(50, 50)).toEqual([50, 50]);
+        // change-perspective renvoie l'identité sur des QuadPoints incomplets : la
+        // projection map(200,0) -> vacuum devrait donner (100,0) mais donne (200,0).
+        // L'auto-vérification le détecte -> la carte affichera l'avertissement.
+        expect(cc.calibrated).toBe(false);
     });
 
     it("tableau vide : perspective, identité, jamais d'exception", () => {
@@ -243,19 +243,60 @@ describe("CoordinatesConverter — calibration insuffisante / dégénérée", ()
         expect(cc.mapToVacuum(7, 9)).toEqual([7, 9]);
     });
 
-    it("3 points colinéaires : matrice dégénérée -> NaN (bug latent, voir notes)", () => {
+    it("3 points colinéaires : matrice dégénérée (NaN) DÉTECTÉE -> non calibré", () => {
         const collinear: CalibrationPoint[] = [
             { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
             { vacuum: { x: 1, y: 1 }, map: { x: 1, y: 1 } },
             { vacuum: { x: 2, y: 2 }, map: { x: 2, y: 2 } },
         ];
         const cc = new CoordinatesConverter(collinear);
-        // calibrated reste true car l'objet matrice est truthy (ses champs sont null).
-        expect(cc.calibrated).toBe(true);
+        // fromTriangles renvoie des composantes null (-> NaN à l'application) :
+        // l'auto-vérification passe calibrated à false au lieu de casser en silence.
         expect(cc.transformMode).toBe(0);
-        const [x, y] = cc.vacuumToMap(5, 5);
-        expect(Number.isNaN(x)).toBe(true);
-        expect(Number.isNaN(y)).toBe(true);
+        expect(cc.calibrated).toBe(false);
+    });
+
+    it("3 points colinéaires côté vacuum uniquement : l'inverse dégénéré est détecté", () => {
+        // La matrice map->vacuum existe (finie) mais vacuum->map est singulière :
+        // seul le contrôle DANS LES DEUX SENS attrape ce cas.
+        const vacuumCollinear: CalibrationPoint[] = [
+            { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
+            { vacuum: { x: 50, y: 50 }, map: { x: 200, y: 0 } },
+            { vacuum: { x: 100, y: 100 }, map: { x: 0, y: 200 } },
+        ];
+        const cc = new CoordinatesConverter(vacuumCollinear);
+        expect(cc.calibrated).toBe(false);
+    });
+
+    it("4 points dont 3 colinéaires : perspective dégénérée (NaN) détectée", () => {
+        const degenerateQuad: CalibrationPoint[] = [
+            { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
+            { vacuum: { x: 1000, y: 0 }, map: { x: 50, y: 50 } },
+            { vacuum: { x: 1000, y: 1000 }, map: { x: 100, y: 100 } },
+            { vacuum: { x: 0, y: 1000 }, map: { x: 0, y: 100 } },
+        ];
+        const cc = new CoordinatesConverter(degenerateQuad);
+        expect(cc.transformMode).toBe(1);
+        expect(cc.calibrated).toBe(false);
+    });
+
+    it("4 points avec doublon : quasi-identité silencieusement fausse détectée", () => {
+        // change-perspective retombe sur une identité au lieu de NaN : seule la
+        // comparaison aux points de calibration eux-mêmes détecte l'écart.
+        const duplicated: CalibrationPoint[] = [
+            { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
+            { vacuum: { x: 1000, y: 0 }, map: { x: 0, y: 0 } },
+            { vacuum: { x: 1000, y: 1000 }, map: { x: 100, y: 100 } },
+            { vacuum: { x: 0, y: 1000 }, map: { x: 0, y: 100 } },
+        ];
+        const cc = new CoordinatesConverter(duplicated);
+        expect(cc.calibrated).toBe(false);
+    });
+
+    it("calibrations saines : l'auto-vérification ne déclenche PAS de faux positif", () => {
+        expect(new CoordinatesConverter(AFFINE_SCALE2).calibrated).toBe(true);
+        expect(new CoordinatesConverter(AFFINE_TRANSLATE).calibrated).toBe(true);
+        expect(new CoordinatesConverter(PERSPECTIVE_QUAD).calibrated).toBe(true);
     });
 });
 

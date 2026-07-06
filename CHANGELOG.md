@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Helper texts under the two required visual-editor fields (vacuum entity, map camera), localized in English and French.
+- 72 new behavioral tests (710 → 782): map objects (room selection semantics, manual rectangles, predefined points/rectangles), vendored HA helpers, hass localization helpers, robot animation (fake timers), and calibration degeneracy.
+
+### Fixed
+- Degenerate calibration is now detected instead of silently breaking the map: collinear points produce a NaN transform and a duplicated quad point makes `change-perspective` fall back to a plausible-but-wrong identity, none of which threw. The converter now re-projects the calibration points themselves through both transforms and marks the calibration invalid on mismatch, so the card shows the existing "invalid calibration" warning. (Closes the known issue listed under 5.8.0.)
+- WCAG AA contrast of the status-header unit labels (m² / min / %) on the default light theme (axe `color-contrast` finding; the units were rendered at 0.8 opacity on top of `--secondary-text-color`).
+
+### Changed
+- Hardened `tsconfig.json` (`noUnusedLocals`, `forceConsistentCasingInFileNames`) and aligned ESLint `ecmaVersion` with the ES2022 build target; refreshed dev dependencies (ESLint 10.6, Prettier 3.9.4, Vitest 4.1.10).
+
 ## [5.9.2] - 2026-07-02
 
 ### Fixed
