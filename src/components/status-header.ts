@@ -280,9 +280,10 @@ export class StatusHeader extends LitElement {
                 color: var(--primary-text-color);
             }
 
+            /* Pleine opacité : à 0.8, le contraste passait sous 4.5:1 (WCAG AA)
+               sur le thème clair par défaut (violation axe color-contrast). */
             .stat-unit {
                 color: var(--secondary-text-color);
-                opacity: 0.8;
             }
         `;
     }
