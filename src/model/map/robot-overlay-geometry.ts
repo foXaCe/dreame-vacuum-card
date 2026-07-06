@@ -46,6 +46,7 @@ export interface RobotOverlayGeometryResult {
     headingDeg: number;
     visible: boolean;
     iconUrl: string | undefined;
+    beamUrl: string | undefined;
     glideMs: number;
     nextSample: RobotSample;
 }
@@ -70,11 +71,16 @@ export function computeRobotOverlayGeometry({
     let headingDeg = 0;
     let visible = false;
     let iconUrl: string | undefined;
+    let beamUrl: string | undefined;
     let nextSample = prevSample;
 
     if (robotOverlayEnabled && converter?.calibrated && camState) {
         // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
         iconUrl = camState.attributes?.robot_icon as string | undefined;
+        // Faisceau « fill light » : présent uniquement quand le réglage est actif côté
+        // intégration (data URI statique par device/thème). Absent = pas de faisceau
+        // (fill light éteinte, ou intégration antérieure au contrat).
+        beamUrl = camState.attributes?.robot_beam_icon as string | undefined;
         const robotPos = camState.attributes?.vacuum_position;
         if (robotPos && robotPos.x != null && robotPos.y != null) {
             const p0 = converter.vacuumToMap(robotPos.x, robotPos.y);
@@ -110,5 +116,5 @@ export function computeRobotOverlayGeometry({
         }
     }
 
-    return { xPct, yPct, headingDeg, visible, iconUrl, glideMs: nextSample.glideMs, nextSample };
+    return { xPct, yPct, headingDeg, visible, iconUrl, beamUrl, glideMs: nextSample.glideMs, nextSample };
 }

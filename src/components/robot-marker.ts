@@ -41,6 +41,13 @@ export class RobotMarker extends LitElement {
     @property({ attribute: false })
     public iconUrl?: string;
 
+    /** Cône de lumière « fill light » fourni par l'intégration (attribut caméra
+     *  `robot_beam_icon`, data URI, sommet à gauche / ouverture vers +x — même
+     *  convention que iconUrl). Absent = pas de faisceau (fill light éteinte,
+     *  ou intégration antérieure au contrat). */
+    @property({ attribute: false })
+    public beamUrl?: string;
+
     protected render(): unknown {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
@@ -49,6 +56,7 @@ export class RobotMarker extends LitElement {
         const rot = `transform: rotate(${this.headingDeg}deg);`;
         return html`<div id="marker" style="${pos}">
             <div id="icon" style="${rot}">
+                ${this.beamUrl ? html`<img id="beam-img" src="${this.beamUrl}" alt="" />` : nothing}
                 ${
                     this.iconUrl
                         ? html`<img id="robot-img" src="${this.iconUrl}" alt="" />`
@@ -110,6 +118,22 @@ export class RobotMarker extends LitElement {
                 width: 24px;
                 height: 24px;
                 object-fit: contain;
+            }
+
+            /* Faisceau fill-light : derrière le corps, ouverture vers +x ; il
+               hérite de la rotation de #icon, donc suit le cap tout seul. */
+            #beam-img {
+                position: absolute;
+                left: 62%; /* démarre au nez du robot, déborde vers +x */
+                top: 50%;
+                width: 34px;
+                height: 34px;
+                transform: translateY(-50%);
+                object-fit: contain;
+                z-index: -1; /* derrière le robot, comme le halo sonar */
+                pointer-events: none;
+                opacity: 0.95;
+                transition: opacity 0.3s ease;
             }
 
             /* Halo de contraste : garde le robot lisible sur toutes les couleurs de sol. */

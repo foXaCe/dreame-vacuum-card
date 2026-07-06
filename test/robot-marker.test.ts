@@ -144,6 +144,83 @@ describe("dreame-robot-marker (composant)", () => {
         expect(icon?.style.transform).toBe("rotate(-45.5deg)");
         el.remove();
     });
+
+    it("beamUrl défini -> rend #beam-img AVANT #robot-img dans le DOM", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.xPercent = 40;
+        el.yPercent = 40;
+        el.iconUrl = "robot.png";
+        el.beamUrl = "beam.png";
+        document.body.appendChild(el);
+        await flush(el);
+
+        const icon = el.shadowRoot?.querySelector("#icon") as HTMLElement | null;
+        expect(icon).toBeTruthy();
+        const beamImg = el.shadowRoot?.querySelector("#beam-img") as HTMLImageElement | null;
+        const robotImg = el.shadowRoot?.querySelector("#robot-img") as HTMLImageElement | null;
+        expect(beamImg).toBeTruthy();
+        expect(robotImg).toBeTruthy();
+        expect(beamImg?.getAttribute("src")).toBe("beam.png");
+        // Le faisceau doit précéder le corps du robot dans le DOM (derrière visuellement,
+        // z-index négatif, mais l'ordre DOM est aussi vérifié ici).
+        const children = Array.from(icon!.children);
+        expect(children.indexOf(beamImg as unknown as Element)).toBeLessThan(
+            children.indexOf(robotImg as unknown as Element)
+        );
+        el.remove();
+    });
+
+    it("beamUrl défini avec fallback SVG (pas d'iconUrl) -> #beam-img rendu AVANT le SVG", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.xPercent = 40;
+        el.yPercent = 40;
+        el.beamUrl = "beam.png";
+        document.body.appendChild(el);
+        await flush(el);
+
+        const icon = el.shadowRoot?.querySelector("#icon") as HTMLElement | null;
+        const beamImg = el.shadowRoot?.querySelector("#beam-img") as HTMLImageElement | null;
+        const svg = el.shadowRoot?.querySelector("svg");
+        expect(beamImg).toBeTruthy();
+        expect(svg).toBeTruthy();
+        const children = Array.from(icon!.children);
+        expect(children.indexOf(beamImg as unknown as Element)).toBeLessThan(
+            children.indexOf(svg as unknown as Element)
+        );
+        el.remove();
+    });
+
+    it("beamUrl undefined -> pas de #beam-img dans le DOM", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.xPercent = 40;
+        el.yPercent = 40;
+        el.iconUrl = "robot.png";
+        document.body.appendChild(el);
+        await flush(el);
+
+        expect(el.shadowRoot?.querySelector("#beam-img")).toBeNull();
+        el.remove();
+    });
+
+    it("le faisceau est un enfant de #icon (hérite de la rotation du cap)", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.xPercent = 40;
+        el.yPercent = 40;
+        el.headingDeg = 45;
+        el.beamUrl = "beam.png";
+        document.body.appendChild(el);
+        await flush(el);
+
+        const icon = el.shadowRoot?.querySelector("#icon") as HTMLElement | null;
+        const beamImg = el.shadowRoot?.querySelector("#beam-img");
+        expect(beamImg?.parentElement).toBe(icon);
+        expect(icon?.style.transform).toBe("rotate(45deg)");
+        el.remove();
+    });
 });
 
 // ---------------------------------------------------------------------------

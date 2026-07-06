@@ -184,6 +184,101 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
     });
 });
 
+/** Génère un petit PNG data URI de synthèse (triangle orange) pour simuler l'attribut
+ *  caméra `robot_beam_icon` (fill light) sans dépendre d'un vrai asset. */
+function makeBeamDataUrl(): string {
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 8;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "rgba(255, 140, 0, 0.9)";
+    ctx.beginPath();
+    ctx.moveTo(0, 4);
+    ctx.lineTo(8, 0);
+    ctx.lineTo(8, 8);
+    ctx.closePath();
+    ctx.fill();
+    return canvas.toDataURL("image/png");
+}
+
+/** Monte la carte avec `vacuum_position` + éventuellement `robot_beam_icon` sur la
+ *  caméra (attribut additif : absent = pas de faisceau, comme une intégration antérieure
+ *  au contrat §5.I bis). */
+function mountCardWithRobotBeam(
+    vacuumState: string,
+    position: { x: number; y: number; a: number },
+    beamUrl: string | undefined
+): { card: CardElement; hass: Record<string, unknown> } {
+    const built = makeHass(vacuumState);
+    const states = built.hass.states as Record<string, { attributes: Record<string, unknown> }>;
+    states["camera.test_map"].attributes["vacuum_position"] = position;
+    if (beamUrl !== undefined) {
+        states["camera.test_map"].attributes["robot_beam_icon"] = beamUrl;
+    }
+
+    const config = makeCardConfig({ robot_overlay: true });
+    const card = document.createElement("dreame-vacuum-card") as CardElement;
+    card.setConfig(config);
+    card.hass = built.hass;
+    document.body.appendChild(card);
+    return { card, hass: built.hass };
+}
+
+describe("dreame-robot-marker — faisceau fill-light (attribut robot_beam_icon)", () => {
+    it("robot_beam_icon présent -> #beam-img rendu, positionné à droite du centre à headingDeg=0", async () => {
+        const beamUrl = makeBeamDataUrl();
+        const { card } = mountCardWithRobotBeam(
+            "cleaning",
+            { x: ROOM_1_CENTER_PX.x * 10, y: ROOM_1_CENTER_PX.y * 10, a: 0 },
+            beamUrl
+        );
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            beamUrl?: string;
+            headingDeg: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+        await until(() => marker.beamUrl === beamUrl);
+
+        const beamImg = marker.shadowRoot!.querySelector<HTMLImageElement>("#beam-img");
+        const robotImg = marker.shadowRoot!.querySelector<HTMLElement>("#robot-img, svg");
+        expect(beamImg).toBeTruthy();
+        expect(robotImg).toBeTruthy();
+        expect(beamImg?.getAttribute("src")).toBe(beamUrl);
+
+        // Cap 0° = ouverture du faisceau vers +x (la droite) : son centre doit être
+        // strictement à droite du centre du corps du robot.
+        const beamRect = beamImg!.getBoundingClientRect();
+        const robotRect = robotImg!.getBoundingClientRect();
+        const beamCenterX = beamRect.left + beamRect.width / 2;
+        const robotCenterX = robotRect.left + robotRect.width / 2;
+        expect(beamCenterX).toBeGreaterThan(robotCenterX);
+    });
+
+    it("robot_beam_icon absent -> aucun #beam-img (fill light éteinte / vieille intégration)", async () => {
+        const { card } = mountCardWithRobotBeam(
+            "cleaning",
+            { x: ROOM_1_CENTER_PX.x * 10, y: ROOM_1_CENTER_PX.y * 10, a: 0 },
+            undefined
+        );
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            beamUrl?: string;
+        };
+        await until(() => !!marker && marker.visible === true);
+        expect(marker.beamUrl).toBeUndefined();
+        expect(marker.shadowRoot!.querySelector("#beam-img")).toBeNull();
+    });
+});
+
 describe("dreame-robot-marker — déroulé du cap (évite le tour complet à ±180°)", () => {
     it("garde le cap continu quand la valeur brute franchit +178° -> -175°", async () => {
         // Calibration de test = pur scale ×10 sans rotation -> le cap écran suit

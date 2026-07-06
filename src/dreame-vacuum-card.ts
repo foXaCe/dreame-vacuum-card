@@ -461,6 +461,7 @@ export class DreameVacuumCard extends LitElement {
         const robotHeadingDeg = robotGeometry.headingDeg;
         const robotVisible = robotGeometry.visible;
         const robotIconUrl = robotGeometry.iconUrl;
+        const robotBeamUrl = robotGeometry.beamUrl;
 
         const mapSrc = this._getMapSrc(preset);
         const platformsWithDefaultCalibration = PlatformGenerator.getPlatformsWithDefaultCalibration();
@@ -528,6 +529,7 @@ export class DreameVacuumCard extends LitElement {
                     .headingDeg=${robotHeadingDeg}
                     .transitionMs=${robotGeometry.glideMs}
                     .iconUrl=${robotIconUrl}
+                    .beamUrl=${robotBeamUrl}
                 ></dreame-robot-marker>
             </div>
         `;

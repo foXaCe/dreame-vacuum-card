@@ -49,6 +49,23 @@ describe("computeRobotOverlayGeometry — position/pourcentages", () => {
         expect(result.headingDeg).toBeCloseTo(0, 6);
     });
 
+    it("robot_beam_icon présent -> beamUrl retourné (fill light active)", () => {
+        const camState = makeCamState({
+            attributes: {
+                vacuum_position: { x: 500, y: 300, a: 0 },
+                robot_icon: "icon.png",
+                robot_beam_icon: "beam.png",
+            },
+        });
+        const result = computeRobotOverlayGeometry(baseInput({ camState }));
+        expect(result.beamUrl).toBe("beam.png");
+    });
+
+    it("robot_beam_icon absent -> beamUrl undefined (fill light éteinte / intégration antérieure)", () => {
+        const result = computeRobotOverlayGeometry(baseInput());
+        expect(result.beamUrl).toBeUndefined();
+    });
+
     it("cap dérivé de l'attribut a (identité -> cap = a mod (-180,180])", () => {
         const camState = makeCamState({ attributes: { vacuum_position: { x: 100, y: 100, a: 90 } } });
         const result = computeRobotOverlayGeometry(baseInput({ camState }));
