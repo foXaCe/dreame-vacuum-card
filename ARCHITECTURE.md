@@ -31,6 +31,9 @@ Home Assistant (hass)
 dreame-vacuum-card.ts  ── le composant Lit principal (orchestration + état + rendu)
    ├─ config-validators.ts   valide la config YAML utilisateur → clés i18n d'erreur
    ├─ utils/                  détection de changement, entités surveillées, conditions, actions
+   ├─ model/map/              sous-systèmes carte extraits (logique pure/testable, le
+   │     composant délègue) : résolution de calibration, géométrie de l'overlay robot,
+   │     double-buffering d'image, pick-canvas/hit-test/overlay de sélection des pièces
    ├─ model/map_mode/         construit les appels de service depuis les modes de carte
    │     MapMode → ServiceCallSchema → ServiceCall (via template-utils + Jinja)
    ├─ model/map_objects/      objets dessinés sur la carte (zones, points, pièces…)
@@ -54,9 +57,10 @@ dreame-vacuum-card.ts  ── le composant Lit principal (orchestration + état 
 
 ```
 src/
-├── dreame-vacuum-card.ts     Composant principal : carte/zoom, calibration, image
-│                             (double-buffer anti-flash), hit-test pièces, overlay,
-│                             sélections/modes, robot-overlay, appels de service.
+├── dreame-vacuum-card.ts     Composant principal : orchestration (zoom, sélections/modes,
+│                             appels de service, template/rendu, cycle de vie Lit). Délègue
+│                             calibration, géométrie robot, image et pick-canvas à
+│                             `model/map/` — voir ci-dessous.
 ├── card-styles.ts            Styles CSS du composant principal (extrait, CSSResultGroup).
 ├── editor.ts                 Éditeur visuel (ha-form déclaratif).
 ├── config-validators.ts      Validation déclarative de la config → clés i18n.
@@ -69,6 +73,21 @@ src/
 │     · robot-marker · status-header · tab-selector
 │
 ├── model/
+│   ├── map/                  Sous-systèmes carte extraits du composant principal — logique
+│   │   │                     pure ou à état minimal, testable unitairement hors Lit/DOM :
+│   │   ├── calibration-resolver.ts      resolveCalibration(config, hass) — 6 sources
+│   │   │                               (identity / points explicites / entity+JSON /
+│   │   │                               entity+attribute / camera / plateforme).
+│   │   ├── robot-overlay-geometry.ts    computeRobotOverlayGeometry(...) — position/cap
+│   │   │                               (déroulé ±180°)/cadence de glisse du marqueur
+│   │   │                               robot ; fonction pure, aucun Date.now()/this.
+│   │   ├── map-image-buffer.ts          MapImageBuffer — double-buffering anti-flash de
+│   │   │                               l'image de carte affichée (précharge hors-écran,
+│   │   │                               ne bascule qu'une fois l'image décodée).
+│   │   └── room-pick-engine.ts          RoomPickEngine — pick-canvas (segment_map API ou
+│   │                                   fallback polygones), hit-test pixel-perfect,
+│   │                                   overlay de sélection des pièces ; canvases
+│   │                                   off-screen et caches possédés par l'engine.
 │   ├── map_mode/             Modes de carte → appels de service
 │   │     map-mode · service-call-schema · service-call · templatable-value
 │   │     · modifier · repeats-type · selection-type
@@ -108,6 +127,14 @@ ce n'est pas une sur-ingénierie à aplatir.
 
 ## Points d'extension
 
+**Ajouter/faire évoluer une logique carte (pas UI)** : elle naît dans `model/map/`, testée
+unitairement (`test/map-*.test.ts`) indépendamment de Lit/du DOM réel quand c'est possible
+(cf. `calibration-resolver`, `robot-overlay-geometry`). Pour ce qui reste intrinsèquement lié
+au canvas/DOM (`map-image-buffer`, `room-pick-engine`), les dépendances externes (accès
+`hass`, éléments DOM, horloge) sont injectées par le composant appelant plutôt que lues
+directement — l'engine ne connaît jamais le shadow DOM. Le composant principal
+(`dreame-vacuum-card.ts`) n'accueille plus que de l'orchestration et le template de rendu.
+
 **Ajouter un type d'objet de carte** : créer `model/map_objects/<type>.ts` étendant
 `MapObject` (ou `PredefinedMapObject`), implémenter `render()` (SVG) et la logique
 métier ; l'alimenter via le `Context`. Ajouter `${<Type>.styles}` aux styles
@@ -146,6 +173,11 @@ map × 10. En CI : job dédié `test-browser` (`npx playwright install chromium`
 **Couverture fusionnée** — `npm run test:coverage:merged` (en local sans navigateurs
 Playwright : `CHROMIUM_BIN=/usr/bin/chromium npm run test:coverage:merged`) est la
 **seule mesure fiable** pour `src/dreame-vacuum-card.ts` : la suite unitaire seule
-(`npm run test:coverage`) ne couvre que ~14 % de ce fichier (rien n'exerce `render()`,
-la calibration ou le hit-test canvas en happy-dom), tandis que le rapport fusionné avec
-la suite navigateur atteint ~66 %. Rapport HTML dans `coverage/merged/html/index.html`.
+(`npm run test:coverage`) ne couvre que ~20 % de ce fichier (rien n'exerce `render()`
+ni le cycle de vie Lit en happy-dom), tandis que le rapport fusionné avec la suite
+navigateur atteint ~61 %. Ce chiffre a baissé mécaniquement après l'extraction de
+`model/map/` (plan 014) : le fichier a perdu ses blocs les MIEUX couverts (pick-canvas,
+calibration, image, robot) au profit de modules dédiés dont la couverture individuelle a
+au contraire progressé (ex. pick-canvas 70 % → 88 %, image 77 % → 92 %) — la couverture
+globale du projet (toutes sources confondues) progresse, elle, sur les 4 métriques.
+Rapport HTML dans `coverage/merged/html/index.html`.
