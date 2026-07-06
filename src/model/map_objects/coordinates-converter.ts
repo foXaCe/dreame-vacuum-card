@@ -1,7 +1,7 @@
 import { applyToPoint, fromTriangles, Matrix } from "transformation-matrix";
-import { default as transformer, QuadPoints } from "change-perspective";
 
 import { CalibrationPoint, PointType } from "../../types/types";
+import { fixPerspective as transformer, QuadPoints } from "./perspective-transform";
 
 enum TransformMode {
     AFFINE,
@@ -58,7 +58,7 @@ export class CoordinatesConverter {
 
     /** Une calibration dégénérée (points colinéaires ou dupliqués) ne lève PAS
      *  d'erreur dans les bibliothèques sous-jacentes : `fromTriangles` renvoie des
-     *  composantes `null` (→ NaN à l'application) et `change-perspective` peut
+     *  composantes `null` (→ NaN à l'application) et `perspective-transform` peut
      *  retomber sur une quasi-identité silencieusement fausse. On revérifie donc la
      *  transformation sur les points de calibration eux-mêmes, dans les deux sens :
      *  chaque point doit se projeter sur son homologue, à une tolérance relative à
