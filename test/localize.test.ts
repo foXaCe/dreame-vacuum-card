@@ -55,8 +55,8 @@ describe("localize", () => {
     });
 
     it("falls back to English when the key is missing in the requested language", () => {
-        // map_mode.setup_zone exists in en ("Zone coordinates") but is absent from bg.
-        expect(localize("map_mode.setup_zone", "bg")).toBe("Zone coordinates");
+        // tile.cleaning_mode.label exists in en ("Cleaning mode") but is absent from bg.
+        expect(localize("tile.cleaning_mode.label", "bg")).toBe("Cleaning mode");
     });
 
     it("replaces the {0} placeholder via the tuple form [key, search, replace]", () => {

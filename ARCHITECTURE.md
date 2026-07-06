@@ -94,6 +94,10 @@ src/
 └── types/                    types.ts · fixes.ts (surcharges HA) · pointer-tracker.d.ts
 ```
 
+`platform-generator` expose une API `Map` multi-templates volontairement conservée
+pour l'extensibilité, même si un seul template (`Dreame`) est aujourd'hui enregistré —
+ce n'est pas une sur-ingénierie à aplatir.
+
 ## Invariants de stabilité (ne jamais casser sans migration)
 
 - **Tags des custom elements** : `dreame-vacuum-card`, `dreame-vacuum-card-editor`,

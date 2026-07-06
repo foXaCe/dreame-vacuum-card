@@ -15,10 +15,7 @@
         "vacuum_clean_point_predefined": "Points",
         "vacuum_clean_zone": "Nettoyage de zone",
         "vacuum_clean_zone_predefined": "Liste des zones",
-        "vacuum_follow_path": "Chemin",
-        "setup_zone": "Coordonnées de zone",
-        "setup_point": "Coordonnées de point",
-        "setup_outline": "Coordonnées de contour"
+        "vacuum_follow_path": "Chemin"
     },
     "validation": {
         "preset": {
