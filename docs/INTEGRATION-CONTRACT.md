@@ -377,6 +377,25 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
     carte à la livraison**. En attendant : fallback SVG « robot vu de dessus » (corps,
     tourelle lidar, pare-chocs avant en couleur d'accent = cap), surchargeable par thème
     (`--map-card-robot-body/halo/lidar`), qui remplace l'ancien disque bleu générique.
+- **J. Faisceau « fill light » (`robot_beam_icon`)** (bug signalé 2026-07-06 : la variante
+  blanchie de `robot_icon` rendait les robots à corps blanc illisibles — corrigé par un
+  vrai faisceau séparé).
+  - **Côté intégration (✅ LIVRÉ, 2026-07-06, commit 13ac313)** : quand le réglage
+    « fill light » du robot est actif, la caméra expose l'attribut **`robot_beam_icon`**
+    = PNG data URI d'un **cône de lumière translucide teinté chaud**, sommet à gauche,
+    **ouverture vers +x** (même convention d'orientation que `robot_icon` : l'icône pointe
+    vers +x à `rotate(0)`). Statique par device/thème (data URI en cache côté renderer).
+    L'attribut **disparaît des attributs caméra** quand la fill light est coupée.
+    `robot_icon` reste le corps du robot (variante « lit » = réchauffement subtil, plus
+    de blanchiment). Les deux attributs sont exclus du recorder
+    (`CAMERA_UNRECORDED_ATTRIBUTES`) — jamais historisés en DB.
+  - **Côté carte (✅ LIVRÉ, 2026-07-06, commit 29e8665)** : `dreame-robot-marker` accepte
+    `beamUrl` et dessine le cône **derrière le corps** (`z-index` négatif, enfant de
+    `#icon` → hérite de la rotation, suit le cap tout seul). **Changement additif dans
+    les deux sens** : carte non mise à jour → l'attribut est ignoré ; intégration
+    antérieure → `beamUrl` absent, aucun faisceau rendu. Couvert par tests unitaires
+    (`test/robot-marker.test.ts`) et navigateur (`test-browser/robot-overlay.test.ts`).
+    ⏳ Validation de bout en bout sur device réel (fill light ON/OFF) : à faire.
 
 ### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
 
