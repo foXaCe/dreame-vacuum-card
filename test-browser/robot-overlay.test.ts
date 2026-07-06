@@ -1,0 +1,124 @@
+/**
+ * Overlay de position du robot (`dreame-robot-marker`, option 2 anti-flash).
+ *
+ * Flux réel exercé (lu dans src/dreame-vacuum-card.ts, render() ~L420-461) :
+ * - Le robot overlay lit l'attribut `vacuum_position` ({x, y, a}) sur la CAMÉRA
+ *   (`preset.map_source.camera`), PAS sur l'entité vacuum elle-même — détail non
+ *   intuitif confirmé en lisant le code (`camState.attributes?.vacuum_position`).
+ * - `robot_overlay: true` en config force `robotOverlayEnabled = true` sans dépendre
+ *   de l'attribut caméra `robot_in_map`.
+ * - Position écran = `coordinatesConverter.vacuumToMap(x, y)` puis `/ natW,natH * 100`
+ *   (pourcentages, PAS de `Context.roundMap` sur ce chemin — valeur exacte attendue).
+ * - Cap écran = atan2 sur un vecteur direction transformé par la même calibration
+ *   (invariant par une simple mise à l'échelle ×10, donc heading écran == heading vacuum
+ *   pour la calibration de test qui est un pur scale sans rotation).
+ */
+import { describe, it, expect, afterEach } from "vitest";
+
+import "../src/dreame-vacuum-card";
+import { makeHass, makeCardConfig, until, IMG_W, IMG_H, ROOM_1_CENTER_PX, type CardElement } from "./fixtures/hass";
+
+afterEach(() => {
+    document.querySelectorAll("dreame-vacuum-card").forEach((el) => el.remove());
+});
+
+/** Monte la carte avec `vacuum_position` déjà présent sur la caméra AVANT le premier rendu
+ *  (mutation directe de l'objet hass renvoyé par makeHass, avant assignation à la carte). */
+function mountCardWithRobotPosition(
+    vacuumState: string,
+    position: { x: number; y: number; a: number }
+): { card: CardElement; hass: Record<string, unknown> } {
+    const built = makeHass(vacuumState);
+    const states = built.hass.states as Record<string, { attributes: Record<string, unknown> }>;
+    states["camera.test_map"].attributes["vacuum_position"] = position;
+
+    const config = makeCardConfig({ robot_overlay: true });
+    const card = document.createElement("dreame-vacuum-card") as CardElement;
+    card.setConfig(config);
+    card.hass = built.hass;
+    document.body.appendChild(card);
+    return { card, hass: built.hass };
+}
+
+describe("dreame-vacuum-card — overlay de position du robot", () => {
+    it("positionne dreame-robot-marker selon vacuum_position (calibration ×10) avec cap 0°", async () => {
+        const { card } = mountCardWithRobotPosition("docked", {
+            x: ROOM_1_CENTER_PX.x * 10,
+            y: ROOM_1_CENTER_PX.y * 10,
+            a: 0,
+        });
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            xPercent: number;
+            yPercent: number;
+            headingDeg: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+
+        const expectedXPct = (ROOM_1_CENTER_PX.x / IMG_W) * 100;
+        const expectedYPct = (ROOM_1_CENTER_PX.y / IMG_H) * 100;
+        expect(marker.xPercent).toBeCloseTo(expectedXPct, 5);
+        expect(marker.yPercent).toBeCloseTo(expectedYPct, 5);
+        expect(marker.headingDeg).toBeCloseTo(0, 5);
+    });
+
+    it("oriente le marqueur selon le cap (a=90°) — calibration sans rotation, cap conservé", async () => {
+        const { card } = mountCardWithRobotPosition("docked", {
+            x: ROOM_1_CENTER_PX.x * 10,
+            y: ROOM_1_CENTER_PX.y * 10,
+            a: 90,
+        });
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            headingDeg: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+        expect(marker.headingDeg).toBeCloseTo(90, 5);
+    });
+
+    it("affiche le marqueur actif (halo) quand le robot nettoie activement", async () => {
+        const { card } = mountCardWithRobotPosition("cleaning", {
+            x: ROOM_1_CENTER_PX.x * 10,
+            y: ROOM_1_CENTER_PX.y * 10,
+            a: 0,
+        });
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            active: boolean;
+        };
+        await until(() => !!marker && marker.visible === true);
+        expect(marker.active).toBe(true);
+    });
+
+    it("ne rend pas le marqueur (visible=false) sans robot_overlay ni vacuum_position", async () => {
+        const built = makeHass("docked");
+        const config = makeCardConfig();
+        const card = document.createElement("dreame-vacuum-card") as CardElement;
+        card.setConfig(config);
+        card.hass = built.hass;
+        document.body.appendChild(card);
+
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+        await card.updateComplete;
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+        };
+        expect(marker).toBeTruthy();
+        expect(marker.visible).toBe(false);
+    });
+});

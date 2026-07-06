@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Helper texts under the two required visual-editor fields (vacuum entity, map camera), localized in English and French.
 - 72 new behavioral tests (710 → 782): map objects (room selection semantics, manual rectangles, predefined points/rectangles), vendored HA helpers, hass localization helpers, robot animation (fake timers), and calibration degeneracy.
+- Real-browser test suite (vitest browser mode + headless Chromium, `npm run test:browser`, dedicated CI job): 16 tests covering the DOM/canvas glue that happy-dom cannot exercise — image decoding, pixel-perfect room hit-testing on the `segment_map` pick canvas, room selection clicks and the resulting `dreame_vacuum.vacuum_clean_segment` call, zone rectangle drag and `vacuum_clean_zone` coordinates, tab keyboard navigation, calibrated robot overlay, and the anti-flicker double-buffering. Closes the "browser harness needed" item listed under 5.8.0.
 
 ### Fixed
 - Degenerate calibration is now detected instead of silently breaking the map: collinear points produce a NaN transform and a duplicated quad point makes `change-perspective` fall back to a plausible-but-wrong identity, none of which threw. The converter now re-projects the calibration points themselves through both transforms and marks the calibration invalid on mismatch, so the card shows the existing "invalid calibration" warning. (Closes the known issue listed under 5.8.0.)

@@ -122,10 +122,19 @@ un label i18n (`editor.label.<clé>` dans en.json + fr.json), et la lire dans le
 
 ## Tests
 
-Suite Vitest (`test/**/*.test.ts`, environnement happy-dom). La **couche logique** est
-couverte à ≥ 90 % (validators, map_mode, coordinates, utils, template-utils, localize,
-platform-generator, map_objects). La **glu DOM/canvas** du composant principal
-(`dreame-vacuum-card.ts`), `pinch-zoom`, `editor` et `action-handler-directive` nécessite
-un vrai navigateur (canvas `getImageData`, décodage d'image, layout) : non couverte par
-happy-dom. Pour une couverture complète de cette couche, un harnais navigateur réel
-(Playwright / @web/test-runner) serait nécessaire — voir « Restant » dans le CHANGELOG.
+Deux suites complémentaires :
+
+**Unitaire** — `test/**/*.test.ts`, environnement happy-dom (`npm test`). La **couche
+logique** est couverte à ≥ 80-90 % (validators, map_mode, coordinates, utils,
+template-utils, localize, platform-generator, map_objects, ha vendored, composants).
+
+**Navigateur réel** — `test-browser/**/*.test.ts`, vitest browser mode + Chromium headless
+(`npm run test:browser` ; en local sans navigateurs Playwright :
+`CHROMIUM_BIN=/usr/bin/chromium npm run test:browser`). Couvre la **glu DOM/canvas** du
+composant principal, impossible en happy-dom : décodage d'images, pick-canvas (hit-test
+des pièces via le canal bleu du `segment_map`), sélection de pièces au clic, dessin/drag
+des rectangles de zone, appels de service Dreame réels (`vacuum_clean_segment`,
+`vacuum_clean_zone`), navigation clavier des onglets, overlay robot calibré,
+double-buffering anti-flicker. Les fixtures (`test-browser/fixtures/hass.ts`) génèrent
+les images de carte et le `segment_map` à la volée via canvas — calibration vacuum =
+map × 10. En CI : job dédié `test-browser` (`npx playwright install chromium`).
