@@ -321,16 +321,37 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   tick — cf. backlog D, ne pas provoquer de re-render carte inutile).
   **2ᵉ temps carte (après livraison)** : badge « Passe N/M » dans le header de statut /
   barre de progression — travail d'affichage trivial, comme les transferts précédents.
+  - ❌ **VERDICT — INFAISABLE PROPREMENT avec les données exposées** (mesuré 2026-07-06 sur
+    deux nettoyages réels, dont un « Room cleaning » de la chambre en multi-passes suivi
+    ~14 min en live) :
+    - **Voie 1 (donnée protocole) morte** : `cleaning_times` (dérivé de `cleanset[seg][2]`,
+      seule source de répétitions) est resté à **1** pendant tout le job actif, même en
+      nettoyage de pièce dédié → l'intégration **ne voit jamais le total M** configuré en
+      cours de tâche. Aucune propriété MIoT ni champ de map ne porte de compteur de passe.
+    - **Voie 2 (inférence par transitions) morte** : le robot fait ses passes **sans quitter
+      le segment** (`current_segment` figé sur la chambre toute la durée) → **aucune ré-entrée
+      à compter**. L'hypothèse « re-entrée = passe suivante » ne s'applique pas à ce firmware.
+    - `cleaning_progress` = **% GLOBAL monotone** (zéro reset, zéro palier par passe) →
+      inexploitable pour délimiter une passe. `cleaned_area` croît de façon monotone (pas de
+      plateau franc observé sur la fenêtre capturée).
+    - Reste seulement la **reconstruction géométrique de la couverture** depuis `MapData.path`
+      (rejouer la grille interne du planificateur pour détecter la fin d'un balayage complet) :
+      lourd, fragile, **et toujours sans total M fiable** → non retenu.
+    - **Statut : abandonné côté intégration**, faute de signal. À rouvrir seulement si un
+      firmware/une propriété Dreame expose un jour l'avancement par segment.
 
 - **H. DÉFAUTS EN DUR — l'overlay fluide doit marcher sans AUCUNE option** (directive
   utilisateur, 2026-07-06 : « il faut que ces options soient par défaut… pas besoin
   d'activer, activer en dur dans le code »). État cible : une install neuve a le robot
   fluide d'office.
-  - **Côté intégration (à livrer)** : « Robot Icon » **masqué PAR DÉFAUT** dans le rendu
-    PNG (→ `robot_in_map: false` par défaut, en code — pas une option à cocher). Attention
-    aux installs existantes (options sauvegardées) et au cas des utilisateurs SANS la
-    carte (vue caméra nue : plus de robot visible du tout — à évaluer : le défaut peut
-    dépendre de la présence de la carte ou être documenté comme breaking).
+  - **Côté intégration (✅ LIVRÉ + validé device, 2026-07-06)** : « robot » ajouté au défaut
+    de `hidden_map_objects` à l'installation (`config_flow`, étape options) → une **install
+    neuve** a `robot_in_map: false` d'office, l'overlay carte prend le relais sans rien cocher.
+    Reste **réversible** (décocher « Robot Icon » le ré-incruste dans le PNG). Installs
+    **existantes** : leurs options sauvegardées sont respectées (pas de migration forcée) →
+    ré-hider une fois si besoin. ⚠ **Breaking documenté** pour les utilisateurs SANS la carte
+    (vue caméra nue → plus de robot dans le PNG). Validé sur r95285 : `robot_in_map=False`
+    servi après déploiement, robot rendu par l'overlay carte.
   - **Côté carte (✅ déjà en place)** : mode AUTO par défaut (`robot_overlay` absent →
     overlay actif dès que `robot_in_map === false`). L'éditeur ne matérialise PLUS
     `robot_overlay: false` à l'édition (fix 2026-07-06 : décoché = clé absente = AUTO,
@@ -340,15 +361,17 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
 - **I. Icône robot RÉELLE pour l'overlay** (retour utilisateur 2026-07-06 : le fallback
   vectoriel ne suffit pas — « il est où mon robot ? » ; l'intégration a l'asset qu'elle
   incrustait dans le PNG et peut le fournir).
-  - **Côté intégration (à livrer)** : exposer l'icône robot sur la caméra, attribut
-    **`robot_icon`** = data URI (PNG ou SVG), vue de dessus, **orientée vers +x** (0° =
-    vers la droite), fond transparent, taille libre (la carte l'affiche en 28 px).
-    Statique tant que le device ne change pas (pas de bump par tick — backlog D).
-    💡 **Pointeur** : les assets existent déjà dans `dreame/_resources_data.py`
-    (`MAP_ROBOT_LIDAR_IMAGE_DREAME_LIGHT` / `_DARK`, PNG base64 128×128, constantes
-    `Final` — plus toutes les variantes d'état charging/cleaning/mop/drying). Exposer la
-    variante de base suffit ; ⚠ vérifier son orientation d'origine (si l'asset pointe
-    vers le haut, le préciser ou le pré-pivoter : le contrat exige une orientation +x).
+  - **Côté intégration (✅ LIVRÉ + validé device, 2026-07-06)** : la caméra expose l'attribut
+    **`robot_icon`** = PNG data URI du **corps de base** du robot (vue de dessus, fond
+    transparent), sélectionné exactement comme `render_vacuum` selon `robot_type` / `icon_set`
+    / thème (helper `_ensure_robot_body_icon` partagé, résultat mis en cache par instance de
+    renderer). Exposé **indépendamment du rendu** → dispo même quand le robot est retiré du PNG
+    (`robot_in_map=false`, cas nominal). Statique par device/thème (aucun bump par tick).
+    Validé sur r95285 : PNG valide **30110 chars** (corps *sweeping+mopping*), robot fluide et
+    correct sur la carte, confirmé utilisateur. **Orientation** : l'asset de base est exposé tel
+    quel (référentiel a=0 du renderer) ; le cap rendu par la carte est cohérent à l'usage
+    (validé visuellement) — si un décalage fixe apparaissait sur un autre device, l'ajuster
+    d'un offset constant côté carte.
   - **Côté carte (✅ pré-câblé, 2026-07-06)** : `dreame-robot-marker` accepte `iconUrl`
     et affiche l'image (rotation par le cap) dès que l'attribut existe — **zéro changement
     carte à la livraison**. En attendant : fallback SVG « robot vu de dessus » (corps,
