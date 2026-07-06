@@ -5,14 +5,7 @@ import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 
 type VacuumState =
-    | "idle"
-    | "docked"
-    | "returning"
-    | "charged"
-    | "cleaning"
-    | "segment_cleaning"
-    | "zoned_cleaning"
-    | "paused";
+    "idle" | "docked" | "returning" | "charged" | "cleaning" | "segment_cleaning" | "zoned_cleaning" | "paused";
 
 interface ButtonConfig {
     label: string;
