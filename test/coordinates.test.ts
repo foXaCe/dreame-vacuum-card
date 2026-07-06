@@ -201,12 +201,46 @@ describe("CoordinatesConverter — calibration absente", () => {
         const cc = new CoordinatesConverter(undefined);
         // Reste considéré comme calibré (calibration par défaut de la plateforme).
         expect(cc.calibrated).toBe(true);
+        expect(cc.calibrationSourceFailed).toBe(false);
         expect(cc.transformMode).toBeUndefined();
         expect(cc.mapToVacuum(5, 7)).toEqual([5, 7]);
         expect(cc.vacuumToMap(5, 7)).toEqual([5, 7]);
         // L'identité est un aller-retour parfait par construction.
         expect(cc.vacuumToMap(-42.5, 1000)).toEqual([-42.5, 1000]);
         expect(cc.mapToVacuum(-42.5, 1000)).toEqual([-42.5, 1000]);
+    });
+
+    it("calibrationPoints undefined + calibrationSourceFailed=false (défaut explicite) -> identité, calibré", () => {
+        const cc = new CoordinatesConverter(undefined, false);
+        expect(cc.calibrated).toBe(true);
+        expect(cc.calibrationSourceFailed).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// CoordinatesConverter — source de calibration configurée mais en échec
+//
+// Distingue « pas de calibration nécessaire » (ci-dessus, calibrationSourceFailed
+// implicite ou explicite à false) de « une source a été demandée mais n'a produit
+// aucun point exploitable » (entité "unknown"/"unavailable", JSON invalide…) : dans
+// ce second cas, l'identité implicite serait presque certainement fausse -> on ne la
+// retient pas, `calibrated` doit passer à `false` et la carte doit le signaler.
+// ---------------------------------------------------------------------------
+
+describe("CoordinatesConverter — source de calibration en échec", () => {
+    it("calibrationPoints undefined + calibrationSourceFailed=true -> NON calibré (pas d'identité silencieuse)", () => {
+        const cc = new CoordinatesConverter(undefined, true);
+        expect(cc.calibrated).toBe(false);
+        expect(cc.calibrationSourceFailed).toBe(true);
+        expect(cc.transformMode).toBeUndefined();
+    });
+
+    it("le flag calibrationSourceFailed reste à false quand des points sont fournis, même en cas de succès", () => {
+        const cc = new CoordinatesConverter(AFFINE_SCALE2, true);
+        // Signature défensive : si des points sont bien fournis, la branche « source en
+        // échec » n'est jamais atteinte, peu importe la valeur du 2e paramètre.
+        expect(cc.calibrated).toBe(true);
+        expect(cc.calibrationSourceFailed).toBe(false);
     });
 });
 

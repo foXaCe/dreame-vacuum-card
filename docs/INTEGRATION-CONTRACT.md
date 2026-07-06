@@ -124,6 +124,16 @@ c'est **un seul produit** dont le code vit dans deux repos. Concrètement :
   (`CoordinatesConverter.selfCheck`, `src/model/map_objects/coordinates-converter.ts`)
   → la carte affiche « Invalid calibration » au lieu de rendre. Toute erreur de
   calibration côté intégration est donc **immédiatement visible**.
+- ⚠ **Source de calibration en échec ≠ absence de calibration** : quand `calibration_source`
+  (entité/caméra/plateforme/points) est explicitement configuré côté carte mais ne se
+  résout en aucun point exploitable (entité `unknown`/`unavailable`, JSON invalide,
+  attribut absent…), la carte ne retombe plus silencieusement sur l'identité map=vacuum.
+  Elle affiche un avertissement dédié (« Calibration source unavailable », distinct de
+  « Invalid calibration ») et `CoordinatesConverter.calibrated` passe à `false`
+  (`calibrationSourceFailed = true`). Seule l'absence totale de `calibration_source`
+  (plateforme fonctionnant nativement en identité, ex. Dreame) reste silencieuse — voir
+  `src/model/map/calibration-resolver.ts` → `isCalibrationSourceConfigured` et
+  `test-browser/calibration-fallback.test.ts`.
 
 ### 3.3 `segment_map` — PNG base64, hit-test des pièces
 

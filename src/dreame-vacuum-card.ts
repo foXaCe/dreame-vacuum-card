@@ -66,7 +66,7 @@ import { SelectionType } from "./model/map_mode/selection-type";
 import { RepeatsType } from "./model/map_mode/repeats-type";
 import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
-import { resolveCalibration } from "./model/map/calibration-resolver";
+import { resolveCalibration, isCalibrationSourceConfigured } from "./model/map/calibration-resolver";
 import { computeRobotOverlayGeometry, INITIAL_ROBOT_SAMPLE, RobotSample } from "./model/map/robot-overlay-geometry";
 import { MapImageBuffer } from "./model/map/map-image-buffer";
 import { RoomPickEngine } from "./model/map/room-pick-engine";
@@ -468,8 +468,20 @@ export class DreameVacuumCard extends LitElement {
         const platformHasDefaultCalibration = platformsWithDefaultCalibration.includes(
             PlatformGenerator.getPlatformName(preset.vacuum_platform)
         );
-        const validCalibration =
-            (!!this.coordinatesConverter && this.coordinatesConverter.calibrated) || platformHasDefaultCalibration;
+        // `_updateCalibration` (appelée juste au-dessus dans ce même rendu) a déjà construit
+        // `this.coordinatesConverter` : il est donc toujours défini ici. `platformHasDefaultCalibration`
+        // ne sert plus que de filet de sécurité pour le cas (théorique) où il ne le serait pas
+        // encore -- il ne doit PAS masquer un `calibrated === false` une fois le converter
+        // construit, sinon une calibration réellement en échec (selfCheck dégénéré OU source
+        // de calibration défaillante) ne serait jamais signalée pour les plateformes de cette
+        // liste (Dreame, la seule à ce jour) : cf. constat plan 012, `plans/README.md`.
+        const validCalibration = this.coordinatesConverter
+            ? this.coordinatesConverter.calibrated
+            : platformHasDefaultCalibration;
+        // Distingue le message affiché quand la calibration n'est pas valide : une source
+        // configurée qui a échoué (entité unknown/JSON invalide…) a un message dédié,
+        // différent de « Invalid calibration » (points géométriquement dégénérés).
+        const calibrationSourceFailed = !!this.coordinatesConverter?.calibrationSourceFailed;
 
         const hasSelection = this._hasActiveSelection();
 
@@ -617,7 +629,11 @@ export class DreameVacuumCard extends LitElement {
                         </div>
                     </div>
                 </div>
-                ${conditional(!validCalibration, () => this._showInvalidCalibrationWarning())}
+                ${conditional(!validCalibration, () =>
+                    calibrationSourceFailed
+                        ? this._showCalibrationSourceFailedWarning()
+                        : this._showInvalidCalibrationWarning()
+                )}
                 <dreame-cleaning-mode-chip .hass=${this.hass} .entityId=${preset.entity}></dreame-cleaning-mode-chip>
                 <dreame-tab-selector
                     .activeTab=${this.activeTab}
@@ -796,12 +812,17 @@ export class DreameVacuumCard extends LitElement {
 
     private _updateCalibration(config: CardPresetConfig): void {
         const calibrationPoints = this._getCalibration(config);
+        // Une source de calibration explicitement configurée (entité, caméra, plateforme,
+        // points bruts) qui ne produit aucun point exploitable est un ÉCHEC à signaler —
+        // distinct d'une absence de configuration (identité implicite légitime). Voir
+        // calibration-resolver.ts → isCalibrationSourceConfigured.
+        const calibrationSourceFailed = calibrationPoints === undefined && isCalibrationSourceConfigured(config);
         // Clé stable sur la calibration : évite de recréer CoordinatesConverter à chaque render
         // (matrice affine/perspective recalculée = coûteux).
-        const key = calibrationPoints ? JSON.stringify(calibrationPoints) : "none";
+        const key = calibrationPoints ? JSON.stringify(calibrationPoints) : `none:${calibrationSourceFailed}`;
         if (key === this._lastCalibrationKey && this.coordinatesConverter) return;
         this._lastCalibrationKey = key;
-        this.coordinatesConverter = new CoordinatesConverter(calibrationPoints);
+        this.coordinatesConverter = new CoordinatesConverter(calibrationPoints, calibrationSourceFailed);
     }
 
     private _getMapSrc(config: CardPresetConfig): string {
@@ -1649,6 +1670,15 @@ export class DreameVacuumCard extends LitElement {
 
     private _showInvalidCalibrationWarning(): TemplateResult {
         return html` <hui-warning>${this._localize("validation.invalid_calibration")}</hui-warning> `;
+    }
+
+    /** Source de calibration explicitement configurée (entité/caméra/plateforme/points)
+     *  mais qui n'a produit aucun point exploitable — distinct de `_showInvalidCalibrationWarning`
+     *  (points géométriquement dégénérés) : ici, la source elle-même est en échec (entité
+     *  "unknown"/"unavailable", JSON invalide, attribut absent…). Voir CoordinatesConverter
+     *  → `calibrationSourceFailed`. */
+    private _showCalibrationSourceFailedWarning(): TemplateResult {
+        return html` <hui-warning>${this._localize("validation.calibration_source_failed")}</hui-warning> `;
     }
 
     private _localize(ts: TranslatableString): string {
