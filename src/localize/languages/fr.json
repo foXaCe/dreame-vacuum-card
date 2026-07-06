@@ -328,6 +328,10 @@
         "description": {
             "text": "Cet éditeur visuel ne permet qu'une configuration de base. Pour un paramétrage plus avancé, utilisez le mode YAML."
         },
+        "helper": {
+            "entity": "Entité de l'aspirateur fournie par votre intégration (ex. dreame_vacuum).",
+            "camera": "Caméra de carte exposant l'image de la carte en direct (généralement nommée « … map »)."
+        },
         "section": {
             "map_source": "Source de la carte",
             "display": "Options d'affichage",

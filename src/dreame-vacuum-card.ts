@@ -579,7 +579,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                                               aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
                                               @click="${() => this._addRectangle()}"
                                               @keydown="${(e: KeyboardEvent) =>
-                                              this._handleIconKey(e, () => this._addRectangle())}"
+                                                  this._handleIconKey(e, () => this._addRectangle())}"
                                           ></ha-icon>
                                       `
                                     : null

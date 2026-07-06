@@ -255,19 +255,19 @@ export class CleaningModeChip extends LitElement {
                     ? html`
                           <div class="mode-menu" role="listbox" aria-label="${modeLabel}">
                               ${
-                              cgChoices.length > 0
-                                  ? html`<div class="menu-section">CleanGenius</div>
-                                        ${cgChoices.map((c) => this._renderChoice(c))}`
-                                  : nothing
-                          }
+                                  cgChoices.length > 0
+                                      ? html`<div class="menu-section">CleanGenius</div>
+                                            ${cgChoices.map((c) => this._renderChoice(c))}`
+                                      : nothing
+                              }
                               ${
-                              manualChoices.length > 0
-                                  ? html`<div class="menu-section">
-                                            ${localize("dreame_ui.mode.manual_section", lang)}
-                                        </div>
-                                        ${manualChoices.map((c) => this._renderChoice(c))}`
-                                  : nothing
-                          }
+                                  manualChoices.length > 0
+                                      ? html`<div class="menu-section">
+                                                ${localize("dreame_ui.mode.manual_section", lang)}
+                                            </div>
+                                            ${manualChoices.map((c) => this._renderChoice(c))}`
+                                      : nothing
+                              }
                           </div>
                       `
                     : nothing

@@ -328,6 +328,10 @@
         "description": {
             "text": "This visual editor supports only a basic configuration. For more advanced setup use YAML mode."
         },
+        "helper": {
+            "entity": "Vacuum entity provided by your integration (e.g. dreame_vacuum).",
+            "camera": "Map camera exposing the live map image (usually named “… map”)."
+        },
         "section": {
             "map_source": "Map source",
             "display": "Display Options",

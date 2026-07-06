@@ -153,6 +153,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
                 .data=${data}
                 .schema=${buildSchema((k) => this._localize(k))}
                 .computeLabel=${this._computeLabel}
+                .computeHelper=${this._computeHelper}
                 @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="yaml-hint">${this._localize("editor.description.text")}</div>
@@ -162,6 +163,15 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
     private _computeLabel = (schema: HaFormSchema): string => {
         const key = `editor.label.${schema.name}`;
         return this._localize(key);
+    };
+
+    /** Texte d'aide sous les champs obligatoires uniquement — les autres champs
+     *  restent sans helper (retourner la clé brute afficherait du bruit). */
+    private _computeHelper = (schema: HaFormSchema): string | undefined => {
+        if (schema.name !== "entity" && schema.name !== "camera") {
+            return undefined;
+        }
+        return this._localize(`editor.helper.${schema.name}`);
     };
 
     private _valueChanged = (ev: CustomEvent): void => {
