@@ -5,18 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-- Removed the `image-rendering: crisp-edges` compensation on zoom (and the now-dead `zoomed` class): the integration renders the map at ×2 since 2026-07-06 (`map_scale` option), so zooming stays below native resolution and the browser's default smooth rendering looks better. Second step of the offload process documented in `docs/INTEGRATION-CONTRACT.md` §1.1.
+## [5.11.0] - 2026-07-07
 
 ### Added
+- **Fill-light beam**: the robot marker draws the `robot_beam_icon` camera attribute (warm translucent cone, integration ≥ 6.8.0 with the fill light on) behind the robot body, rotating with the heading. Additive in both directions: older cards ignore the attribute, older integrations simply show no beam. Validated end-to-end on a real device.
 - `docs/INTEGRATION-CONTRACT.md`: shared card ↔ integration contract — division of responsibilities ("the integration renders, the card interacts"), strict camera-attribute contract, card consumption pipeline, offload backlog and cross-validation checklist. Since extended with: the `vacuum_position.a` heading convention validated on a real moving robot (raw device angle, standard atan2 vacuum-frame convention — the card's math was already correct as-is), and the backlog G proposal (`segment_pass` current/total) for multi-pass progress.
 - Adaptive robot-marker interpolation: the card measures the real cadence between two distinct `vacuum_position` samples (~3 s, Dreame cloud push) and glides the marker over ~90 % of that interval (clamped 400 ms – 4 s) instead of a fixed 0.4 s hop followed by a pause — continuous motion during cleaning. Locked by a Chromium test.
 - Browser test locking the polygon pick-canvas fallback when `segment_map` is absent (new integration behaviour on degenerate buffers).
-- Robot-marker redesigned as a top-view robot vacuum (body, lidar turret, accent front bumper indicating heading — themeable via `--map-card-robot-body/halo/lidar`), replacing the generic blue dot. The marker is also pre-wired to display the real robot icon as soon as the integration exposes a `robot_icon` camera attribute (contract §5.I) — zero card change needed on delivery.
+- Robot-marker redesigned as a top-view robot vacuum (body, lidar turret, accent front bumper indicating heading — themeable via `--map-card-robot-body/halo/lidar`), replacing the generic blue dot, and displaying the real robot icon when the integration exposes the `robot_icon` camera attribute (contract §5.I).
+
+### Changed
+- Removed the `image-rendering: crisp-edges` compensation on zoom (and the now-dead `zoomed` class): the integration renders the map at ×2 since 2026-07-06 (`map_scale` option), so zooming stays below native resolution and the browser's default smooth rendering looks better. Second step of the offload process documented in `docs/INTEGRATION-CONTRACT.md` §1.1.
+- The Lottie engine and animation JSONs are lazy-loaded as separate chunks (−33 % on the main bundle); releases publish a self-contained single-file JS asset for HACS alongside the chunked zip.
+- The map component was split into focused `src/model/map/` modules and the inherited `Xiaomi*` identifiers renamed to `Dreame*` (custom element tags unchanged); CI runs a single-version matrix with third-party actions pinned to commit SHAs.
+- Robot marker size reduced 28 → 21 px (beam 30 px, sonar halo 19 px, proportions preserved).
+- The 4-point perspective transform is vendored in `perspective-transform.ts` (bit-exact parity with the dormant `change-perspective` package, npm dependency removed).
 
 ### Fixed
+- **Lottie animations never loaded under cache-busted resource URLs** (`?v=`/`hacstag=`): the lazy chunks re-imported the entry bundle without the query, so the browser re-evaluated the whole bundle as a second module and `customElements.define` threw — washing/drying/emptying animations failed silently. Shared code now lives in a dedicated `helpers` chunk; regression-pinned on the built artifacts.
+- **A failed calibration source is no longer silent**: when a configured source resolves to unknown/invalid, the card shows a "calibration source unavailable" warning and hides the robot instead of silently assuming an identity mapping (robot and overlays misplaced). Also fixes calibration warnings being permanently masked by the platform default.
+- **The robot marker no longer glides across the map on HA reboot**: it is frozen at its last consistent position while the displayed image doesn't match the current `entity_picture` (double-buffer settling window), and it teleports instead of gliding when the displayed map changes or a jump exceeds 20 % of the image in one sample.
+- Robot heading no longer takes the long way around when crossing ±180° (angle unwrap); service-call failures now surface to the user instead of being swallowed; leaf components guard against updates after disconnect.
 - The visual editor no longer materialises `robot_overlay: false` into the YAML on any edit (unchecked now means AUTO — key absent — so the overlay auto-activates when the integration reports `robot_in_map: false`; checked stores an explicit `true`). An explicit `false` written by older editor versions silently disabled the fluid overlay for good.
 
 ## [5.10.0] - 2026-07-06
