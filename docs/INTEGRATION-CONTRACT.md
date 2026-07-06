@@ -395,7 +395,10 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
     les deux sens** : carte non mise à jour → l'attribut est ignoré ; intégration
     antérieure → `beamUrl` absent, aucun faisceau rendu. Couvert par tests unitaires
     (`test/robot-marker.test.ts`) et navigateur (`test-browser/robot-overlay.test.ts`).
-    ⏳ Validation de bout en bout sur device réel (fill light ON/OFF) : à faire.
+    ✅ **Validé de bout en bout sur device réel** (r95285, 2026-07-06) : fill light ON →
+    `robot_beam_icon` présent (PNG 2490 chars, cône chaud translucide, sommet à gauche /
+    ouverture +x vérifiés visuellement sur l'asset décodé) ; OFF → l'attribut disparaît,
+    `robot_icon` reste ; ON → l'attribut revient à l'identique (cache stable).
 
 ### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
 
