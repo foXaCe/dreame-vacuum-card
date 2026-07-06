@@ -71,6 +71,19 @@ export class MapImageBuffer {
     }
 
     /**
+     * `true` quand l'image AFFICHÉE correspond à l'`entity_picture` courant.
+     * `false` pendant la fenêtre où les attributs d'état (calibration,
+     * vacuum_position) décrivent déjà la nouvelle frame alors que l'<img>
+     * visible montre encore l'ancienne (préchargement en cours, ou échec de
+     * chargement — ex. reboot de HA) : dans cette fenêtre, tout overlay
+     * positionné en % de l'image affichée serait calculé avec des données
+     * incohérentes (signalement 2026-07-06 : robot dans le coin au reboot).
+     */
+    isSettled(): boolean {
+        return this.lastValidUrl === undefined || this.displayedUrl === this.lastValidUrl;
+    }
+
+    /**
      * Précharge l'URL hors-écran et ne bascule `displayedUrl` (donc le `src` de
      * `#map-image` côté composant) qu'une fois l'image décodée. L'`<img>` visible
      * continue d'afficher la frame précédente pendant ce temps -> pas de flash.

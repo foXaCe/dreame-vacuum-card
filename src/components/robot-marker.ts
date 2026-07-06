@@ -41,6 +41,13 @@ export class RobotMarker extends LitElement {
     @property({ attribute: false })
     public iconUrl?: string;
 
+    /** Cône de lumière « fill light » fourni par l'intégration (attribut caméra
+     *  `robot_beam_icon`, data URI, sommet à gauche / ouverture vers +x — même
+     *  convention que iconUrl). Absent = pas de faisceau (fill light éteinte,
+     *  ou intégration antérieure au contrat). */
+    @property({ attribute: false })
+    public beamUrl?: string;
+
     protected render(): unknown {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
@@ -49,10 +56,11 @@ export class RobotMarker extends LitElement {
         const rot = `transform: rotate(${this.headingDeg}deg);`;
         return html`<div id="marker" style="${pos}">
             <div id="icon" style="${rot}">
+                ${this.beamUrl ? html`<img id="beam-img" src="${this.beamUrl}" alt="" />` : nothing}
                 ${
                     this.iconUrl
                         ? html`<img id="robot-img" src="${this.iconUrl}" alt="" />`
-                        : html`<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true">
+                        : html`<svg viewBox="0 0 32 32" width="21" height="21" aria-hidden="true">
                               <!-- Robot aspirateur vu de dessus, orienté vers +x à rotate(0) :
                                halo de contraste, corps, pare-chocs avant (cap) et tourelle lidar. -->
                               <circle cx="16" cy="16" r="14" class="halo" />
@@ -95,10 +103,10 @@ export class RobotMarker extends LitElement {
 
             #icon {
                 position: absolute;
-                left: -12px;
-                top: -12px;
-                width: 24px;
-                height: 24px;
+                left: -10.5px;
+                top: -10.5px;
+                width: 21px;
+                height: 21px;
                 transform-origin: center;
                 transition: transform 0.4s linear;
                 will-change: transform;
@@ -107,9 +115,25 @@ export class RobotMarker extends LitElement {
 
             #robot-img {
                 display: block;
-                width: 24px;
-                height: 24px;
+                width: 21px;
+                height: 21px;
                 object-fit: contain;
+            }
+
+            /* Faisceau fill-light : derrière le corps, ouverture vers +x ; il
+               hérite de la rotation de #icon, donc suit le cap tout seul. */
+            #beam-img {
+                position: absolute;
+                left: 62%; /* démarre au nez du robot, déborde vers +x */
+                top: 50%;
+                width: 30px;
+                height: 30px;
+                transform: translateY(-50%);
+                object-fit: contain;
+                z-index: -1; /* derrière le robot, comme le halo sonar */
+                pointer-events: none;
+                opacity: 0.95;
+                transition: opacity 0.3s ease;
             }
 
             /* Halo de contraste : garde le robot lisible sur toutes les couleurs de sol. */
@@ -148,9 +172,9 @@ export class RobotMarker extends LitElement {
                 position: absolute;
                 left: 50%;
                 top: 50%;
-                width: 22px;
-                height: 22px;
-                margin: -11px 0 0 -11px;
+                width: 19px;
+                height: 19px;
+                margin: -9.5px 0 0 -9.5px;
                 border-radius: 50%;
                 background: radial-gradient(
                     circle,

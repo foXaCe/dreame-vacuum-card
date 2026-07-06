@@ -105,6 +105,50 @@ describe("MapImageBuffer — bascule anti-flash après décodage", () => {
     });
 });
 
+describe("MapImageBuffer.isSettled — cohérence image affichée / entity_picture courant", () => {
+    it("true avant tout flux caméra (source statique ou aucun état encore reçu)", () => {
+        const { buffer } = makeBuffer();
+        expect(buffer.isSettled()).toBe(true);
+    });
+
+    it("false tant que l'entity_picture courant n'a pas pu être affiché (préchargement/échec), true une fois décodé", () => {
+        // Image contrôlée à la main (happy-dom « charge » n'importe quelle data URI,
+        // impossible d'y matérialiser un échec réel — même approche que la suite
+        // navigateur test-browser/map-double-buffering.test.ts).
+        const RealImage = globalThis.Image;
+        const instances: Array<{ onload: (() => void) | null; onerror: (() => void) | null }> = [];
+        class FakeImage {
+            public onload: (() => void) | null = null;
+            public onerror: (() => void) | null = null;
+            public crossOrigin = "";
+            public set src(_v: string) {
+                instances.push(this);
+            }
+        }
+        globalThis.Image = FakeImage as unknown as typeof Image;
+        try {
+            const { buffer } = makeBuffer();
+            const input = {
+                mapSource: { camera: "camera.vacuum" },
+                cameraEntityPicture: TINY_PNG,
+                isFresh: true,
+            };
+            buffer.resolveSrc(input);
+            // Préchargement en cours : l'état décrit une frame pas encore affichée.
+            expect(buffer.isSettled()).toBe(false);
+            // Échec de chargement (HA down pendant un reboot) : toujours pas affichable.
+            instances[0].onerror?.();
+            expect(buffer.isSettled()).toBe(false);
+            // Retentative (nouvel état) puis décodage réussi : l'affiché rejoint le courant.
+            buffer.resolveSrc(input);
+            instances[1].onload?.();
+            expect(buffer.isSettled()).toBe(true);
+        } finally {
+            globalThis.Image = RealImage;
+        }
+    });
+});
+
 describe("MapImageBuffer.reset", () => {
     it("purge tous les buffers -> retombe sur DISCONNECTED_IMAGE comme un état neuf", async () => {
         const { buffer } = makeBuffer();

@@ -19,7 +19,6 @@
     "author": "Piotr Machowski <piotr.machowski.dev@gmail.com>",
     "license": "MIT",
     "dependencies": {
-        "change-perspective": "^1.0.1",
         "home-assistant-js-websocket": "^9.6.0",
         "lit": "^3.3.3",
         "lottie-web": "^5.13.0",

@@ -14,6 +14,13 @@ export interface RobotSample {
     posTs: number;
     glideMs: number;
     headingDeg?: number;
+    /** Dernière position rendue (en % de l'image) et clé de la carte affichée :
+     *  servent à détecter les repositionnements qui ne sont PAS un déplacement
+     *  réel du robot (reboot HA, changement de carte/résolution, relocalisation)
+     *  pour les téléporter au lieu de les faire glisser à travers la carte. */
+    xPct?: number;
+    yPct?: number;
+    mapKey?: string;
 }
 
 /** Valeurs initiales identiques aux anciens champs de classe (`_robotGlideMs = 400`,
@@ -23,6 +30,9 @@ export const INITIAL_ROBOT_SAMPLE: RobotSample = {
     posTs: 0,
     glideMs: 400,
     headingDeg: undefined,
+    xPct: undefined,
+    yPct: undefined,
+    mapKey: undefined,
 };
 
 export interface RobotOverlayGeometryInput {
@@ -38,6 +48,13 @@ export interface RobotOverlayGeometryInput {
     prevSample: RobotSample;
     /** Horodatage figé par l'appelant (AUCUN `Date.now()` dans ce module). */
     nowMs: number;
+    /** `true` quand l'image de carte affichée ne correspond PAS (encore) à
+     *  l'`entity_picture` courant (`!MapImageBuffer.isSettled()`) : les attributs
+     *  d'état décrivent la nouvelle frame, l'image visible montre l'ancienne.
+     *  Dans cette fenêtre le marqueur est GELÉ à sa dernière position cohérente
+     *  (ou masqué s'il n'en a pas), au lieu d'être recalculé avec des entrées
+     *  incohérentes — c'est ce qui l'envoyait dans le coin au reboot de HA. */
+    mapSettling?: boolean;
 }
 
 export interface RobotOverlayGeometryResult {
@@ -46,6 +63,7 @@ export interface RobotOverlayGeometryResult {
     headingDeg: number;
     visible: boolean;
     iconUrl: string | undefined;
+    beamUrl: string | undefined;
     glideMs: number;
     nextSample: RobotSample;
 }
@@ -64,17 +82,47 @@ export function computeRobotOverlayGeometry({
     robotOverlayEnabled,
     prevSample,
     nowMs,
+    mapSettling = false,
 }: RobotOverlayGeometryInput): RobotOverlayGeometryResult {
     let xPct = -1;
     let yPct = -1;
     let headingDeg = 0;
     let visible = false;
     let iconUrl: string | undefined;
+    let beamUrl: string | undefined;
     let nextSample = prevSample;
+
+    // Image affichée ≠ frame décrite par les attributs : GELER (dernière position
+    // cohérente, aucune glisse, sample intact) ou masquer si on n'a encore rien
+    // affiché de cohérent. Ne PAS recalculer : la calibration reçue s'applique à
+    // une image que l'utilisateur ne voit pas encore.
+    if (mapSettling) {
+        if (robotOverlayEnabled && converter?.calibrated && camState) {
+            iconUrl = camState.attributes?.robot_icon as string | undefined;
+            beamUrl = camState.attributes?.robot_beam_icon as string | undefined;
+            if (prevSample.xPct !== undefined && prevSample.yPct !== undefined) {
+                return {
+                    xPct: prevSample.xPct,
+                    yPct: prevSample.yPct,
+                    headingDeg: prevSample.headingDeg ?? 0,
+                    visible: true,
+                    iconUrl,
+                    beamUrl,
+                    glideMs: 0,
+                    nextSample: prevSample,
+                };
+            }
+        }
+        return { xPct, yPct, headingDeg, visible, iconUrl, beamUrl, glideMs: prevSample.glideMs, nextSample };
+    }
 
     if (robotOverlayEnabled && converter?.calibrated && camState) {
         // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
         iconUrl = camState.attributes?.robot_icon as string | undefined;
+        // Faisceau « fill light » : présent uniquement quand le réglage est actif côté
+        // intégration (data URI statique par device/thème). Absent = pas de faisceau
+        // (fill light éteinte, ou intégration antérieure au contrat).
+        beamUrl = camState.attributes?.robot_beam_icon as string | undefined;
         const robotPos = camState.attributes?.vacuum_position;
         if (robotPos && robotPos.x != null && robotPos.y != null) {
             const p0 = converter.vacuumToMap(robotPos.x, robotPos.y);
@@ -105,10 +153,43 @@ export function computeRobotOverlayGeometry({
                     }
                     posTs = nowMs;
                 }
-                nextSample = { posKey, posTs, glideMs, headingDeg };
+
+                // Téléportation au lieu de glisse quand le repositionnement n'est pas
+                // un déplacement réel (signalement 2026-07-06 : au reboot HA, le
+                // marqueur partait du coin et « traversait la carte ») :
+                // - la carte affichée a changé (dimensions naturelles ≠) : les % ne
+                //   sont pas comparables d'une carte à l'autre, et la cadence mesurée
+                //   ne veut plus rien dire → glisse remise à 400 ms ;
+                // - le saut dépasse 20 % de la diagonale de l'image en un échantillon :
+                //   ce n'est pas une trajectoire (~170 mm/3 s en nettoyage réel), c'est
+                //   un reboot / une relocalisation / une correction de calibration.
+                const mapKey = `${natW}x${natH}`;
+                const mapChanged = prevSample.mapKey !== undefined && prevSample.mapKey !== mapKey;
+                const jumped =
+                    prevSample.xPct !== undefined &&
+                    prevSample.yPct !== undefined &&
+                    Math.hypot(xPct - prevSample.xPct, yPct - prevSample.yPct) > 20;
+                let effectiveGlideMs = glideMs;
+                if (mapChanged || jumped) {
+                    effectiveGlideMs = 0;
+                    glideMs = 400;
+                    posTs = nowMs;
+                }
+
+                nextSample = { posKey, posTs, glideMs, headingDeg, xPct, yPct, mapKey };
+                return {
+                    xPct,
+                    yPct,
+                    headingDeg,
+                    visible,
+                    iconUrl,
+                    beamUrl,
+                    glideMs: effectiveGlideMs,
+                    nextSample,
+                };
             }
         }
     }
 
-    return { xPct, yPct, headingDeg, visible, iconUrl, glideMs: nextSample.glideMs, nextSample };
+    return { xPct, yPct, headingDeg, visible, iconUrl, beamUrl, glideMs: nextSample.glideMs, nextSample };
 }

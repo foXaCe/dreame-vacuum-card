@@ -49,6 +49,23 @@ describe("computeRobotOverlayGeometry — position/pourcentages", () => {
         expect(result.headingDeg).toBeCloseTo(0, 6);
     });
 
+    it("robot_beam_icon présent -> beamUrl retourné (fill light active)", () => {
+        const camState = makeCamState({
+            attributes: {
+                vacuum_position: { x: 500, y: 300, a: 0 },
+                robot_icon: "icon.png",
+                robot_beam_icon: "beam.png",
+            },
+        });
+        const result = computeRobotOverlayGeometry(baseInput({ camState }));
+        expect(result.beamUrl).toBe("beam.png");
+    });
+
+    it("robot_beam_icon absent -> beamUrl undefined (fill light éteinte / intégration antérieure)", () => {
+        const result = computeRobotOverlayGeometry(baseInput());
+        expect(result.beamUrl).toBeUndefined();
+    });
+
     it("cap dérivé de l'attribut a (identité -> cap = a mod (-180,180])", () => {
         const camState = makeCamState({ attributes: { vacuum_position: { x: 100, y: 100, a: 90 } } });
         const result = computeRobotOverlayGeometry(baseInput({ camState }));
@@ -157,5 +174,98 @@ describe("computeRobotOverlayGeometry — robot invisible / conditions de désac
         expect(result.yPct).toBe(-1);
         expect(result.iconUrl).toBe("icon.png");
         expect(result.nextSample).toBe(INITIAL_ROBOT_SAMPLE);
+    });
+});
+
+describe("computeRobotOverlayGeometry — téléportation (reboot / changement de carte / saut)", () => {
+    it("saut > 20 % de l'image en un échantillon -> glide 0 (téléportation), cadence remise à 400", () => {
+        const prevSample: RobotSample = {
+            posKey: "10,10",
+            posTs: 7_000,
+            glideMs: 2700,
+            headingDeg: 0,
+            xPct: 1,
+            yPct: 1,
+            mapKey: "1000x1000",
+        };
+        // (500,300) en identité sur 1000x1000 -> (50 %, 30 %) : distance >> 20 %.
+        const result = computeRobotOverlayGeometry(baseInput({ prevSample }));
+        expect(result.visible).toBe(true);
+        expect(result.glideMs).toBe(0);
+        expect(result.nextSample.glideMs).toBe(400);
+        expect(result.nextSample.xPct).toBeCloseTo(50, 6);
+        expect(result.nextSample.yPct).toBeCloseTo(30, 6);
+    });
+
+    it("changement de dimensions naturelles (autre carte) -> glide 0 même pour un petit delta", () => {
+        const prevSample: RobotSample = {
+            posKey: "499,299",
+            posTs: 7_000,
+            glideMs: 2700,
+            headingDeg: 0,
+            xPct: 49.9,
+            yPct: 29.9,
+            mapKey: "800x800",
+        };
+        const result = computeRobotOverlayGeometry(baseInput({ prevSample }));
+        expect(result.glideMs).toBe(0);
+        expect(result.nextSample.mapKey).toBe("1000x1000");
+    });
+
+    it("déplacement normal (petit delta, même carte) -> la glisse cadencée est conservée", () => {
+        const prevSample: RobotSample = {
+            posKey: "490,300",
+            posTs: 7_000,
+            glideMs: 2700,
+            headingDeg: 0,
+            xPct: 49,
+            yPct: 30,
+            mapKey: "1000x1000",
+        };
+        const result = computeRobotOverlayGeometry(baseInput({ prevSample }));
+        expect(result.glideMs).toBe(2700);
+        expect(result.nextSample.glideMs).toBe(2700);
+    });
+
+    it("premier échantillon (aucune position précédente) -> pas de téléportation forcée, défauts inchangés", () => {
+        const result = computeRobotOverlayGeometry(baseInput());
+        expect(result.glideMs).toBe(400);
+        expect(result.nextSample.xPct).toBeCloseTo(50, 6);
+        expect(result.nextSample.mapKey).toBe("1000x1000");
+    });
+});
+
+describe("computeRobotOverlayGeometry — gel pendant le swap d'image (mapSettling)", () => {
+    it("settling + position précédente connue -> gelé à la dernière position, glide 0, sample intact", () => {
+        const prevSample: RobotSample = {
+            posKey: "421,43",
+            posTs: 7_000,
+            glideMs: 2700,
+            headingDeg: 90,
+            xPct: 91.2,
+            yPct: 38.4,
+            mapKey: "1000x1000",
+        };
+        const result = computeRobotOverlayGeometry(baseInput({ prevSample, mapSettling: true }));
+        expect(result.visible).toBe(true);
+        expect(result.xPct).toBeCloseTo(91.2, 6);
+        expect(result.yPct).toBeCloseTo(38.4, 6);
+        expect(result.headingDeg).toBe(90);
+        expect(result.glideMs).toBe(0);
+        expect(result.nextSample).toBe(prevSample);
+        expect(result.iconUrl).toBe("icon.png");
+    });
+
+    it("settling sans position précédente -> marqueur masqué (rien de cohérent à montrer)", () => {
+        const result = computeRobotOverlayGeometry(baseInput({ mapSettling: true }));
+        expect(result.visible).toBe(false);
+        expect(result.xPct).toBe(-1);
+        expect(result.nextSample).toBe(INITIAL_ROBOT_SAMPLE);
+    });
+
+    it("settling=false (défaut) -> calcul normal inchangé", () => {
+        const result = computeRobotOverlayGeometry(baseInput());
+        expect(result.visible).toBe(true);
+        expect(result.xPct).toBeCloseTo(50, 6);
     });
 });

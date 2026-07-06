@@ -124,7 +124,8 @@
             }
         },
         "invalid_entities": "Invalid entities:",
-        "invalid_calibration": "Invalid calibration, please check your configuration"
+        "invalid_calibration": "Invalid calibration, please check your configuration",
+        "calibration_source_failed": "Calibration source unavailable: the map may be misaligned until it recovers"
     },
     "tile": {
         "status": {

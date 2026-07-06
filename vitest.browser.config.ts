@@ -13,7 +13,9 @@ import { playwright } from "@vitest/browser-playwright";
 export default defineConfig({
     optimizeDeps: {
         // Pré-bundle les dépendances CJS pour le serveur Vite du mode navigateur.
-        include: ["lottie-web", "pointer-tracker", "transformation-matrix", "change-perspective"],
+        // (`change-perspective` a été vendorisé dans src/model/map_objects/perspective-transform.ts,
+        // ce n'est plus une dépendance CJS externe à pré-bundler.)
+        include: ["lottie-web", "pointer-tracker", "transformation-matrix"],
     },
     test: {
         name: "browser",

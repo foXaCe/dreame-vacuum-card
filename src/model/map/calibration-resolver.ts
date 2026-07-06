@@ -10,7 +10,12 @@ import { PlatformGenerator } from "../generators/platform-generator";
  *
  * Comportement figé (voir `test-browser/calibration-fallback.test.ts`) : les
  * branches "entity" dégradées (état "unknown", JSON invalide) ne jettent jamais,
- * elles retournent `undefined` via un `catch`.
+ * elles retournent `undefined` via un `catch`. Ce module ne fait AUCUNE différence
+ * entre "pas de source configurée" et "source configurée mais en échec" — les deux
+ * renvoient `undefined` ici. C'est le rôle de `isCalibrationSourceConfigured`
+ * ci-dessous : l'appelant (`dreame-vacuum-card.ts` → `_updateCalibration`) l'utilise
+ * pour signaler l'échec à `CoordinatesConverter` sans changer la valeur de retour de
+ * `resolveCalibration` elle-même (contrat inchangé, voir `test/map-calibration-resolver.test.ts`).
  */
 export function resolveCalibration(
     config: CardPresetConfig,
@@ -55,4 +60,21 @@ export function resolveCalibration(
         return platformCalibration;
     }
     return undefined;
+}
+
+/**
+ * Indique si le preset a explicitement demandé une source de calibration (entité,
+ * caméra, plateforme ou points bruts). Sert à distinguer, quand `resolveCalibration`
+ * renvoie `undefined`, un ÉCHEC de résolution (source configurée mais qui n'a produit
+ * aucun point exploitable — entité "unknown"/"unavailable", JSON invalide, attribut
+ * absent, caméra sans `calibration_points`…) d'une absence de besoin de calibration
+ * (aucune source demandée : plateforme fonctionnant nativement en identité) — voir
+ * §3.2 du contrat carte↔intégration.
+ *
+ * `identity: true` n'est jamais concerné par cette distinction : cette branche renvoie
+ * toujours des points triviaux valides, jamais `undefined`.
+ */
+export function isCalibrationSourceConfigured(config: CardPresetConfig): boolean {
+    const source = config.calibration_source;
+    return !!(source?.entity || source?.camera || source?.platform || source?.calibration_points);
 }
