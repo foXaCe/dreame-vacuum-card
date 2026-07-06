@@ -391,6 +391,10 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (this.configErrors.length > 0) {
             return this._showConfigErrors(this.configErrors);
         }
+        // hass peut ne pas être encore assigné (setConfig → premier render, preview éditeur).
+        if (!this.hass) {
+            return;
+        }
         const invalidEntities = areAllEntitiesDefined(this.watchedEntities, this.hass);
         if (invalidEntities.length > 0) {
             return this._showInvalidEntities(invalidEntities);
@@ -1226,6 +1230,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _getRoomsConfig(): RoomConfigEventData | undefined {
+        if (!this.hass) return undefined;
         const config = this._getCurrentPreset();
         const rooms = this.hass.states[config.map_source?.camera ?? ""]?.attributes["rooms"] as Record<
             string,
@@ -1582,6 +1587,8 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _initializeRoomsRetries = 0;
 
     private _initializeRooms(): void {
+        // Instance déconnectée : ne pas poursuivre la chaîne de retries (cf. connectedCallback).
+        if (!this.connected) return;
         if (!this.modes || this.modes.length === 0) {
             if (this._initializeRoomsRetries >= 20) return;
             this._initializeRoomsRetries++;
