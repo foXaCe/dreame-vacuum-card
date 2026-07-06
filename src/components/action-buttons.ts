@@ -41,7 +41,10 @@ export class ActionButtons extends LitElement {
         forwardHaptic("light");
         // HA 2024+ recommande de passer entity_id via `target` plutôt que serviceData,
         // pour bénéficier du resolving area_id/floor_id/label_id.
-        this.hass.callService("vacuum", action, undefined, { entity_id: this.entityId });
+        this.hass.callService("vacuum", action, undefined, { entity_id: this.entityId }).then(
+            () => forwardHaptic("success"),
+            () => forwardHaptic("failure")
+        );
     }
 
     private _fireEvent(eventName: string): void {

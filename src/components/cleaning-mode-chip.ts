@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
+import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { computeStateDisplay } from "../localize/hass/compute_state_display";
@@ -165,7 +166,10 @@ export class CleaningModeChip extends LitElement {
         if (choice.kind === "cleangenius") {
             const cgId = this._getCleanGeniusEntity();
             if (!cgId) return;
-            this.hass.callService("select", "select_option", { option: choice.option }, { entity_id: cgId });
+            this.hass.callService("select", "select_option", { option: choice.option }, { entity_id: cgId }).then(
+                () => forwardHaptic("success"),
+                () => forwardHaptic("failure")
+            );
             return;
         }
 
@@ -174,15 +178,21 @@ export class CleaningModeChip extends LitElement {
         const modeId = this._getCleaningModeEntity();
         if (!modeId) return;
         const cgId = this._getCleanGeniusEntity();
-        if (cgId && this._isCgActive()) {
-            await this.hass.callService("select", "select_option", { option: "off" }, { entity_id: cgId });
-            for (let attempt = 0; attempt < 8; attempt++) {
-                const st = this.hass.states[modeId]?.state;
-                if (st && st !== "unavailable" && st !== "unknown") break;
-                await new Promise((resolve) => setTimeout(resolve, 400));
+        try {
+            if (cgId && this._isCgActive()) {
+                await this.hass.callService("select", "select_option", { option: "off" }, { entity_id: cgId });
+                for (let attempt = 0; attempt < 8; attempt++) {
+                    const st = this.hass.states[modeId]?.state;
+                    if (st && st !== "unavailable" && st !== "unknown") break;
+                    await new Promise((resolve) => setTimeout(resolve, 400));
+                }
             }
+            await this.hass.callService("select", "select_option", { option: choice.option }, { entity_id: modeId });
+            forwardHaptic("success");
+        } catch {
+            forwardHaptic("failure");
+            return;
         }
-        this.hass.callService("select", "select_option", { option: choice.option }, { entity_id: modeId });
     }
 
     protected render(): TemplateResult | typeof nothing {

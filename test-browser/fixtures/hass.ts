@@ -86,17 +86,26 @@ export interface ServiceCall {
     data: Record<string, unknown>;
 }
 
+/** Comportement mutable du mock `callService`, partagé par référence avec les tests :
+ *  bascule `rejectCalls` à `true` pour exercer un chemin d'échec de service (haptic
+ *  "failure", pas de unhandled rejection) sans changer le défaut (résolution). */
+export interface HassBehavior {
+    rejectCalls: boolean;
+}
+
 export interface TestHass {
     // Typé lâche exprès : la carte consomme HomeAssistantFixed (interface vendored
     // minimale) — les tests castent via `as unknown as`.
     hass: Record<string, unknown>;
     calls: ServiceCall[];
     images: TestImages;
+    behavior: HassBehavior;
 }
 
 export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<string, unknown> = {}): TestHass {
     const images = makeTestImages();
     const calls: ServiceCall[] = [];
+    const behavior: HassBehavior = { rejectCalls: false };
     const now = new Date().toISOString();
     const hass = {
         language: "en",
@@ -138,10 +147,10 @@ export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<s
         },
         callService: (domain: string, service: string, data: Record<string, unknown>) => {
             calls.push({ domain, service, data });
-            return Promise.resolve();
+            return behavior.rejectCalls ? Promise.reject(new Error("service failed (test)")) : Promise.resolve();
         },
     };
-    return { hass, calls, images };
+    return { hass, calls, images, behavior };
 }
 
 export function makeCardConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -185,13 +194,19 @@ export function mountCard(
     config: Record<string, unknown> = makeCardConfig(),
     vacuumState = "docked",
     extraVacuumAttributes: Record<string, unknown> = {}
-): { card: CardElement; hass: Record<string, unknown>; calls: ServiceCall[]; images: TestImages } {
-    const { hass, calls, images } = makeHass(vacuumState, extraVacuumAttributes);
+): {
+    card: CardElement;
+    hass: Record<string, unknown>;
+    calls: ServiceCall[];
+    images: TestImages;
+    behavior: HassBehavior;
+} {
+    const { hass, calls, images, behavior } = makeHass(vacuumState, extraVacuumAttributes);
     const card = document.createElement("dreame-vacuum-card") as CardElement;
     card.setConfig(config);
     card.hass = hass;
     document.body.appendChild(card);
-    return { card, hass, calls, images };
+    return { card, hass, calls, images, behavior };
 }
 
 /** Deuxième image de carte, visuellement distincte de `makeTestImages().mapDataUrl` — sert à

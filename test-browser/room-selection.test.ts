@@ -19,6 +19,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import "../src/dreame-vacuum-card";
 import {
     mountCard,
+    makeCardConfig,
     until,
     IMG_W,
     IMG_H,
@@ -40,9 +41,7 @@ function clickMapAtImagePixel(card: CardElement, ix: number, iy: number): void {
     const rect = img.getBoundingClientRect();
     const clientX = rect.left + (ix / IMG_W) * rect.width;
     const clientY = rect.top + (iy / IMG_H) * rect.height;
-    svgWrapper.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true, clientX, clientY, button: 0 })
-    );
+    svgWrapper.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, clientX, clientY, button: 0 }));
 }
 
 /** Active l'onglet "Pièce" via un vrai clic sur le sélecteur d'onglets (pas un appel direct
@@ -139,5 +138,40 @@ describe("dreame-vacuum-card — sélection de pièce par hit-test", () => {
         expect(calls[0].data.entity_id).toBe("vacuum.test");
         expect(calls[0].data.repeats).toBe(1);
         expect((calls[0].data.segments as string[]).map(String).sort()).toEqual(["1", "2"]);
+    });
+
+    it("un callService rejeté (robot hors-ligne) émet un haptic 'failure' sans casser la carte ni la sélection", async () => {
+        // clean_selection_on_start: false pour isoler l'assertion "la sélection reste
+        // intacte" du comportement (indépendant du succès/échec) qui la vide sinon.
+        const { card, behavior } = mountCard(makeCardConfig({ clean_selection_on_start: false }));
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+        await activateRoomTabAndWaitPickCanvas(card);
+
+        clickMapAtImagePixel(card, ROOM_1_CENTER_PX.x, ROOM_1_CENTER_PX.y);
+        await until(() => selectedRoomIds(card).length === 1);
+        clickMapAtImagePixel(card, ROOM_2_CENTER_PX.x, ROOM_2_CENTER_PX.y);
+        await until(() => selectedRoomIds(card).length === 2);
+
+        behavior.rejectCalls = true;
+        const haptics: unknown[] = [];
+        const onHaptic = (e: Event) => haptics.push((e as CustomEvent).detail);
+        window.addEventListener("haptic", onHaptic);
+
+        try {
+            await card.updateComplete;
+            const actionButtons = card.shadowRoot!.querySelector("dreame-action-buttons") as HTMLElement & {
+                updateComplete: Promise<boolean>;
+            };
+            await actionButtons.updateComplete;
+            const primaryBtn = actionButtons.shadowRoot!.querySelector<HTMLButtonElement>(".action-btn.primary")!;
+            primaryBtn.click();
+
+            await until(() => haptics.includes("failure"));
+            expect(selectedRoomIds(card).sort()).toEqual(["1", "2"]);
+        } finally {
+            window.removeEventListener("haptic", onHaptic);
+        }
     });
 });
