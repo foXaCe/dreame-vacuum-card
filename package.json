@@ -60,6 +60,8 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "test:browser": "vitest run --config vitest.browser.config.ts",
+        "test:coverage:browser": "vitest run --coverage --config vitest.browser.config.ts",
+        "test:coverage:merged": "npm run test:coverage && npm run test:coverage:browser && node scripts/merge-coverage.mjs",
         "format": "prettier --write \"src/**/*.{ts,js,json,css}\"",
         "format:check": "prettier --check \"src/**/*.{ts,js,json,css}\"",
         "rollup": "rollup -c"

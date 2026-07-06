@@ -142,3 +142,10 @@ des rectangles de zone, appels de service Dreame réels (`vacuum_clean_segment`,
 double-buffering anti-flicker. Les fixtures (`test-browser/fixtures/hass.ts`) génèrent
 les images de carte et le `segment_map` à la volée via canvas — calibration vacuum =
 map × 10. En CI : job dédié `test-browser` (`npx playwright install chromium`).
+
+**Couverture fusionnée** — `npm run test:coverage:merged` (en local sans navigateurs
+Playwright : `CHROMIUM_BIN=/usr/bin/chromium npm run test:coverage:merged`) est la
+**seule mesure fiable** pour `src/dreame-vacuum-card.ts` : la suite unitaire seule
+(`npm run test:coverage`) ne couvre que ~14 % de ce fichier (rien n'exerce `render()`,
+la calibration ou le hit-test canvas en happy-dom), tandis que le rapport fusionné avec
+la suite navigateur atteint ~66 %. Rapport HTML dans `coverage/merged/html/index.html`.
