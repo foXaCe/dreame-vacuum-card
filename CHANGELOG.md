@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Removed the `image-rendering: crisp-edges` compensation on zoom (and the now-dead `zoomed` class): the integration renders the map at ×2 since 2026-07-06 (`map_scale` option), so zooming stays below native resolution and the browser's default smooth rendering looks better. Second step of the offload process documented in `docs/INTEGRATION-CONTRACT.md` §1.1.
+
+### Added
+- `docs/INTEGRATION-CONTRACT.md`: shared card ↔ integration contract — division of responsibilities ("the integration renders, the card interacts"), strict camera-attribute contract, card consumption pipeline, offload backlog and cross-validation checklist.
+
 ## [5.10.0] - 2026-07-06
 
 ### Added

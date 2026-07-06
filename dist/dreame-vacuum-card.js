@@ -950,14 +950,6 @@ function e(e,t,i,a){var n,s=arguments.length,r=s<3?t:null===a?a=Object.getOwnPro
         pointer-events: none;
     }
 
-    #map-image.zoomed {
-        /* crisp-edges préserve les pixels sans flouter, en évitant l'aspect "grille"
-                   brutal de pixelated. Fallback sur pixelated pour les navigateurs qui ne
-                   reconnaissent pas crisp-edges. */
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-    }
-
     #room-selection-overlay {
         position: absolute;
         top: 0;
@@ -2168,7 +2160,6 @@ function e(e,t,i,a){var n,s=arguments.length,r=s<3?t:null===a?a=Object.getOwnPro
                     decoding="async"
                     loading="eager"
                     fetchpriority="high"
-                    class="${this.mapScale*this.realScale>1?"zoomed":""}"
                     src="${m}"
                     @load="${()=>{this.mapLoaded=!0,this._calculateBasicScale(),this._buildPickCanvas()}}"
                 />
