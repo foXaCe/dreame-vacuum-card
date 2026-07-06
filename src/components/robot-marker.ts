@@ -60,7 +60,7 @@ export class RobotMarker extends LitElement {
                 ${
                     this.iconUrl
                         ? html`<img id="robot-img" src="${this.iconUrl}" alt="" />`
-                        : html`<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true">
+                        : html`<svg viewBox="0 0 32 32" width="21" height="21" aria-hidden="true">
                               <!-- Robot aspirateur vu de dessus, orienté vers +x à rotate(0) :
                                halo de contraste, corps, pare-chocs avant (cap) et tourelle lidar. -->
                               <circle cx="16" cy="16" r="14" class="halo" />
@@ -103,10 +103,10 @@ export class RobotMarker extends LitElement {
 
             #icon {
                 position: absolute;
-                left: -12px;
-                top: -12px;
-                width: 24px;
-                height: 24px;
+                left: -10.5px;
+                top: -10.5px;
+                width: 21px;
+                height: 21px;
                 transform-origin: center;
                 transition: transform 0.4s linear;
                 will-change: transform;
@@ -115,8 +115,8 @@ export class RobotMarker extends LitElement {
 
             #robot-img {
                 display: block;
-                width: 24px;
-                height: 24px;
+                width: 21px;
+                height: 21px;
                 object-fit: contain;
             }
 
@@ -126,8 +126,8 @@ export class RobotMarker extends LitElement {
                 position: absolute;
                 left: 62%; /* démarre au nez du robot, déborde vers +x */
                 top: 50%;
-                width: 34px;
-                height: 34px;
+                width: 30px;
+                height: 30px;
                 transform: translateY(-50%);
                 object-fit: contain;
                 z-index: -1; /* derrière le robot, comme le halo sonar */
@@ -172,9 +172,9 @@ export class RobotMarker extends LitElement {
                 position: absolute;
                 left: 50%;
                 top: 50%;
-                width: 22px;
-                height: 22px;
-                margin: -11px 0 0 -11px;
+                width: 19px;
+                height: 19px;
+                margin: -9.5px 0 0 -9.5px;
                 border-radius: 50%;
                 background: radial-gradient(
                     circle,
