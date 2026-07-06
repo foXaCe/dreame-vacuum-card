@@ -344,6 +344,11 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
     **`robot_icon`** = data URI (PNG ou SVG), vue de dessus, **orientée vers +x** (0° =
     vers la droite), fond transparent, taille libre (la carte l'affiche en 28 px).
     Statique tant que le device ne change pas (pas de bump par tick — backlog D).
+    💡 **Pointeur** : les assets existent déjà dans `dreame/_resources_data.py`
+    (`MAP_ROBOT_LIDAR_IMAGE_DREAME_LIGHT` / `_DARK`, PNG base64 128×128, constantes
+    `Final` — plus toutes les variantes d'état charging/cleaning/mop/drying). Exposer la
+    variante de base suffit ; ⚠ vérifier son orientation d'origine (si l'asset pointe
+    vers le haut, le préciser ou le pré-pivoter : le contrat exige une orientation +x).
   - **Côté carte (✅ pré-câblé, 2026-07-06)** : `dreame-robot-marker` accepte `iconUrl`
     et affiche l'image (rotation par le cap) dès que l'attribut existe — **zéro changement
     carte à la livraison**. En attendant : fallback SVG « robot vu de dessus » (corps,
