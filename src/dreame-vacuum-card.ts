@@ -56,6 +56,7 @@ import {
     getWatchedEntities,
     hasConfigOrAnyEntityChanged,
     stopEvent,
+    unwrapAngleDeg,
 } from "./utils";
 import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
@@ -173,6 +174,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _lastRobotPosKey?: string;
     private _lastRobotPosTs = 0;
     private _robotGlideMs = 400;
+    private _lastRobotHeadingDeg?: number;
 
     constructor() {
         super();
@@ -467,6 +469,10 @@ export class XiaomiVacuumMapCard extends LitElement {
                         robotPos.y + Math.sin(aRad)
                     );
                     robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
+                    // Déroule le cap : évite qu'une transition CSS `rotate()` fasse un tour
+                    // complet dans le mauvais sens quand le cap réel franchit ±180°.
+                    robotHeadingDeg = unwrapAngleDeg(this._lastRobotHeadingDeg, robotHeadingDeg);
+                    this._lastRobotHeadingDeg = robotHeadingDeg;
                     robotVisible = true;
 
                     // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
@@ -836,6 +842,8 @@ export class XiaomiVacuumMapCard extends LitElement {
             this.lastValidMapUrl = undefined;
             // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
             this.mapLoaded = false;
+            // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement.
+            this._lastRobotHeadingDeg = undefined;
         }
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne

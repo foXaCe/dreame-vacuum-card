@@ -173,3 +173,33 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
         await until(() => marker.transitionMs === 400);
     });
 });
+
+describe("dreame-robot-marker — déroulé du cap (évite le tour complet à ±180°)", () => {
+    it("garde le cap continu quand la valeur brute franchit +178° -> -175°", async () => {
+        // Calibration de test = pur scale ×10 sans rotation -> le cap écran suit
+        // directement `robotPos.a`, donc on peut choisir `a` pour franchir la limite
+        // de atan2 (178° -> -175° est une rotation physique de ~7°, pas ~353°).
+        const base = { x: ROOM_1_CENTER_PX.x * 10, y: ROOM_1_CENTER_PX.y * 10, a: 178 };
+        const { card, hass } = mountCardWithRobotPosition("cleaning", base);
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            headingDeg: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+        expect(marker.headingDeg).toBeCloseTo(178, 5);
+        const before = marker.headingDeg;
+
+        pushRobotPosition(card, hass, { ...base, a: -175 });
+        await until(() => marker.headingDeg !== before);
+        const after = marker.headingDeg;
+
+        // Continuité : le delta appliqué doit être le petit virage (~7°), pas le grand
+        // tour (~353°) qu'un simple atan2 non déroulé produirait.
+        expect(Math.abs(after - before)).toBeLessThan(180);
+        expect(after).toBeCloseTo(185, 5);
+    });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isHaVersionAtLeast, deleteFromArray, conditional } from "../src/utils";
+import { isHaVersionAtLeast, deleteFromArray, conditional, unwrapAngleDeg } from "../src/utils";
 import type { HomeAssistantFixed } from "../src/types/fixes";
 
 const mkHass = (version: string | undefined): HomeAssistantFixed =>
@@ -61,5 +61,33 @@ describe("conditional", () => {
         });
         expect(out).toBe(null);
         expect(called).toBe(false);
+    });
+});
+
+describe("unwrapAngleDeg", () => {
+    it("returns the value unchanged on the first sample (no previous angle)", () => {
+        expect(unwrapAngleDeg(undefined, 90)).toBe(90);
+    });
+
+    it("unwraps a crossing of +180 -> -175 as a short +7 delta, not -353", () => {
+        expect(unwrapAngleDeg(178, -175)).toBe(185);
+    });
+
+    it("unwraps a crossing of -180 -> 175 as a short -7 delta, in the opposite direction", () => {
+        expect(unwrapAngleDeg(-178, 175)).toBe(-185);
+    });
+
+    it("keeps the continuous value beyond a single turn (720 -> value equivalent to 10 mod 360)", () => {
+        expect(unwrapAngleDeg(720, 10)).toBe(730);
+    });
+
+    it("treats a non-finite previous angle like a first sample", () => {
+        expect(unwrapAngleDeg(NaN, 42)).toBe(42);
+    });
+
+    it("resolves an exact 180deg flip to the canonical -180 delta (boundary of the wrap range)", () => {
+        // 0 -> 180 is a half-turn either way; the wrap formula canonicalizes it to -180
+        // (delta range is (-180, 180], so a diff of exactly 180 maps to -180, not +180).
+        expect(unwrapAngleDeg(0, 180)).toBe(-180);
     });
 });
