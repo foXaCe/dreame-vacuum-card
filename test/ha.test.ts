@@ -144,7 +144,12 @@ describe("handleAction", () => {
     it("toggle does nothing when config.entity is missing", () => {
         const callService = vi.fn();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        handleAction(document.createElement("div"), { callService } as any, { tap_action: { action: "toggle" } }, "tap");
+        handleAction(
+            document.createElement("div"),
+            { callService } as any,
+            { tap_action: { action: "toggle" } },
+            "tap"
+        );
         expect(callService).not.toHaveBeenCalled();
     });
 
@@ -165,9 +170,14 @@ describe("handleAction", () => {
             },
             "tap"
         );
-        expect(callService).toHaveBeenCalledWith("vacuum", "set_fan_speed", { fan_speed: "max" }, {
-            entity_id: "vacuum.foo",
-        });
+        expect(callService).toHaveBeenCalledWith(
+            "vacuum",
+            "set_fan_speed",
+            { fan_speed: "max" },
+            {
+                entity_id: "vacuum.foo",
+            }
+        );
     });
 
     it("call-service does nothing when the action has no service", () => {
@@ -215,6 +225,34 @@ describe("handleAction", () => {
         openSpy.mockRestore();
     });
 
+    it("url preserves the URL intact (hyphens not stripped)", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "https://example.com/my-page" } },
+            "tap"
+        );
+        expect(openSpy).toHaveBeenCalledWith("https://example.com/my-page", "_blank", "noopener");
+        openSpy.mockRestore();
+    });
+
+    it("url allows a relative path", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "/local/dashboard" } },
+            "tap"
+        );
+        expect(openSpy).toHaveBeenCalledWith("/local/dashboard", "_blank", "noopener");
+        openSpy.mockRestore();
+    });
+
     it("url rejects a javascript: scheme (XSS guard)", () => {
         const callService = vi.fn();
         const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
@@ -223,6 +261,48 @@ describe("handleAction", () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             { callService } as any,
             { tap_action: { action: "url", url_path: "javascript:alert(1)" } },
+            "tap"
+        );
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    it("url rejects a javascript: scheme hidden behind a control character (tab bypass)", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "java\tscript:alert(1)" } },
+            "tap"
+        );
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    it("url rejects a javascript: scheme regardless of casing", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "JaVaScRiPt:alert(1)" } },
+            "tap"
+        );
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    it("url rejects a mailto: scheme (allowlist is http/https only)", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "mailto:x@y.z" } },
             "tap"
         );
         expect(openSpy).not.toHaveBeenCalled();

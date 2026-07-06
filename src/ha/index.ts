@@ -231,9 +231,23 @@ export const handleAction = (
             break;
         case "url": {
             const cfg = actionConfig as UrlActionConfig;
-            // Refuse le schéma javascript: (XSS) et ouvre sans accès `window.opener` (noopener).
-            if (cfg.url_path && !/^\s*javascript:/i.test(cfg.url_path)) {
-                window.open(cfg.url_path, "_blank", "noopener");
+            // Allowlist de schémas (http/https + chemins relatifs) : plus sûr qu'une
+            // blacklist de `javascript:` — les navigateurs normalisent (WHATWG URL)
+            // les caractères de contrôle avant de résoudre le schéma, ce qui pouvait
+            // contourner une regex. `new URL()` applique la même normalisation, donc
+            // on s'appuie sur le schéma résolu plutôt que sur une regex manuelle.
+            const raw = cfg.url_path ?? "";
+            if (!raw) break;
+            let allowed = false;
+            try {
+                const resolved = new URL(raw, window.location.href);
+                allowed = resolved.protocol === "http:" || resolved.protocol === "https:";
+            } catch {
+                allowed = false;
+            }
+            if (allowed) {
+                // Ouvre sans accès `window.opener` (noopener).
+                window.open(raw, "_blank", "noopener");
             }
             break;
         }

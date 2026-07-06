@@ -139,8 +139,52 @@ describe("isConditionMet", () => {
 
     it("value_not equal to the default empty currentValue does not match", () => {
         const cond: ConditionConfig = { value_not: "" };
-        // condition.value_not "" is falsy, so the value_not branch is never entered -> false.
+        // currentValue defaults to "" (no internal_variable/entity resolved);
+        // "" !== "" is false, so the condition does not match.
         expect(isConditionMet(cond, {}, mkHass({}))).toBe(false);
+    });
+
+    it("matches an empty-string value against an entity state that is legitimately empty", () => {
+        const hass = mkHass({ "sensor.note": { state: "", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.note", value: "" };
+        expect(isConditionMet(cond, {}, hass)).toBe(true);
+    });
+
+    it("does not match an empty-string value against a non-empty entity state", () => {
+        const hass = mkHass({ "sensor.note": { state: "on", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.note", value: "" };
+        expect(isConditionMet(cond, {}, hass)).toBe(false);
+    });
+
+    it("matches value_not: '' against a non-empty entity state", () => {
+        const hass = mkHass({ "sensor.note": { state: "on", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.note", value_not: "" };
+        expect(isConditionMet(cond, {}, hass)).toBe(true);
+    });
+
+    it("does not match value_not: '' against an entity state that is empty", () => {
+        const hass = mkHass({ "sensor.note": { state: "", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.note", value_not: "" };
+        expect(isConditionMet(cond, {}, hass)).toBe(false);
+    });
+
+    it("non-regression: value '0' still matches (falsy but defined string)", () => {
+        const hass = mkHass({ "sensor.count": { state: "0", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.count", value: "0" };
+        expect(isConditionMet(cond, {}, hass)).toBe(true);
+    });
+
+    it("non-regression: value_not 'off' still matches when state differs", () => {
+        const hass = mkHass({ "vacuum.robot": { state: "cleaning", attributes: {} } });
+        const cond: ConditionConfig = { entity: "vacuum.robot", value_not: "off" };
+        expect(isConditionMet(cond, {}, hass)).toBe(true);
+    });
+
+    it("value takes precedence over value_not when both are set (including empty strings)", () => {
+        const hass = mkHass({ "sensor.note": { state: "", attributes: {} } });
+        const cond: ConditionConfig = { entity: "sensor.note", value: "", value_not: "" };
+        // value "" === currentValue "" -> true, via the `value` branch (value_not never evaluated).
+        expect(isConditionMet(cond, {}, hass)).toBe(true);
     });
 });
 
@@ -235,10 +279,11 @@ describe("hasConfigOrAnyEntityChanged", () => {
         // _hass is NOT in changedProps, so oldHass is undefined -> entitiesChanged short-circuits true.
         // Use a watched entity that resolves identically by passing _hass too would change semantics,
         // so here we verify the changedKeys path with an unwatched-entities list.
-        const changed = mkChanged([["_hass", oldHass], ["foo", 2]]);
-        expect(hasConfigOrAnyEntityChanged([], changed, false, mkHass({ "vacuum.robot": sharedState }))).toBe(
-            true,
-        );
+        const changed = mkChanged([
+            ["_hass", oldHass],
+            ["foo", 2],
+        ]);
+        expect(hasConfigOrAnyEntityChanged([], changed, false, mkHass({ "vacuum.robot": sharedState }))).toBe(true);
     });
 
     it("returns false when no watched entities, only _hass changed, and entities identical", () => {
