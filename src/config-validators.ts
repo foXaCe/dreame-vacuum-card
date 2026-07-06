@@ -209,7 +209,7 @@ function validateMapModeConfig(
     return errors;
 }
 
-function validatePreset(config: CardPresetConfig, nameRequired: boolean, language: Language): TranslatableString[] {
+function validatePreset(config: CardPresetConfig, language: Language): TranslatableString[] {
     const errors: TranslatableString[] = [];
     const platformsWithDefaultCalibration = PlatformGenerator.getPlatformsWithDefaultCalibration();
     const mandatoryFields = new Map<string, string>([
@@ -236,13 +236,12 @@ function validatePreset(config: CardPresetConfig, nameRequired: boolean, languag
     (config.map_modes ?? [])
         .flatMap((i) => validateMapModeConfig(vacuumPlatform, i, language))
         .forEach((e) => errors.push(e));
-    if (!config.preset_name && nameRequired) errors.push("validation.preset.preset_name.missing");
     return errors;
 }
 
 export function validateConfig(config: XiaomiVacuumMapCardConfig): string[] {
     const errors: TranslatableString[] = [];
-    validatePreset(config, false, config.language).forEach((e) => errors.push(e));
+    validatePreset(config, config.language).forEach((e) => errors.push(e));
     return errors.map((e) => localize(e, config.language));
 }
 

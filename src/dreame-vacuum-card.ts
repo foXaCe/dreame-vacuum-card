@@ -168,6 +168,11 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _mapAlphaMaskKey?: string;
     private _stateSensorId: string | null | undefined = undefined;
     private _stateSensorEntityKey: string | undefined = undefined;
+    /** Interpolation du marqueur robot : cadence mesurée des échantillons vacuum_position
+     *  (contrat §5.D — ~3 s de push cloud, la fluidité se gagne côté carte). */
+    private _lastRobotPosKey?: string;
+    private _lastRobotPosTs = 0;
+    private _robotGlideMs = 400;
 
     constructor() {
         super();
@@ -422,6 +427,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         let robotYPct = -1;
         let robotHeadingDeg = 0;
         let robotVisible = false;
+        let robotIconUrl: string | undefined;
         // Résolution de l'overlay robot client-side :
         //  - un réglage explicite (preset puis config) est toujours respecté ;
         //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
@@ -438,6 +444,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         if (robotOverlayEnabled && this.coordinatesConverter?.calibrated && preset.map_source?.camera) {
             const camState = this.hass.states[preset.map_source.camera];
+            // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
+            robotIconUrl = camState?.attributes?.robot_icon as string | undefined;
             const robotPos = camState?.attributes?.vacuum_position;
             if (robotPos && robotPos.x != null && robotPos.y != null) {
                 const p0 = this.coordinatesConverter.vacuumToMap(robotPos.x, robotPos.y);
@@ -456,6 +464,20 @@ export class XiaomiVacuumMapCard extends LitElement {
                     );
                     robotHeadingDeg = (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
                     robotVisible = true;
+
+                    // Cadence mesurée des échantillons de position (~3 s, push cloud Dreame,
+                    // cf. contrat §5.D) : le marqueur glisse sur ~90 % de l'intervalle mesuré
+                    // pour un mouvement continu (au lieu de 0,4 s de glisse puis une pause).
+                    const posKey = `${robotPos.x},${robotPos.y}`;
+                    if (posKey !== this._lastRobotPosKey) {
+                        const now = Date.now();
+                        if (this._lastRobotPosKey !== undefined) {
+                            const interval = now - this._lastRobotPosTs;
+                            this._robotGlideMs = Math.min(4000, Math.max(400, Math.round(interval * 0.9)));
+                        }
+                        this._lastRobotPosKey = posKey;
+                        this._lastRobotPosTs = now;
+                    }
                 }
             }
         }
@@ -524,6 +546,8 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .xPercent=${robotXPct}
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
+                    .transitionMs=${this._robotGlideMs}
+                    .iconUrl=${robotIconUrl}
                 ></dreame-robot-marker>
             </div>
         `;
@@ -1021,7 +1045,6 @@ export class XiaomiVacuumMapCard extends LitElement {
                 selection = this.selectedPredefinedRectangles
                     .map((r) => r.toVacuum(repeats))
                     .reduce((a, v) => a.concat(v), [] as unknown[]);
-                variables = this.selectedPredefinedRectangles[0]?.variables ?? {};
                 variables = variablesExtractor(this.selectedPredefinedRectangles);
                 break;
             case SelectionType.ROOM:
@@ -1029,12 +1052,10 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .map((r) => r.toVacuum())
                     .map((r) => XiaomiVacuumMapCard.adjustRoomId(r, mode));
                 selection = [...selectedRooms, ...(repeats && selectedRooms.length > 0 ? [repeats] : [])];
-                variables = this.selectedRooms[0]?.variables ?? {};
                 variables = variablesExtractor(this.selectedRooms);
                 break;
             case SelectionType.MANUAL_PATH:
                 selection = this.selectedManualPath.toVacuum(repeats);
-                variables = this.selectedManualPath.variables ?? {};
                 variables = variablesExtractor([this.selectedManualPath]);
                 break;
             case SelectionType.MANUAL_POINT:

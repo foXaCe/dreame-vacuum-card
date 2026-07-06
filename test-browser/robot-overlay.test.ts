@@ -122,3 +122,54 @@ describe("dreame-vacuum-card — overlay de position du robot", () => {
         expect(marker.visible).toBe(false);
     });
 });
+
+/** Pousse une nouvelle vacuum_position via une MAJ hass immuable (même pattern que
+ *  map-double-buffering : nouvelle référence states → hasConfigOrAnyEntityChanged). */
+function pushRobotPosition(
+    card: CardElement,
+    hass: Record<string, unknown>,
+    position: { x: number; y: number; a: number }
+): void {
+    const prevStates = hass.states as Record<string, { attributes: Record<string, unknown> }>;
+    const newStates = {
+        ...prevStates,
+        "camera.test_map": {
+            ...prevStates["camera.test_map"],
+            attributes: { ...prevStates["camera.test_map"].attributes, vacuum_position: position },
+        },
+    };
+    card.hass = { ...hass, states: newStates };
+}
+
+describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () => {
+    it("adapte la durée de glisse à la cadence mesurée des échantillons de position", async () => {
+        const base = { x: ROOM_1_CENTER_PX.x * 10, y: ROOM_1_CENTER_PX.y * 10, a: 0 };
+        const { card, hass } = mountCardWithRobotPosition("cleaning", base);
+        await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+        const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+        await until(() => img.complete && img.naturalWidth > 0);
+
+        const marker = card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & {
+            visible: boolean;
+            transitionMs: number;
+        };
+        await until(() => !!marker && marker.visible === true);
+        // Avant toute cadence mesurée : durée de glisse par défaut.
+        expect(marker.transitionMs).toBe(400);
+
+        // Échantillon suivant ~650 ms plus tard → glisse ≈ 90 % de l'intervalle mesuré.
+        await new Promise((r) => setTimeout(r, 650));
+        pushRobotPosition(card, hass, { ...base, x: base.x + 300 });
+        await until(() => marker.transitionMs > 400);
+        expect(marker.transitionMs).toBeGreaterThan(400);
+        expect(marker.transitionMs).toBeLessThan(1500);
+
+        // La transition CSS est bien pilotée par la variable posée en style inline.
+        const markerDiv = marker.shadowRoot!.querySelector<HTMLElement>("#marker")!;
+        expect(markerDiv.style.getPropertyValue("--rm-glide")).toBe(`${marker.transitionMs}ms`);
+
+        // Échantillon quasi immédiat → borne basse (clamp à 400 ms, jamais en dessous).
+        pushRobotPosition(card, hass, { ...base, x: base.x + 600 });
+        await until(() => marker.transitionMs === 400);
+    });
+});
