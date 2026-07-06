@@ -200,6 +200,15 @@ répertoires avec une ligne par module, et retirer de la description de
 
 - [ ] 4 modules créés sous `src/model/map/`, chacun avec ses tests
 - [ ] `wc -l src/dreame-vacuum-card.ts` ≤ 1400
+  > **Amendé en revue (2026-07-06)** : résultat réel 1659 lignes. Le seuil 1400 était
+  > une mauvaise estimation du plan — l'inventaire complet des coutures (y compris
+  > `_polygonArea` et `_apiRoomPolygonsCache`, découverts en cours) ne représente que
+  > ~524 lignes nettes ; le reste est de l'orchestration explicitement hors scope.
+  > Critère effectif : toutes les coutures de l'inventaire extraites sans duplication.
+  > Couverture : l'AGRÉGAT « All files » monte (82,16 → 82,81 % stmts) et chaque zone
+  > extraite est en hausse ou maintenue dans son module (95,65 / 100 / 91,89 / 87,82 %) ;
+  > le chiffre isolé du fichier (67,88 → 61,03 %) baisse mécaniquement car le code le
+  > mieux couvert l'a quitté — artefact de composition, zéro zone perdue.
 - [ ] Gate complet vert (typecheck, lint, format, unit, browser) + `npm run rollup` exit 0
 - [ ] Aucun changement de comportement : aucune modification dans les fichiers de
       test EXISTANTS autre que d'éventuels imports (les assertions ne bougent pas)

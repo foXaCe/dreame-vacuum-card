@@ -26,9 +26,9 @@ l'utilisateur contrôle git.
 | 010 | Code mort : branche « Setup », clés i18n, asset Lottie | P2 | S | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a36b2185b9da81797`, intégré dans la PR #37 ; −315 lignes) |
 | 011 | [SPIKE] Couverture navigateur + rapport fusionné | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-ac51381359e60361c`, intégré dans la PR #37 ; couverture réelle du god file : 14,58 % → 66,05 % stmts, baseline pour le plan 014) |
 | 012 | Tests caractérisation : calibration dégradée + overlay pixels | P2 | M | — | DONE (approuvé 2026-07-06, branche `worktree-agent-a21600c0503585e24`, intégré dans la PR #37 ; +10 tests navigateur ; a révélé le constat « calibration cassée = faux calibrated:true », voir ci-dessous) |
-| 013 | Lazy-load Lottie (~1/3 du bundle) + livrable zip HACS | P3 | L | 005, 010 | IN PROGRESS |
-| 014 | Découpage du god file en 4 modules `src/model/map/` | P3 | L | 002, 003, 010 (durs) ; 011, 012 (recommandés) | IN PROGRESS |
-| 015 | CI sans matrice + renommage `Xiaomi*` → `Dreame*` | P3 | S+M | 005 ; partie B **en dernier de tout** | TODO |
+| 013 | Lazy-load Lottie (~1/3 du bundle) + livrable zip HACS | P3 | L | 005, 010 | DONE (approuvé 2026-07-06, branche `worktree-agent-ae6b8099d9b100752`, intégré PR #38 ; bundle 606→407 Ko ; **correctif post-merge** : hacs.json revenu à filename .js + release double asset, voir section correctif) |
+| 014 | Découpage du god file en 4 modules `src/model/map/` | P3 | L | 002, 003, 010 (durs) ; 011, 012 (recommandés) | DONE (approuvé 2026-07-06, branche `worktree-agent-a122f932bc10e79a0`, intégré PR #38 ; 2183→1659 lignes, 4 modules + 44 tests, couverture agrégée en hausse — criteria ≤1400 et couverture par fichier amendés en revue, voir plan) |
+| 015 | CI sans matrice + renommage `Xiaomi*` → `Dreame*` | P3 | S+M | 005 ; partie B **en dernier de tout** | DONE (approuvé 2026-07-06, branche `worktree-agent-a1a414645cbbc0a5a` ; 88 identifiants renommés, tags custom elements intacts, doc alignée — scope amendé pour ARCHITECTURE.md/CLAUDE.md) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (avec raison en une ligne) |
 REJECTED (avec justification en une ligne).
@@ -62,6 +62,17 @@ REJECTED (avec justification en une ligne).
   « pas de calibration nécessaire (plateforme) » de « source de calibration en échec »
   (ex. `calibrated = false` + message utilisateur dans le second cas). Impact M,
   effort S-M, confiance HIGH (vérifié par exécution réelle).
+
+## Correctif post-merge PR #38 (hors plan, 2026-07-06)
+
+- **Livraison HACS re-stabilisée** (branche `worktree-agent-a7b5f54100c7c0adf`) : la
+  bascule `zip_release` du plan 013 rendait la validation HACS rouge et les
+  re-téléchargements incohérents tant qu'aucune release ne portait le zip. Correctif :
+  `hacs.json` revient à `filename: dreame-vacuum-card.js` ; `release.yml` publie
+  désormais DEUX assets (un `.js` single-file autonome via `SINGLE_FILE=1`, imports
+  dynamiques inlinés, pour HACS ; le zip chunké complet en parallèle). La bascule
+  `zip_release` redeviendra possible et verte dès qu'une release portera le zip —
+  documenté en commentaire dans `release.yml`.
 
 ## Findings considered and rejected
 

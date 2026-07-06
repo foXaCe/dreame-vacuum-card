@@ -75,6 +75,9 @@ purement interne (les tags custom elements, invariant du repo, ne changent pas).
 - Partie A : `.github/workflows/ci.yml` (job `build` uniquement)
 - Partie B : tous les fichiers `src/`, `test/`, `test-browser/` contenant
   `XiaomiVacuumMapCard` (renommage d'identifiants uniquement)
+- Partie B (amendement de revue 2026-07-06) : `ARCHITECTURE.md` et `CLAUDE.md` —
+  mise à jour des mentions du type renommé dans la doc (le plan initial les avait
+  omis ; l'attribution du fork dans README.md reste intacte).
 
 **Out of scope**:
 - Les autres jobs de `ci.yml` et les autres workflows.
