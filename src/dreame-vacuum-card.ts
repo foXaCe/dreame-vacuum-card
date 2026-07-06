@@ -454,6 +454,10 @@ export class DreameVacuumCard extends LitElement {
             robotOverlayEnabled,
             prevSample: this._robotSample,
             nowMs: Date.now(),
+            // Image affichée ≠ entity_picture courant (préchargement/reboot) :
+            // le marqueur est gelé au lieu d'être recalculé sur des entrées
+            // incohérentes (cf. robot-overlay-geometry.ts).
+            mapSettling: !this._mapImageBuffer.isSettled(),
         });
         this._robotSample = robotGeometry.nextSample;
         const robotXPct = robotGeometry.xPct;

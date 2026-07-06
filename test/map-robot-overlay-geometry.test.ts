@@ -234,3 +234,38 @@ describe("computeRobotOverlayGeometry — téléportation (reboot / changement d
         expect(result.nextSample.mapKey).toBe("1000x1000");
     });
 });
+
+describe("computeRobotOverlayGeometry — gel pendant le swap d'image (mapSettling)", () => {
+    it("settling + position précédente connue -> gelé à la dernière position, glide 0, sample intact", () => {
+        const prevSample: RobotSample = {
+            posKey: "421,43",
+            posTs: 7_000,
+            glideMs: 2700,
+            headingDeg: 90,
+            xPct: 91.2,
+            yPct: 38.4,
+            mapKey: "1000x1000",
+        };
+        const result = computeRobotOverlayGeometry(baseInput({ prevSample, mapSettling: true }));
+        expect(result.visible).toBe(true);
+        expect(result.xPct).toBeCloseTo(91.2, 6);
+        expect(result.yPct).toBeCloseTo(38.4, 6);
+        expect(result.headingDeg).toBe(90);
+        expect(result.glideMs).toBe(0);
+        expect(result.nextSample).toBe(prevSample);
+        expect(result.iconUrl).toBe("icon.png");
+    });
+
+    it("settling sans position précédente -> marqueur masqué (rien de cohérent à montrer)", () => {
+        const result = computeRobotOverlayGeometry(baseInput({ mapSettling: true }));
+        expect(result.visible).toBe(false);
+        expect(result.xPct).toBe(-1);
+        expect(result.nextSample).toBe(INITIAL_ROBOT_SAMPLE);
+    });
+
+    it("settling=false (défaut) -> calcul normal inchangé", () => {
+        const result = computeRobotOverlayGeometry(baseInput());
+        expect(result.visible).toBe(true);
+        expect(result.xPct).toBeCloseTo(50, 6);
+    });
+});

@@ -48,6 +48,13 @@ export interface RobotOverlayGeometryInput {
     prevSample: RobotSample;
     /** Horodatage figé par l'appelant (AUCUN `Date.now()` dans ce module). */
     nowMs: number;
+    /** `true` quand l'image de carte affichée ne correspond PAS (encore) à
+     *  l'`entity_picture` courant (`!MapImageBuffer.isSettled()`) : les attributs
+     *  d'état décrivent la nouvelle frame, l'image visible montre l'ancienne.
+     *  Dans cette fenêtre le marqueur est GELÉ à sa dernière position cohérente
+     *  (ou masqué s'il n'en a pas), au lieu d'être recalculé avec des entrées
+     *  incohérentes — c'est ce qui l'envoyait dans le coin au reboot de HA. */
+    mapSettling?: boolean;
 }
 
 export interface RobotOverlayGeometryResult {
@@ -75,6 +82,7 @@ export function computeRobotOverlayGeometry({
     robotOverlayEnabled,
     prevSample,
     nowMs,
+    mapSettling = false,
 }: RobotOverlayGeometryInput): RobotOverlayGeometryResult {
     let xPct = -1;
     let yPct = -1;
@@ -83,6 +91,30 @@ export function computeRobotOverlayGeometry({
     let iconUrl: string | undefined;
     let beamUrl: string | undefined;
     let nextSample = prevSample;
+
+    // Image affichée ≠ frame décrite par les attributs : GELER (dernière position
+    // cohérente, aucune glisse, sample intact) ou masquer si on n'a encore rien
+    // affiché de cohérent. Ne PAS recalculer : la calibration reçue s'applique à
+    // une image que l'utilisateur ne voit pas encore.
+    if (mapSettling) {
+        if (robotOverlayEnabled && converter?.calibrated && camState) {
+            iconUrl = camState.attributes?.robot_icon as string | undefined;
+            beamUrl = camState.attributes?.robot_beam_icon as string | undefined;
+            if (prevSample.xPct !== undefined && prevSample.yPct !== undefined) {
+                return {
+                    xPct: prevSample.xPct,
+                    yPct: prevSample.yPct,
+                    headingDeg: prevSample.headingDeg ?? 0,
+                    visible: true,
+                    iconUrl,
+                    beamUrl,
+                    glideMs: 0,
+                    nextSample: prevSample,
+                };
+            }
+        }
+        return { xPct, yPct, headingDeg, visible, iconUrl, beamUrl, glideMs: prevSample.glideMs, nextSample };
+    }
 
     if (robotOverlayEnabled && converter?.calibrated && camState) {
         // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
