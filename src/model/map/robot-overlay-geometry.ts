@@ -14,6 +14,13 @@ export interface RobotSample {
     posTs: number;
     glideMs: number;
     headingDeg?: number;
+    /** Dernière position rendue (en % de l'image) et clé de la carte affichée :
+     *  servent à détecter les repositionnements qui ne sont PAS un déplacement
+     *  réel du robot (reboot HA, changement de carte/résolution, relocalisation)
+     *  pour les téléporter au lieu de les faire glisser à travers la carte. */
+    xPct?: number;
+    yPct?: number;
+    mapKey?: string;
 }
 
 /** Valeurs initiales identiques aux anciens champs de classe (`_robotGlideMs = 400`,
@@ -23,6 +30,9 @@ export const INITIAL_ROBOT_SAMPLE: RobotSample = {
     posTs: 0,
     glideMs: 400,
     headingDeg: undefined,
+    xPct: undefined,
+    yPct: undefined,
+    mapKey: undefined,
 };
 
 export interface RobotOverlayGeometryInput {
@@ -111,7 +121,40 @@ export function computeRobotOverlayGeometry({
                     }
                     posTs = nowMs;
                 }
-                nextSample = { posKey, posTs, glideMs, headingDeg };
+
+                // Téléportation au lieu de glisse quand le repositionnement n'est pas
+                // un déplacement réel (signalement 2026-07-06 : au reboot HA, le
+                // marqueur partait du coin et « traversait la carte ») :
+                // - la carte affichée a changé (dimensions naturelles ≠) : les % ne
+                //   sont pas comparables d'une carte à l'autre, et la cadence mesurée
+                //   ne veut plus rien dire → glisse remise à 400 ms ;
+                // - le saut dépasse 20 % de la diagonale de l'image en un échantillon :
+                //   ce n'est pas une trajectoire (~170 mm/3 s en nettoyage réel), c'est
+                //   un reboot / une relocalisation / une correction de calibration.
+                const mapKey = `${natW}x${natH}`;
+                const mapChanged = prevSample.mapKey !== undefined && prevSample.mapKey !== mapKey;
+                const jumped =
+                    prevSample.xPct !== undefined &&
+                    prevSample.yPct !== undefined &&
+                    Math.hypot(xPct - prevSample.xPct, yPct - prevSample.yPct) > 20;
+                let effectiveGlideMs = glideMs;
+                if (mapChanged || jumped) {
+                    effectiveGlideMs = 0;
+                    glideMs = 400;
+                    posTs = nowMs;
+                }
+
+                nextSample = { posKey, posTs, glideMs, headingDeg, xPct, yPct, mapKey };
+                return {
+                    xPct,
+                    yPct,
+                    headingDeg,
+                    visible,
+                    iconUrl,
+                    beamUrl,
+                    glideMs: effectiveGlideMs,
+                    nextSample,
+                };
             }
         }
     }
