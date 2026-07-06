@@ -52,7 +52,7 @@ export class RobotMarker extends LitElement {
                 ${
                     this.iconUrl
                         ? html`<img id="robot-img" src="${this.iconUrl}" alt="" />`
-                        : html`<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+                        : html`<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true">
                               <!-- Robot aspirateur vu de dessus, orienté vers +x à rotate(0) :
                                halo de contraste, corps, pare-chocs avant (cap) et tourelle lidar. -->
                               <circle cx="16" cy="16" r="14" class="halo" />
@@ -95,10 +95,10 @@ export class RobotMarker extends LitElement {
 
             #icon {
                 position: absolute;
-                left: -14px;
-                top: -14px;
-                width: 28px;
-                height: 28px;
+                left: -12px;
+                top: -12px;
+                width: 24px;
+                height: 24px;
                 transform-origin: center;
                 transition: transform 0.4s linear;
                 will-change: transform;
@@ -107,8 +107,8 @@ export class RobotMarker extends LitElement {
 
             #robot-img {
                 display: block;
-                width: 28px;
-                height: 28px;
+                width: 24px;
+                height: 24px;
                 object-fit: contain;
             }
 
@@ -148,9 +148,9 @@ export class RobotMarker extends LitElement {
                 position: absolute;
                 left: 50%;
                 top: 50%;
-                width: 26px;
-                height: 26px;
-                margin: -13px 0 0 -13px;
+                width: 22px;
+                height: 22px;
+                margin: -11px 0 0 -11px;
                 border-radius: 50%;
                 background: radial-gradient(
                     circle,
