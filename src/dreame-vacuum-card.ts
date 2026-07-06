@@ -1045,7 +1045,6 @@ export class XiaomiVacuumMapCard extends LitElement {
                 selection = this.selectedPredefinedRectangles
                     .map((r) => r.toVacuum(repeats))
                     .reduce((a, v) => a.concat(v), [] as unknown[]);
-                variables = this.selectedPredefinedRectangles[0]?.variables ?? {};
                 variables = variablesExtractor(this.selectedPredefinedRectangles);
                 break;
             case SelectionType.ROOM:
@@ -1053,12 +1052,10 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .map((r) => r.toVacuum())
                     .map((r) => XiaomiVacuumMapCard.adjustRoomId(r, mode));
                 selection = [...selectedRooms, ...(repeats && selectedRooms.length > 0 ? [repeats] : [])];
-                variables = this.selectedRooms[0]?.variables ?? {};
                 variables = variablesExtractor(this.selectedRooms);
                 break;
             case SelectionType.MANUAL_PATH:
                 selection = this.selectedManualPath.toVacuum(repeats);
-                variables = this.selectedManualPath.variables ?? {};
                 variables = variablesExtractor([this.selectedManualPath]);
                 break;
             case SelectionType.MANUAL_POINT:
