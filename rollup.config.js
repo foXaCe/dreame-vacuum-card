@@ -51,6 +51,21 @@ const output = singleFile
           format: "es",
           entryFileNames: "dreame-vacuum-card.js",
           chunkFileNames: "dreame-vacuum-card.[name]-[hash].js",
+          // Bug 2026-07-06 : tout module partagé entre l'entrée et un chunk dynamique
+          // doit vivre dans un chunk séparé. S'il reste dans l'entrée, le chunk
+          // dynamique émet `import "./dreame-vacuum-card.js"` — SANS le `?v=` de
+          // cache-busting de la ressource Lovelace — donc le navigateur ré-évalue le
+          // bundle entier comme un second module : `customElements.define()` relance
+          // et jette, le chunk ne s'évalue jamais, les animations Lottie ne chargent
+          // pas. Le seul module partagé aujourd'hui est le helper virtuel de
+          // @rollup/plugin-commonjs ; `test/dist-chunks.test.ts` épingle qu'aucun
+          // chunk ne ré-importe l'entrée si un autre partage apparaît.
+          manualChunks(id) {
+              if (id.includes("commonjsHelpers")) {
+                  return "helpers";
+              }
+              return undefined;
+          },
       };
 
 export default [
