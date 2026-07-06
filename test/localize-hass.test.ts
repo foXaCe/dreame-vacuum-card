@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import { formatDuration, millisecondsToDuration, UNIT_TO_MILLISECOND_CONVERT } from "../src/localize/hass/duration";
 import { formatDate } from "../src/localize/hass/format_date";
@@ -8,10 +8,18 @@ import {
     formatDateTimeWithSeconds,
 } from "../src/localize/hass/format_date_time";
 import { useAmPm } from "../src/localize/hass/use_am_pm";
-import { computeStateDisplay } from "../src/localize/hass/compute_state_display";
+import { computeStateDisplay, computeStateDisplayFromEntityAttributes } from "../src/localize/hass/compute_state_display";
 import { computeAttributeValueDisplay } from "../src/localize/hass/compute_attribute_display";
 import { formatAttributeValue } from "../src/localize/hass/entity_attributes";
-import { UNAVAILABLE, UNKNOWN, OFF, UNAVAILABLE_STATES, OFF_STATES } from "../src/localize/hass/entity";
+import {
+    UNAVAILABLE,
+    UNKNOWN,
+    OFF,
+    UNAVAILABLE_STATES,
+    OFF_STATES,
+    arrayLiteralIncludes,
+} from "../src/localize/hass/entity";
+import { fetchFrontendUserData } from "../src/localize/hass/frontend";
 import checkValidDate from "../src/localize/hass/check_valid_date";
 import { isDate } from "../src/localize/hass/is_date";
 import { isTimestamp } from "../src/localize/hass/is_timestamp";
@@ -21,7 +29,7 @@ import { blankBeforePercent } from "../src/localize/hass/blank_before_percent";
 import { NumberFormat, TimeFormat, FirstWeekday } from "../src/localize/hass/translation";
 import type { FrontendLocaleData } from "../src/localize/hass/translation";
 import type { FrontendLocaleDataFixed, HomeAssistantFixed } from "../src/types/fixes";
-import type { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity, Connection } from "home-assistant-js-websocket";
 
 // -----------------------------------------------------------------------------
 // helpers
@@ -223,6 +231,37 @@ describe("useAmPm", () => {
 // -----------------------------------------------------------------------------
 // compute_state_display.ts (branches not covered by localize.test.ts)
 // -----------------------------------------------------------------------------
+
+describe("computeStateDisplay - états spéciaux unknown/unavailable", () => {
+    it("état 'unknown' -> traduction state.default.unknown", () => {
+        const loc = mkLocalize({ "state.default.unknown": "Inconnu" });
+        const stateObj = mkStateObj({ entity_id: "sensor.x", state: "unknown", attributes: {} as HassEntity["attributes"] });
+        expect(computeStateDisplay(loc, stateObj, mkLocale(), {})).toBe("Inconnu");
+    });
+
+    it("état 'unavailable' -> traduction state.default.unavailable", () => {
+        const loc = mkLocalize({ "state.default.unavailable": "Indisponible" });
+        const stateObj = mkStateObj({
+            entity_id: "sensor.x",
+            state: "unavailable",
+            attributes: {} as HassEntity["attributes"],
+        });
+        expect(computeStateDisplay(loc, stateObj, mkLocale(), {})).toBe("Indisponible");
+    });
+});
+
+describe("computeStateDisplay - numérique via state_class sans unité", () => {
+    it("formate un capteur numérique (state_class) sans unit_of_measurement (unit vide)", () => {
+        const stateObj = mkStateObj({
+            entity_id: "sensor.count",
+            state: "42",
+            attributes: { state_class: "measurement" } as HassEntity["attributes"],
+        });
+        expect(
+            computeStateDisplay(mkLocalize(), stateObj, mkLocale({ number_format: NumberFormat.comma_decimal }), {})
+        ).toBe("42");
+    });
+});
 
 describe("computeStateDisplay - duration device_class", () => {
     it("formats a numeric duration sensor via formatDuration", () => {
@@ -738,5 +777,150 @@ describe("blankBeforePercent (exhaustive)", () => {
         for (const lang of ["en", "es", "it", "pl", "nl", "pt", "ru", "ja", "cz", ""]) {
             expect(blankBeforePercent(mkLocale({ language: lang }))).toBe("");
         }
+    });
+});
+
+// -----------------------------------------------------------------------------
+// entity.ts — arrayLiteralIncludes (prédicat non couvert ailleurs)
+// -----------------------------------------------------------------------------
+
+describe("arrayLiteralIncludes", () => {
+    it("crée un prédicat vrai pour les éléments du tableau et faux sinon", () => {
+        const isUnavailable = arrayLiteralIncludes(UNAVAILABLE_STATES);
+        expect(isUnavailable("unknown")).toBe(true);
+        expect(isUnavailable(UNAVAILABLE)).toBe(true);
+        expect(isUnavailable("on")).toBe(false);
+    });
+
+    it("transmet fromIndex à Array.prototype.includes", () => {
+        const isOffState = arrayLiteralIncludes(OFF_STATES);
+        // OFF_STATES = [UNAVAILABLE, UNKNOWN, OFF] ; OFF est à l'index 2.
+        expect(isOffState(OFF, 2)).toBe(true);
+        expect(isOffState(OFF, 3)).toBe(false);
+    });
+});
+
+// -----------------------------------------------------------------------------
+// frontend.ts — fetchFrontendUserData
+// -----------------------------------------------------------------------------
+
+describe("fetchFrontendUserData", () => {
+    it("envoie le message frontend/get_user_data et renvoie sa valeur", async () => {
+        const sendMessagePromise = vi.fn().mockResolvedValue({ value: { showAdvanced: true } });
+        const conn = { sendMessagePromise } as unknown as Connection;
+        const result = await fetchFrontendUserData(conn, "core");
+        expect(sendMessagePromise).toHaveBeenCalledWith({ type: "frontend/get_user_data", key: "core" });
+        expect(result).toEqual({ showAdvanced: true });
+    });
+
+    it("renvoie null quand la valeur stockée est null", async () => {
+        const sendMessagePromise = vi.fn().mockResolvedValue({ value: null });
+        const conn = { sendMessagePromise } as unknown as Connection;
+        expect(await fetchFrontendUserData(conn, "core")).toBeNull();
+    });
+});
+
+// -----------------------------------------------------------------------------
+// compute_state_display.ts — branches internes non atteignables via
+// computeStateDisplay (state explicitement undefined) et repli sur exception.
+// -----------------------------------------------------------------------------
+
+describe("computeStateDisplayFromEntityAttributes - state undefined (dérivation depuis les attributs)", () => {
+    const entityId = "input_datetime.event";
+
+    it("has_date && has_time -> formatDateTime à partir des attributs", () => {
+        const attrs = {
+            has_date: true,
+            has_time: true,
+            year: 2021,
+            month: 8,
+            day: 9,
+            hour: 20,
+            minute: 23,
+        } as unknown as HassEntity["attributes"];
+        const out = computeStateDisplayFromEntityAttributes(
+            mkLocalize(),
+            mkLocale({ language: "en", time_format: TimeFormat.twenty_four }),
+            undefined,
+            entityId,
+            attrs,
+            undefined as unknown as string
+        );
+        expect(out).toContain("August 9, 2021");
+        expect(out).toContain("20:23");
+    });
+
+    it("has_date seul -> formatDate à partir des attributs", () => {
+        const attrs = {
+            has_date: true,
+            has_time: false,
+            year: 2021,
+            month: 8,
+            day: 9,
+        } as unknown as HassEntity["attributes"];
+        const out = computeStateDisplayFromEntityAttributes(
+            mkLocalize(),
+            mkLocale({ language: "en" }),
+            undefined,
+            entityId,
+            attrs,
+            undefined as unknown as string
+        );
+        expect(out).toBe("August 9, 2021");
+    });
+
+    it("has_time seul -> formatTime à partir des attributs", () => {
+        const attrs = {
+            has_date: false,
+            has_time: true,
+            hour: 14,
+            minute: 30,
+        } as unknown as HassEntity["attributes"];
+        const out = computeStateDisplayFromEntityAttributes(
+            mkLocalize(),
+            mkLocale({ language: "en", time_format: TimeFormat.twenty_four }),
+            undefined,
+            entityId,
+            attrs,
+            undefined as unknown as string
+        );
+        expect(out).toBe("14:30");
+    });
+
+    it("ni date ni heure -> renvoie l'état (undefined) tel quel", () => {
+        const attrs = {} as unknown as HassEntity["attributes"];
+        const out = computeStateDisplayFromEntityAttributes(
+            mkLocalize(),
+            mkLocale({ language: "en" }),
+            undefined,
+            entityId,
+            attrs,
+            undefined as unknown as string
+        );
+        expect(out).toBeUndefined();
+    });
+});
+
+describe("computeStateDisplay - repli sur exception de formatage", () => {
+    it("date+heure explicites invalides -> renvoie l'état brut (premier catch)", () => {
+        const stateObj = mkStateObj({
+            entity_id: "input_datetime.weird",
+            state: "garbage input",
+            attributes: {} as HassEntity["attributes"],
+        });
+        // Deux composants séparés par un espace déclenchent le chemin formatDateTime ;
+        // le contenu n'est pas parsable en Date valide -> Intl lève -> repli sur l'état brut.
+        expect(computeStateDisplay(mkLocalize(), stateObj, mkLocale({ language: "en" }), {})).toBe("garbage input");
+    });
+
+    it("domaine timestamp avec état invalide -> renvoie l'état brut (second catch)", () => {
+        const stateObj = mkStateObj({
+            entity_id: "button.restart",
+            state: "not-a-valid-date",
+            attributes: {} as HassEntity["attributes"],
+        });
+        expect(computeStateDisplay(mkLocalize(), stateObj, mkLocale({ language: "en" }), {})).toBe(
+            "not-a-valid-date"
+        );
     });
 });

@@ -80,4 +80,183 @@ describe("handleAction", () => {
         handleAction(document.createElement("div"), { callService } as any, { tap_action: { action: "none" } }, "tap");
         expect(callService).not.toHaveBeenCalled();
     });
+
+    it("falls back to DEFAULT_ACTIONS.tap (more-info) when no tap_action is configured", () => {
+        const callService = vi.fn();
+        const node = document.createElement("div");
+        const handler = vi.fn();
+        node.addEventListener("hass-more-info", handler);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handleAction(node, { callService } as any, { entity: "light.x" }, "tap");
+        expect(handler).toHaveBeenCalledOnce();
+        expect((handler.mock.calls[0][0] as CustomEvent).detail).toEqual({ entityId: "light.x" });
+    });
+
+    it("falls back to DEFAULT_ACTIONS.hold (none) when no hold_action is configured", () => {
+        const callService = vi.fn();
+        const node = document.createElement("div");
+        const handler = vi.fn();
+        node.addEventListener("hass-more-info", handler);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handleAction(node, { callService } as any, { entity: "light.x" }, "hold");
+        expect(handler).not.toHaveBeenCalled();
+        expect(callService).not.toHaveBeenCalled();
+    });
+
+    it("uses the explicit hold_action when action='hold'", () => {
+        const callService = vi.fn().mockResolvedValue(undefined);
+        const node = document.createElement("div");
+        handleAction(
+            node,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            {
+                hold_action: {
+                    action: "call-service",
+                    service: "vacuum.locate",
+                    target: { entity_id: "vacuum.foo" },
+                },
+            },
+            "hold"
+        );
+        expect(callService).toHaveBeenCalledWith("vacuum", "locate", undefined, { entity_id: "vacuum.foo" });
+    });
+
+    it("uses the explicit double_tap_action when action='double_tap'", () => {
+        const callService = vi.fn().mockResolvedValue(undefined);
+        const node = document.createElement("div");
+        handleAction(
+            node,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            {
+                double_tap_action: {
+                    action: "call-service",
+                    service: "vacuum.pause",
+                    target: { entity_id: "vacuum.foo" },
+                },
+            },
+            "double_tap"
+        );
+        expect(callService).toHaveBeenCalledWith("vacuum", "pause", undefined, { entity_id: "vacuum.foo" });
+    });
+
+    it("toggle does nothing when config.entity is missing", () => {
+        const callService = vi.fn();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handleAction(document.createElement("div"), { callService } as any, { tap_action: { action: "toggle" } }, "tap");
+        expect(callService).not.toHaveBeenCalled();
+    });
+
+    it("call-service falls back to service_data ?? data when service_data is absent", () => {
+        const callService = vi.fn().mockResolvedValue(undefined);
+        const node = document.createElement("div");
+        handleAction(
+            node,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            {
+                tap_action: {
+                    action: "call-service",
+                    service: "vacuum.set_fan_speed",
+                    data: { fan_speed: "max" },
+                    target: { entity_id: "vacuum.foo" },
+                },
+            },
+            "tap"
+        );
+        expect(callService).toHaveBeenCalledWith("vacuum", "set_fan_speed", { fan_speed: "max" }, {
+            entity_id: "vacuum.foo",
+        });
+    });
+
+    it("call-service does nothing when the action has no service", () => {
+        const callService = vi.fn();
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "call-service" } as never },
+            "tap"
+        );
+        expect(callService).not.toHaveBeenCalled();
+    });
+
+    it("navigate pushes history state and fires a location-changed event", () => {
+        const callService = vi.fn();
+        const pushStateSpy = vi.spyOn(history, "pushState").mockImplementation(() => {});
+        const spy = vi.fn();
+        window.addEventListener("location-changed", spy);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "navigate", navigation_path: "/lovelace/0" } },
+            "tap"
+        );
+        expect(pushStateSpy).toHaveBeenCalledWith(null, "", "/lovelace/0");
+        expect(spy).toHaveBeenCalledOnce();
+        expect((spy.mock.calls[0][0] as CustomEvent).detail).toEqual({ replace: false });
+        window.removeEventListener("location-changed", spy);
+        pushStateSpy.mockRestore();
+    });
+
+    it("url opens the link in a new tab without opener access", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "https://example.com" } },
+            "tap"
+        );
+        expect(openSpy).toHaveBeenCalledWith("https://example.com", "_blank", "noopener");
+        openSpy.mockRestore();
+    });
+
+    it("url rejects a javascript: scheme (XSS guard)", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "javascript:alert(1)" } },
+            "tap"
+        );
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    it("url does nothing when url_path is empty", () => {
+        const callService = vi.fn();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+        handleAction(
+            document.createElement("div"),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: { action: "url", url_path: "" } },
+            "tap"
+        );
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    it("fire-dom-event dispatches an 'll-custom' event with the action config as detail", () => {
+        const callService = vi.fn();
+        const node = document.createElement("div");
+        const spy = vi.fn();
+        node.addEventListener("ll-custom", spy);
+        const actionConfig = { action: "fire-dom-event" as const, foo: "bar" };
+        handleAction(
+            node,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { callService } as any,
+            { tap_action: actionConfig },
+            "tap"
+        );
+        expect(spy).toHaveBeenCalledOnce();
+        expect((spy.mock.calls[0][0] as CustomEvent).detail).toEqual(actionConfig);
+    });
 });

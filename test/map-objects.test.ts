@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, svg } from "lit";
 
 import { CoordinatesConverter } from "../src/model/map_objects/coordinates-converter";
@@ -11,9 +11,11 @@ import { Room } from "../src/model/map_objects/room";
 import { PredefinedMultiRectangle } from "../src/model/map_objects/predefined-multi-rectangle";
 import { PredefinedPoint } from "../src/model/map_objects/predefined-point";
 import { MapMode } from "../src/model/map_mode/map-mode";
+import { SelectionType } from "../src/model/map_mode/selection-type";
 import { HomeAssistantFixed } from "../src/types/fixes";
 import {
     CalibrationPoint,
+    LabelConfig,
     PredefinedPointConfig,
     PredefinedZoneConfig,
     RoomConfig,
@@ -562,5 +564,529 @@ describe("MapObject (base) — conversions via PathPoint/ManualRectangle", () =>
             ctx
         );
         expect(() => renderSvg(obj.render())).not.toThrow();
+    });
+});
+
+// ===========================================================================
+// MapObject.renderLabel — badge de texte réel (config non nulle)
+// ===========================================================================
+
+describe("MapObject.renderLabel (via PredefinedPoint)", () => {
+    it("produit un badge <div class='label-badge'> avec le texte configuré", () => {
+        const ctx = makeContext(IDENTITY());
+        const label: LabelConfig = { text: "Cuisine", x: 5, y: 5, offset_x: 2, offset_y: -2 };
+        const obj = new PredefinedPoint({ position: [5, 5], label } as PredefinedPointConfig, ctx);
+        const host = renderSvg(obj.render());
+        const badge = host.querySelector(".label-badge.predefined-point-label");
+        expect(badge?.textContent?.trim()).toBe("Cuisine");
+    });
+
+    it("ne produit aucun badge quand label est absent", () => {
+        const ctx = makeContext(IDENTITY());
+        const obj = new PredefinedPoint({ position: [5, 5] } as PredefinedPointConfig, ctx);
+        const host = renderSvg(obj.render());
+        expect(host.querySelector(".label-badge")).toBeNull();
+    });
+});
+
+// ===========================================================================
+// Room.toggleFromHitTest — activation du mode room, sélection, limites, revert
+// ===========================================================================
+
+describe("Room.toggleFromHitTest", () => {
+    const cfg = (overrides: Partial<RoomConfig> = {}): RoomConfig => ({ id: 1, ...overrides }) as RoomConfig;
+
+    it("bascule directement la sélection quand le mode courant est déjà ROOM", async () => {
+        const rooms: Room[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            getCurrentMode: () => ({ selectionType: SelectionType.ROOM }) as unknown as MapMode,
+            selectedRooms: () => rooms,
+        });
+        const room = new Room(cfg({ id: 5 }), ctx);
+        await room.toggleFromHitTest();
+        expect(room.selected).toBe(true);
+        expect(rooms).toEqual([room]);
+    });
+
+    it("désélectionne une pièce déjà sélectionnée (retrait du tableau)", async () => {
+        const rooms: Room[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            getCurrentMode: () => ({ selectionType: SelectionType.ROOM }) as unknown as MapMode,
+            selectedRooms: () => rooms,
+        });
+        const room = new Room(cfg({ id: 2, default_state: SelectionState.SELECTED }), ctx);
+        rooms.push(room);
+        expect(room.selected).toBe(true);
+        await room.toggleFromHitTest();
+        expect(room.selected).toBe(false);
+        expect(rooms).toEqual([]);
+    });
+
+    it("refuse la sélection quand maxSelections est atteint (haptic failure)", async () => {
+        const hapticSpy = vi.fn();
+        window.addEventListener("haptic", hapticSpy);
+        const rooms: Room[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            getCurrentMode: () => ({ selectionType: SelectionType.ROOM }) as unknown as MapMode,
+            selectedRooms: () => rooms,
+            maxSelections: () => 0,
+        });
+        const room = new Room(cfg(), ctx);
+        await room.toggleFromHitTest();
+        expect(room.selected).toBe(false);
+        expect(rooms).toEqual([]);
+        expect(hapticSpy).toHaveBeenCalledOnce();
+        expect((hapticSpy.mock.calls[0][0] as CustomEvent).detail).toBe("failure");
+        window.removeEventListener("haptic", hapticSpy);
+    });
+
+    it("annule la sélection quand runImmediately résout true (exécution immédiate)", async () => {
+        const rooms: Room[] = [];
+        const selectionChanged = vi.fn();
+        const ctx = makeContext(IDENTITY(), {
+            getCurrentMode: () => ({ selectionType: SelectionType.ROOM }) as unknown as MapMode,
+            selectedRooms: () => rooms,
+            runImmediately: () => Promise.resolve(true),
+            selectionChanged,
+        });
+        const room = new Room(cfg({ id: 9 }), ctx);
+        await room.toggleFromHitTest();
+        expect(room.selected).toBe(false);
+        expect(rooms).toEqual([]);
+        expect(selectionChanged).toHaveBeenCalledTimes(2);
+    });
+
+    it("traite un rejet de runImmediately comme un skip (comportement normal, pas de revert)", async () => {
+        const rooms: Room[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            getCurrentMode: () => ({ selectionType: SelectionType.ROOM }) as unknown as MapMode,
+            selectedRooms: () => rooms,
+            runImmediately: () => Promise.reject(new Error("boom")),
+        });
+        const room = new Room(cfg(), ctx);
+        await room.toggleFromHitTest();
+        expect(room.selected).toBe(true);
+        expect(rooms).toEqual([room]);
+    });
+
+    it("active le mode room automatiquement quand le mode courant n'est pas ROOM, puis procède", async () => {
+        vi.useFakeTimers();
+        try {
+            let currentMode: MapMode | undefined = undefined;
+            const activateRoomMode = vi.fn(() => {
+                currentMode = { selectionType: SelectionType.ROOM } as unknown as MapMode;
+            });
+            const rooms: Room[] = [];
+            const ctx = makeContext(IDENTITY(), {
+                getCurrentMode: () => currentMode,
+                activateRoomMode,
+                selectedRooms: () => rooms,
+            });
+            const room = new Room(cfg(), ctx);
+            const promise = room.toggleFromHitTest();
+            await vi.advanceTimersByTimeAsync(150);
+            await promise;
+            expect(activateRoomMode).toHaveBeenCalledOnce();
+            expect(room.selected).toBe(true);
+            expect(rooms).toContain(room);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("n'active pas la sélection si le mode room ne s'active pas (early return)", async () => {
+        vi.useFakeTimers();
+        try {
+            const activateRoomMode = vi.fn(); // ne change jamais le mode courant
+            const ctx = makeContext(IDENTITY(), {
+                getCurrentMode: () => undefined,
+                activateRoomMode,
+            });
+            const room = new Room(cfg(), ctx);
+            const promise = room.toggleFromHitTest();
+            await vi.advanceTimersByTimeAsync(150);
+            await promise;
+            expect(activateRoomMode).toHaveBeenCalledOnce();
+            expect(room.selected).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+});
+
+// ===========================================================================
+// PredefinedMapObject (état commun : state_entity / deselect / isDynamic)
+// ===========================================================================
+
+describe("PredefinedMapObject (état commun) — via Room", () => {
+    it("state_entity présent : l'état initial suit getState() ('on' => sélectionné)", () => {
+        const ctx = makeContext(IDENTITY(), { getState: () => "on" });
+        const room = new Room({ id: 1, state_entity: "input_boolean.x" } as RoomConfig, ctx);
+        expect(room.selected).toBe(true);
+        expect(room.isDynamic()).toBe(true);
+    });
+
+    it("state_entity présent mais état != 'on' => non sélectionné", () => {
+        const ctx = makeContext(IDENTITY(), { getState: () => "off" });
+        const room = new Room({ id: 1, state_entity: "input_boolean.x" } as RoomConfig, ctx);
+        expect(room.selected).toBe(false);
+    });
+
+    it("isDynamic() est false sans state_entity", () => {
+        const room = new Room({ id: 1 } as RoomConfig, makeContext(IDENTITY()));
+        expect(room.isDynamic()).toBe(false);
+    });
+
+    it("deselect() force l'état non sélectionné", () => {
+        const room = new Room(
+            { id: 1, default_state: SelectionState.SELECTED } as RoomConfig,
+            makeContext(IDENTITY())
+        );
+        expect(room.selected).toBe(true);
+        room.deselect();
+        expect(room.selected).toBe(false);
+    });
+
+    it("_toggleSelected avec state_entity appelle toggleEntity et suit l'inverse de l'état courant", () => {
+        const toggleEntity = vi.fn();
+        const ctx = makeContext(IDENTITY(), { getState: () => "off", toggleEntity });
+        const room = new Room({ id: 1, state_entity: "input_boolean.x" } as RoomConfig, ctx);
+        expect(room.selected).toBe(false);
+        (room as unknown as { _toggleSelected(): void })._toggleSelected();
+        expect(toggleEntity).toHaveBeenCalledWith("input_boolean.x");
+        expect(room.selected).toBe(true);
+    });
+
+    it("variables renvoie config.variables si fourni, sinon l'objet vide par défaut", () => {
+        const withVars = new Room({ id: 1, variables: { foo: "bar" } } as RoomConfig, makeContext(IDENTITY()));
+        expect(withVars.variables).toEqual({ foo: "bar" });
+        const withoutVars = new Room({ id: 1 } as RoomConfig, makeContext(IDENTITY()));
+        expect(withoutVars.variables).toEqual({});
+    });
+});
+
+// ===========================================================================
+// PredefinedPoint._click — sélection unique, remplacement, revert
+// ===========================================================================
+
+describe("PredefinedPoint._click (sélection exclusive)", () => {
+    function click(point: PredefinedPoint): Promise<void> {
+        return (point as unknown as { _click(): Promise<void> })._click();
+    }
+
+    it("sélectionne un point sans sélection préalable", async () => {
+        const selected: PredefinedPoint[] = [];
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedPoint: () => selected });
+        const point = new PredefinedPoint({ position: [1, 1] } as PredefinedPointConfig, ctx);
+        await click(point);
+        expect(point.selected).toBe(true);
+        expect(selected).toEqual([point]);
+    });
+
+    it("remplace le point précédemment sélectionné (sélection exclusive)", async () => {
+        const selected: PredefinedPoint[] = [];
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedPoint: () => selected });
+        const first = new PredefinedPoint({ position: [1, 1] } as PredefinedPointConfig, ctx);
+        const second = new PredefinedPoint({ position: [2, 2] } as PredefinedPointConfig, ctx);
+        await click(first);
+        expect(selected).toEqual([first]);
+        await click(second);
+        expect(first.selected).toBe(false);
+        expect(second.selected).toBe(true);
+        expect(selected).toEqual([second]);
+    });
+
+    it("désélectionne un point déjà sélectionné", async () => {
+        const selected: PredefinedPoint[] = [];
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedPoint: () => selected });
+        const point = new PredefinedPoint(
+            { position: [1, 1], default_state: SelectionState.SELECTED } as PredefinedPointConfig,
+            ctx
+        );
+        selected.push(point);
+        await click(point);
+        expect(point.selected).toBe(false);
+        expect(selected).toEqual([]);
+    });
+
+    it("annule la sélection quand runImmediately résout true", async () => {
+        const selected: PredefinedPoint[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            selectedPredefinedPoint: () => selected,
+            runImmediately: () => Promise.resolve(true),
+        });
+        const point = new PredefinedPoint({ position: [1, 1] } as PredefinedPointConfig, ctx);
+        await click(point);
+        expect(point.selected).toBe(false);
+        expect(selected).toEqual([]);
+    });
+
+    it("traite un rejet de runImmediately comme un skip", async () => {
+        const selected: PredefinedPoint[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            selectedPredefinedPoint: () => selected,
+            runImmediately: () => Promise.reject(new Error("boom")),
+        });
+        const point = new PredefinedPoint({ position: [1, 1] } as PredefinedPointConfig, ctx);
+        await click(point);
+        expect(point.selected).toBe(true);
+        expect(selected).toEqual([point]);
+    });
+});
+
+// ===========================================================================
+// PredefinedMultiRectangle._click — limite maxSelections, sélection, revert
+// ===========================================================================
+
+describe("PredefinedMultiRectangle._click", () => {
+    function click(zone: PredefinedMultiRectangle): Promise<void> {
+        return (zone as unknown as { _click(): Promise<void> })._click();
+    }
+
+    it("refuse la sélection au-delà de maxSelections (haptic failure)", async () => {
+        const hapticSpy = vi.fn();
+        window.addEventListener("haptic", hapticSpy);
+        const selected: PredefinedMultiRectangle[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            selectedPredefinedRectangles: () => selected,
+            maxSelections: () => 0,
+        });
+        const zone = new PredefinedMultiRectangle({ zones: [[0, 0, 1, 1]] } as PredefinedZoneConfig, ctx);
+        await click(zone);
+        expect(zone.selected).toBe(false);
+        expect(selected).toEqual([]);
+        expect(hapticSpy).toHaveBeenCalledOnce();
+        expect((hapticSpy.mock.calls[0][0] as CustomEvent).detail).toBe("failure");
+        window.removeEventListener("haptic", hapticSpy);
+    });
+
+    it("sélectionne la zone et l'ajoute à selectedPredefinedRectangles", async () => {
+        const selected: PredefinedMultiRectangle[] = [];
+        const update = vi.fn();
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedRectangles: () => selected, update });
+        const zone = new PredefinedMultiRectangle({ zones: [[0, 0, 1, 1]] } as PredefinedZoneConfig, ctx);
+        await click(zone);
+        expect(zone.selected).toBe(true);
+        expect(selected).toEqual([zone]);
+        expect(update).toHaveBeenCalledOnce();
+    });
+
+    it("désélectionne une zone déjà sélectionnée", async () => {
+        const selected: PredefinedMultiRectangle[] = [];
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedRectangles: () => selected });
+        const zone = new PredefinedMultiRectangle(
+            { zones: [[0, 0, 1, 1]], default_state: SelectionState.SELECTED } as PredefinedZoneConfig,
+            ctx
+        );
+        selected.push(zone);
+        await click(zone);
+        expect(zone.selected).toBe(false);
+        expect(selected).toEqual([]);
+    });
+
+    it("annule la sélection quand runImmediately résout true", async () => {
+        const selected: PredefinedMultiRectangle[] = [];
+        const ctx = makeContext(IDENTITY(), {
+            selectedPredefinedRectangles: () => selected,
+            runImmediately: () => Promise.resolve(true),
+        });
+        const zone = new PredefinedMultiRectangle({ zones: [[0, 0, 1, 1]] } as PredefinedZoneConfig, ctx);
+        await click(zone);
+        expect(zone.selected).toBe(false);
+        expect(selected).toEqual([]);
+    });
+
+    it("le clic réel sur le polygone rendu déclenche la sélection", async () => {
+        const selected: PredefinedMultiRectangle[] = [];
+        const ctx = makeContext(IDENTITY(), { selectedPredefinedRectangles: () => selected });
+        const zone = new PredefinedMultiRectangle({ zones: [[0, 0, 10, 10]] } as PredefinedZoneConfig, ctx);
+        const host = renderSvg(zone.render());
+        const polygon = host.querySelector("polygon.predefined-rectangle") as SVGElement;
+        expect(polygon).toBeTruthy();
+        polygon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        // _click() est asynchrone (await runImmediately()) : laisser les microtâches s'écouler.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(zone.selected).toBe(true);
+        expect(selected).toEqual([zone]);
+    });
+});
+
+// ===========================================================================
+// ManualRectangle — drag / resize / delete via événements souris réels
+// ===========================================================================
+
+describe("ManualRectangle — événements souris (drag/resize/delete)", () => {
+    /** Contexte de drag avec position de souris pilotable manuellement. */
+    function makeDragContext(overrides: Partial<ContextOptions> = {}): {
+        ctx: Context;
+        setPos: (x: number, y: number) => void;
+    } {
+        let pos = new MousePosition(0, 0);
+        const ctx = makeContext(IDENTITY(), {
+            realScale: () => 1,
+            mousePositionCalculator: () => pos,
+            ...overrides,
+        });
+        return { ctx, setPos: (x, y) => (pos = new MousePosition(x, y)) };
+    }
+
+    it("mousedown sur le polygone déplaçable sélectionne le rectangle et déclenche update()", () => {
+        const update = vi.fn();
+        const { ctx, setPos } = makeDragContext({ update });
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const polygon = host.querySelector("polygon.manual-rectangle") as SVGElement;
+        expect(rect.isSelected()).toBe(false);
+        setPos(0, 0);
+        polygon.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        expect(rect.isSelected()).toBe(true);
+        expect(update).toHaveBeenCalledOnce();
+    });
+
+    it("un déplacement (MOVE) translate le rectangle du diff souris, endDrag désélectionne", () => {
+        const { ctx, setPos } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const polygon = host.querySelector("polygon.manual-rectangle") as SVGElement;
+
+        setPos(0, 0);
+        polygon.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        const pointsBefore = polygon.getAttribute("points");
+
+        setPos(5, 7);
+        polygon.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        expect(rect.toVacuum()).toEqual([5, 7, 15, 17]);
+        expect(polygon.getAttribute("points")).not.toBe(pointsBefore);
+
+        polygon.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+        expect(rect.isSelected()).toBe(false);
+        // La position finale reste celle du dernier déplacement.
+        expect(rect.toVacuum()).toEqual([5, 7, 15, 17]);
+    });
+
+    it("externalDrag() délègue à la logique de drag interne (même effet qu'un mousemove)", () => {
+        const { ctx, setPos } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const polygon = host.querySelector("polygon.manual-rectangle") as SVGElement;
+
+        setPos(0, 0);
+        polygon.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        setPos(2, 3);
+        rect.externalDrag(new MouseEvent("mousemove"));
+        expect(rect.toVacuum()).toEqual([2, 3, 12, 13]);
+    });
+
+    it("un redimensionnement (RESIZE) déplace le coin opposé à l'ancre", () => {
+        const { ctx, setPos } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const resizer = host.querySelector("circle.manual-rectangle-resize-circle") as SVGElement;
+
+        setPos(0, 0);
+        resizer.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        setPos(5, 7);
+        resizer.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        expect(rect.toVacuum()).toEqual([0, 0, 15, 17]);
+    });
+
+    it("un redimensionnement qui inverserait les bornes est annulé (retour à l'état précédent)", () => {
+        const { ctx, setPos } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const resizer = host.querySelector("circle.manual-rectangle-resize-circle") as SVGElement;
+
+        setPos(0, 0);
+        resizer.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        // diffX = -20 : le coin passerait de l'autre côté de l'ancre -> inversion refusée.
+        setPos(-20, 0);
+        resizer.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        expect(rect.toVacuum()).toEqual([0, 0, 10, 10]);
+    });
+
+    it("mousedown sur un élément non draggable est ignoré", () => {
+        const { ctx } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const description = host.querySelector("g.manual-rectangle-description") as SVGElement;
+        description.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        expect(rect.isSelected()).toBe(false);
+    });
+
+    it("mousedown sur un élément draggable dont le parent n'est pas le wrapper est ignoré", () => {
+        const { ctx } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const fakeEl = document.createElement("div");
+        fakeEl.classList.add("draggable");
+        const wrongParent = document.createElement("div");
+        wrongParent.appendChild(fakeEl);
+        const ev = new MouseEvent("mousedown");
+        Object.defineProperty(ev, "target", { value: fakeEl });
+        (rect as unknown as { _startDrag(e: MouseEvent): void })._startDrag(ev);
+        expect(rect.isSelected()).toBe(false);
+    });
+
+    it("un touchstart multi-doigts (>1) est ignoré (pas de démarrage de drag)", () => {
+        const { ctx } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const polygon = host.querySelector("polygon.manual-rectangle") as SVGElement;
+        const touchEvent = new TouchEvent("touchstart", {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            touches: [{}, {}] as any,
+            bubbles: true,
+        });
+        polygon.dispatchEvent(touchEvent);
+        expect(rect.isSelected()).toBe(false);
+    });
+
+    it("_drag ne fait rien si aucun élément n'est actuellement sélectionné (pas de mousedown préalable)", () => {
+        const { ctx, setPos } = makeDragContext();
+        const rect = new ManualRectangle(0, 0, 10, 10, "1", ctx);
+        const host = renderSvg(rect.render());
+        const polygon = host.querySelector("polygon.manual-rectangle") as SVGElement;
+        setPos(5, 5);
+        polygon.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        expect(rect.toVacuum()).toEqual([0, 0, 10, 10]);
+    });
+
+    it("_getDimensions renvoie une chaîne vide quand coordinatesToMetersDivider vaut -1", () => {
+        const ctx = makeContext(IDENTITY(), { realScale: () => 1, coordinatesToMetersDivider: () => -1 });
+        const rect = new ManualRectangle(0, 0, 10, 10, "7", ctx);
+        const host = renderSvg(rect.render());
+        const text = host.querySelector("g.manual-rectangle-description text");
+        expect(text?.textContent?.trim()).toBe("7");
+    });
+
+    it("le clic sur le cercle de suppression retire le rectangle et renumérote les suivants", () => {
+        const rects: ManualRectangle[] = [];
+        const update = vi.fn();
+        const ctx = makeContext(IDENTITY(), { realScale: () => 1, selectedManualRectangles: () => rects, update });
+        const rectA = new ManualRectangle(0, 0, 1, 1, "1", ctx);
+        const rectB = new ManualRectangle(0, 0, 1, 1, "2", ctx);
+        const rectC = new ManualRectangle(0, 0, 1, 1, "3", ctx);
+        rects.push(rectA, rectB, rectC);
+
+        const hapticSpy = vi.fn();
+        window.addEventListener("haptic", hapticSpy);
+        const host = renderSvg(rectB.render());
+        const deleteCircle = host.querySelector("circle.manual-rectangle-delete-circle") as SVGElement;
+        deleteCircle.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+        window.removeEventListener("haptic", hapticSpy);
+
+        expect(rects).toEqual([rectA, rectC]);
+        expect(rectC._id).toBe("2");
+        expect(hapticSpy).toHaveBeenCalledOnce();
+        expect(update).toHaveBeenCalledOnce();
+    });
+
+    it("le clic sur le cercle de suppression ne fait rien si le rectangle n'est pas dans la sélection", () => {
+        const update = vi.fn();
+        const ctx = makeContext(IDENTITY(), { realScale: () => 1, selectedManualRectangles: () => [], update });
+        const rect = new ManualRectangle(0, 0, 1, 1, "1", ctx);
+        const host = renderSvg(rect.render());
+        const deleteCircle = host.querySelector("circle.manual-rectangle-delete-circle") as SVGElement;
+        deleteCircle.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+        expect(update).not.toHaveBeenCalled();
     });
 });
