@@ -102,8 +102,9 @@ describe("dreame-robot-marker (composant)", () => {
         expect(icon).toBeTruthy();
         expect(icon?.style.transform).toBe("rotate(0deg)");
 
-        // Le SVG du robot (bec orienté vers +x) est présent.
-        expect(el.shadowRoot?.querySelector("svg polygon.beak")).toBeTruthy();
+        // Le SVG du robot est présent, avec son indicateur de cap (pare-chocs .beak, orienté +x).
+        expect(el.shadowRoot?.querySelector("svg .beak")).toBeTruthy();
+        expect(el.shadowRoot?.querySelector("svg .lidar")).toBeTruthy();
         el.remove();
     });
 

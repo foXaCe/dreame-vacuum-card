@@ -427,6 +427,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         let robotYPct = -1;
         let robotHeadingDeg = 0;
         let robotVisible = false;
+        let robotIconUrl: string | undefined;
         // Résolution de l'overlay robot client-side :
         //  - un réglage explicite (preset puis config) est toujours respecté ;
         //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
@@ -443,6 +444,8 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
         if (robotOverlayEnabled && this.coordinatesConverter?.calibrated && preset.map_source?.camera) {
             const camState = this.hass.states[preset.map_source.camera];
+            // Icône robot réelle exposée par l'intégration (contrat §5.I) — fallback SVG sinon.
+            robotIconUrl = camState?.attributes?.robot_icon as string | undefined;
             const robotPos = camState?.attributes?.vacuum_position;
             if (robotPos && robotPos.x != null && robotPos.y != null) {
                 const p0 = this.coordinatesConverter.vacuumToMap(robotPos.x, robotPos.y);
@@ -544,6 +547,7 @@ export class XiaomiVacuumMapCard extends LitElement {
                     .yPercent=${robotYPct}
                     .headingDeg=${robotHeadingDeg}
                     .transitionMs=${this._robotGlideMs}
+                    .iconUrl=${robotIconUrl}
                 ></dreame-robot-marker>
             </div>
         `;

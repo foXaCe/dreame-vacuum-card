@@ -179,6 +179,43 @@ describe("dreame-vacuum-card-editor", () => {
             haForm(el).dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
         }
 
+        it("robot_overlay décoché → undefined (AUTO), jamais false matérialisé (contrat §5.D)", async () => {
+            const el = makeEditor();
+            el.hass = makeHass();
+            el.setConfig(baseConfig({ robot_overlay: false }));
+            await mount(el);
+            const handler = vi.fn();
+            el.addEventListener("config-changed", handler);
+            emitValueChanged(el, {
+                entity: "vacuum.robot",
+                map_source: { camera: "camera.robot" },
+                display: { show_title: false, appearance: "premium", language: "" },
+                map_behavior: { robot_overlay: false },
+            });
+            const ev = handler.mock.calls[0][0] as CustomEvent;
+            // Décoché = mode AUTO : la clé disparaît du YAML (un false explicite tuerait
+            // l'activation automatique quand robot_in_map passe à false).
+            expect(ev.detail.config.robot_overlay).toBeUndefined();
+            expect("robot_overlay" in ev.detail.config).toBe(false);
+        });
+
+        it("robot_overlay coché → true explicite (forçage)", async () => {
+            const el = makeEditor();
+            el.hass = makeHass();
+            el.setConfig(baseConfig());
+            await mount(el);
+            const handler = vi.fn();
+            el.addEventListener("config-changed", handler);
+            emitValueChanged(el, {
+                entity: "vacuum.robot",
+                map_source: { camera: "camera.robot" },
+                display: { show_title: false, appearance: "premium", language: "" },
+                map_behavior: { robot_overlay: true },
+            });
+            const ev = handler.mock.calls[0][0] as CustomEvent;
+            expect(ev.detail.config.robot_overlay).toBe(true);
+        });
+
         it("maps display.appearance 'minimal' to config.appearance === 'minimal'", async () => {
             const el = makeEditor();
             el.hass = makeHass();

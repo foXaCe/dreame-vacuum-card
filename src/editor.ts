@@ -201,8 +201,14 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             map_locked: value.map_behavior?.map_locked,
             two_finger_pan: value.map_behavior?.two_finger_pan,
             clean_selection_on_start: value.map_behavior?.clean_selection_on_start,
-            robot_overlay: value.map_behavior?.robot_overlay,
+            // Tri-état : coché → true (forcé), décoché → AUTO (clé absente, suit robot_in_map).
+            // Ne JAMAIS matérialiser `false` : un false explicite tue le mode auto et
+            // c'est ce que l'éditeur écrivait avant à la moindre édition (contrat §5.D).
+            robot_overlay: value.map_behavior?.robot_overlay ? true : undefined,
         };
+        if (draft.robot_overlay === undefined) {
+            delete draft.robot_overlay;
+        }
 
         // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`
         // et qu'aucune source n'est encore configurée — préserve le wizard "happy path" du legacy.

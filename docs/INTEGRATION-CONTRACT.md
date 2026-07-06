@@ -322,6 +322,34 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   **2ᵉ temps carte (après livraison)** : badge « Passe N/M » dans le header de statut /
   barre de progression — travail d'affichage trivial, comme les transferts précédents.
 
+- **H. DÉFAUTS EN DUR — l'overlay fluide doit marcher sans AUCUNE option** (directive
+  utilisateur, 2026-07-06 : « il faut que ces options soient par défaut… pas besoin
+  d'activer, activer en dur dans le code »). État cible : une install neuve a le robot
+  fluide d'office.
+  - **Côté intégration (à livrer)** : « Robot Icon » **masqué PAR DÉFAUT** dans le rendu
+    PNG (→ `robot_in_map: false` par défaut, en code — pas une option à cocher). Attention
+    aux installs existantes (options sauvegardées) et au cas des utilisateurs SANS la
+    carte (vue caméra nue : plus de robot visible du tout — à évaluer : le défaut peut
+    dépendre de la présence de la carte ou être documenté comme breaking).
+  - **Côté carte (✅ déjà en place)** : mode AUTO par défaut (`robot_overlay` absent →
+    overlay actif dès que `robot_in_map === false`). L'éditeur ne matérialise PLUS
+    `robot_overlay: false` à l'édition (fix 2026-07-06 : décoché = clé absente = AUTO,
+    coché = `true` ; un `false` explicite ne peut plus apparaître que par YAML volontaire).
+    La carte garde AUTO plutôt qu'un forçage dur : avec une intégration plus ancienne
+    (`robot_in_map: true`), un forçage afficherait DEUX robots.
+- **I. Icône robot RÉELLE pour l'overlay** (retour utilisateur 2026-07-06 : le fallback
+  vectoriel ne suffit pas — « il est où mon robot ? » ; l'intégration a l'asset qu'elle
+  incrustait dans le PNG et peut le fournir).
+  - **Côté intégration (à livrer)** : exposer l'icône robot sur la caméra, attribut
+    **`robot_icon`** = data URI (PNG ou SVG), vue de dessus, **orientée vers +x** (0° =
+    vers la droite), fond transparent, taille libre (la carte l'affiche en 28 px).
+    Statique tant que le device ne change pas (pas de bump par tick — backlog D).
+  - **Côté carte (✅ pré-câblé, 2026-07-06)** : `dreame-robot-marker` accepte `iconUrl`
+    et affiche l'image (rotation par le cap) dès que l'attribut existe — **zéro changement
+    carte à la livraison**. En attendant : fallback SVG « robot vu de dessus » (corps,
+    tourelle lidar, pare-chocs avant en couleur d'accent = cap), surchargeable par thème
+    (`--map-card-robot-body/halo/lidar`), qui remplace l'ancien disque bleu générique.
+
 ### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
 
 - ✅ **RÉSOLUE (2026-07-06) — Traits rectangulaires gris clair sur le rendu ×2** :
