@@ -5,10 +5,10 @@ import { ServiceCallSchema } from "../model/map_mode/service-call-schema";
 import { TemplatableItemValue } from "../model/map_mode/templatable-value";
 import { getFilledTemplate } from "../template-utils";
 // Import de type uniquement : casse le cycle d'import carte <-> utils au runtime.
-import type { XiaomiVacuumMapCard } from "../dreame-vacuum-card";
+import type { DreameVacuumCard } from "../dreame-vacuum-card";
 
 export function createActionWithConfigHandler(
-    node: XiaomiVacuumMapCard,
+    node: DreameVacuumCard,
     config: ActionableObjectConfig | undefined,
     action?: string
 ): ActionHandlerFunction {
@@ -19,7 +19,7 @@ export function createActionWithConfigHandler(
 }
 
 export function handleActionWithConfig(
-    node: XiaomiVacuumMapCard,
+    node: DreameVacuumCard,
     config: ActionableObjectConfig | undefined,
     action: string
 ): void {

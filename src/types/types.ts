@@ -1,12 +1,12 @@
 import { ActionConfig, ActionHandlerEvent, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from "../ha";
 import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME, CARD_CUSTOM_ELEMENT_NAME, EDITOR_CUSTOM_ELEMENT_NAME } from "../const";
-import { XiaomiVacuumMapCardActionHandler } from "../action-handler-directive";
-import { XiaomiVacuumMapCard } from "../dreame-vacuum-card";
+import { DreameVacuumCardActionHandler } from "../action-handler-directive";
+import { DreameVacuumCard } from "../dreame-vacuum-card";
 declare global {
     interface HTMLElementTagNameMap {
-        [CARD_CUSTOM_ELEMENT_NAME]: XiaomiVacuumMapCard;
+        [CARD_CUSTOM_ELEMENT_NAME]: DreameVacuumCard;
         [EDITOR_CUSTOM_ELEMENT_NAME]: LovelaceCardEditor;
-        [ACTION_HANDLER_CUSTOM_ELEMENT_NAME]: XiaomiVacuumMapCardActionHandler;
+        [ACTION_HANDLER_CUSTOM_ELEMENT_NAME]: DreameVacuumCardActionHandler;
         "hui-error-card": LovelaceCard;
     }
 }
@@ -35,7 +35,7 @@ export type EntityRegistryEntry = {
     device_id?: string;
 };
 
-export interface XiaomiVacuumMapCardConfig extends LovelaceCardConfig, CardPresetConfig {
+export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetConfig {
     readonly show_title?: boolean;
     readonly language?: Language;
     readonly debug?: boolean;

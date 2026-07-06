@@ -3,7 +3,7 @@ import {
     Language,
     PredefinedPointConfig,
     PredefinedZoneConfig,
-    XiaomiVacuumMapCardConfig,
+    DreameVacuumCardConfig,
 } from "../types/types";
 import { MapMode } from "../model/map_mode/map-mode";
 import { SelectionType } from "../model/map_mode/selection-type";
@@ -53,7 +53,7 @@ export function getWatchedEntitiesForPreset(config: CardPresetConfig, language: 
     return watchedEntities;
 }
 
-export function getWatchedEntities(config: XiaomiVacuumMapCardConfig): string[] {
+export function getWatchedEntities(config: DreameVacuumCardConfig): string[] {
     const watchedEntities = new Set<string>();
     getWatchedEntitiesForPreset(config, config.language).forEach((e) => watchedEntities.add(e));
     return [...watchedEntities];

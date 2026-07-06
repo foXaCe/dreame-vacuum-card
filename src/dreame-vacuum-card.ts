@@ -10,7 +10,7 @@ import type {
     ReplacedKey,
     RoomConfig,
     RoomConfigEventData,
-    XiaomiVacuumMapCardConfig,
+    DreameVacuumCardConfig,
 } from "./types/types";
 import {
     ActionType,
@@ -107,9 +107,9 @@ windowWithCards.customCards.push({
 });
 
 @customElement(CARD_CUSTOM_ELEMENT_NAME)
-export class XiaomiVacuumMapCard extends LitElement {
+export class DreameVacuumCard extends LitElement {
     @state() private oldConfig = false;
-    @state() private config!: XiaomiVacuumMapCardConfig;
+    @state() private config!: DreameVacuumCardConfig;
     @state() private presetIndex!: number;
     @state() private realScale!: number;
     @state() private realImageWidth!: number;
@@ -203,7 +203,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         return document.createElement(EDITOR_CUSTOM_ELEMENT_NAME);
     }
 
-    public static getStubConfig(hass: HomeAssistantFixed): XiaomiVacuumMapCardConfig | undefined {
+    public static getStubConfig(hass: HomeAssistantFixed): DreameVacuumCardConfig | undefined {
         const entities = Object.keys(hass.states);
 
         // Cherche en priorité une caméra/image avec `calibration_points` (intégrations
@@ -239,7 +239,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         return buildSuggestedConfig(pickedCamera, pickedVacuum);
     }
 
-    public setConfig(config: XiaomiVacuumMapCardConfig): void {
+    public setConfig(config: DreameVacuumCardConfig): void {
         if (!config) {
             throw new Error(this._localize("common.invalid_configuration"));
         }
@@ -341,12 +341,12 @@ export class XiaomiVacuumMapCard extends LitElement {
         if (isPureHassTick && this._isRobotActive()) {
             const now = Date.now();
             const dt = now - this._lastRenderTs;
-            if (dt < XiaomiVacuumMapCard._CLEANING_RENDER_MIN_MS) {
+            if (dt < DreameVacuumCard._CLEANING_RENDER_MIN_MS) {
                 if (this._throttledRenderTimer === undefined) {
                     this._throttledRenderTimer = window.setTimeout(() => {
                         this._throttledRenderTimer = undefined;
                         this.requestUpdate();
-                    }, XiaomiVacuumMapCard._CLEANING_RENDER_MIN_MS - dt);
+                    }, DreameVacuumCard._CLEANING_RENDER_MIN_MS - dt);
                 }
                 return false;
             }
@@ -787,7 +787,7 @@ export class XiaomiVacuumMapCard extends LitElement {
         this.currentPreset = config;
         // Cast : getWatchedEntities attend la config complète de carte, mais ici on ne
         // fournit qu'un preset — type n'est utilisé nulle part dans le calcul des watched.
-        this.watchedEntities = getWatchedEntities(config as XiaomiVacuumMapCardConfig);
+        this.watchedEntities = getWatchedEntities(config as DreameVacuumCardConfig);
     }
 
     private _lastCalibrationKey?: string;
@@ -942,7 +942,7 @@ export class XiaomiVacuumMapCard extends LitElement {
             case SelectionType.ROOM:
                 const selectedRooms = this.selectedRooms
                     .map((r) => r.toVacuum())
-                    .map((r) => XiaomiVacuumMapCard.adjustRoomId(r, mode));
+                    .map((r) => DreameVacuumCard.adjustRoomId(r, mode));
                 selection = [...selectedRooms, ...(repeats && selectedRooms.length > 0 ? [repeats] : [])];
                 variables = variablesExtractor(this.selectedRooms);
                 break;

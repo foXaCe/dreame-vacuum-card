@@ -13,7 +13,7 @@ import {
     RoomConfig,
     ServiceCallSchemaConfig,
     TranslatableString,
-    XiaomiVacuumMapCardConfig,
+    DreameVacuumCardConfig,
 } from "./types/types";
 import { localize } from "./localize/localize";
 import { MapMode } from "./model/map_mode/map-mode";
@@ -239,13 +239,13 @@ function validatePreset(config: CardPresetConfig, language: Language): Translata
     return errors;
 }
 
-export function validateConfig(config: XiaomiVacuumMapCardConfig): string[] {
+export function validateConfig(config: DreameVacuumCardConfig): string[] {
     const errors: TranslatableString[] = [];
     validatePreset(config, config.language).forEach((e) => errors.push(e));
     return errors.map((e) => localize(e, config.language));
 }
 
-export function isOldConfig(config: XiaomiVacuumMapCardConfig): boolean {
+export function isOldConfig(config: DreameVacuumCardConfig): boolean {
     return !!(config.map_image || config.map_camera);
 }
 

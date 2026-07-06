@@ -26,7 +26,7 @@ import * as tr from "./languages/tr.json";
 import * as uk from "./languages/uk.json";
 import * as zh from "./languages/zh.json";
 import * as zhHant from "./languages/zh-Hant.json";
-import { Language, TranslatableString, XiaomiVacuumMapCardConfig } from "../types/types";
+import { Language, TranslatableString, DreameVacuumCardConfig } from "../types/types";
 import { HomeAssistantFixed } from "../types/fixes";
 
 const languages: Record<string, unknown> = {
@@ -111,7 +111,7 @@ export function localize(ts: TranslatableString, lang?: Language, fallback?: str
 export function localizeWithHass(
     ts: TranslatableString,
     hass?: HomeAssistantFixed,
-    config?: XiaomiVacuumMapCardConfig,
+    config?: DreameVacuumCardConfig,
     fallback?: string
 ): string {
     return localize(ts, config?.language ?? hass?.locale?.language, fallback);
