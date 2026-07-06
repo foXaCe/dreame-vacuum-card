@@ -12,8 +12,6 @@ This platform can be used to control vacuums connected to Home Assistant using D
 
   [Configuration generator](https://github.com/PiotrMachowski/lovelace-xiaomi-vacuum-map-card/discussions/317)
 
-  [Getting coordinates](/docs/templates/setup.md#getting-coordinates)
-
   Used service: `dreame_vacuum.vacuum_clean_segment`
 
   <details>
@@ -88,8 +86,6 @@ This platform can be used to control vacuums connected to Home Assistant using D
 * ### Predefined zone cleaning (`vacuum_clean_zone_predefined`)
 
   Uses 4 coordinates to clean rectangular zones that have been defined in the configuration. Requires `predefined_selections` to be provided.
-
-  [Getting coordinates](/docs/templates/setup.md#getting-coordinates)
 
   Used service: `dreame_vacuum.vacuum_clean_zone`
 
@@ -169,8 +165,6 @@ This platform can be used to control vacuums connected to Home Assistant using D
 
   Uses a pair of coordinates for vacuum to clean a point that has been defined in the configuration. Requires `predefined_selections` to be provided.
 
-  [Getting coordinates](/docs/templates/setup.md#getting-coordinates)
-
   Used service: `dreame_vacuum.vacuum_clean_spot`
 
   <details>
@@ -236,8 +230,6 @@ This platform can be used to control vacuums connected to Home Assistant using D
 * ### Going to a predefined point (`vacuum_goto_predefined`)
 
   Uses a pair of coordinates for vacuum to go to a point that has been defined in the configuration. Requires `predefined_selections` to be provided.
-
-  [Getting coordinates](/docs/templates/setup.md#getting-coordinates)
 
   Used service: `dreame_vacuum.vacuum_goto`
 
