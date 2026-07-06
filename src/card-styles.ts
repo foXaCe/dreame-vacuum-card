@@ -454,14 +454,6 @@ export const cardStyles: CSSResultGroup = css`
         pointer-events: none;
     }
 
-    #map-image.zoomed {
-        /* crisp-edges préserve les pixels sans flouter, en évitant l'aspect "grille"
-                   brutal de pixelated. Fallback sur pixelated pour les navigateurs qui ne
-                   reconnaissent pas crisp-edges. */
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-    }
-
     #room-selection-overlay {
         position: absolute;
         top: 0;

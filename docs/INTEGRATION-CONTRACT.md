@@ -1,0 +1,324 @@
+# Contrat carte ↔ intégration — référence complète
+
+> Document de travail partagé entre **la carte Lovelace** (`dreame-vacuum-card`, ce repo)
+> et **l'intégration** (`dreame_vacuum`, qui rend la carte/map en PNG côté serveur).
+> À lire intégralement par tout agent (Claude Code ou humain) qui travaille sur le
+> **rendu de map côté intégration** ou sur la **consommation côté carte**.
+>
+> État de référence : carte **v5.10.0** (2026-07-06), HA core **2026.7.0**,
+> frontend **20260624.3**.
+
+---
+
+## 1. Philosophie de répartition (décision d'architecture)
+
+**Le rendu visuel appartient à l'INTÉGRATION. La carte Lovelace reste mince.**
+
+| Responsabilité | Propriétaire |
+|---|---|
+| Dessin des pièces, murs, sols/tapis, meubles, seuils, no-go, obstacles, labels, path, chargeur | **Intégration** (dans le PNG) |
+| Qualité visuelle du PNG (résolution, anti-aliasing, palette, netteté des labels) | **Intégration** |
+| Données structurées (calibration, rooms, positions, segment_map) | **Intégration** |
+| Affichage de l'image, pinch-zoom, skeleton de chargement | **Carte** |
+| Hit-test des pièces (clic), sélections (pièces/zones), overlays d'interaction | **Carte** |
+| Marqueur robot **dynamique** (suivi fluide anti-flicker pendant nettoyage) | **Carte** (si `robot_in_map=false`) |
+| Header statut, chip CleanGenius, boutons d'action, appels de service | **Carte** |
+
+Chaque fois qu'un choix se présente « qui dessine ça ? » → réponse par défaut :
+**l'intégration**. Plus le PNG est complet et soigné, plus la carte est simple.
+
+### 1.1 Soulager la carte — c'est un OBJECTIF, pas un effet de bord
+
+L'intégration ne se contente pas de « ne pas casser » la carte : elle cherche activement
+à **lui retirer du travail**. Chaque complexité côté carte qui existe pour compenser une
+limite du rendu serveur est une **dette à résorber côté intégration**. La direction du
+transfert est toujours la même : la carte fait aujourd'hui X en JS → l'intégration prend
+X en charge dans le rendu ou dans les données → la carte supprime son code X.
+
+**Candidats au transfert identifiés (état v5.10.0)** — à traiter comme un backlog commun :
+
+| Ce que la carte fait aujourd'hui (et pourquoi) | Ce qui le rendrait inutile côté intégration |
+|---|---|
+| Fallback pick-canvas par **polygones** quand le `segment_map` est dégénéré (tout-à-zéro) | Un `segment_map` toujours fiable (§3.3, backlog E) → le fallback carte pourra être supprimé |
+| ~~`image-rendering: crisp-edges` au zoom pour masquer la pixellisation~~ | ✅ **TRANSFERT TERMINÉ** (2026-07-06) : rendu ×2 livré côté intégration, compensation retirée côté carte (règle CSS + classe `zoomed` supprimées), zoom ×3 vérifié net sur device réel |
+| Overlay **chargeur** calculé/dessiné en JS | Chargeur incrusté dans le PNG (déjà une couche `CHARGER` du renderer) avec un rendu de qualité → l'overlay carte pourra disparaître |
+| Cap robot déduit en transformant un vecteur par la calibration (contournement d'une convention `a` inconnue) | Convention `a` documentée/normalisée (backlog F) → simplification du calcul côté carte |
+| Throttle agressif + double-buffering pour absorber les bumps d'image inutiles | Stabilité temporelle du `?v=` (backlog D) → moins de pression, code de garde simplifiable |
+| Mapping `_rawToRoomId` reconstruit par heuristique quand `segment_id` manque | `segment_id` systématiquement exposé dans `rooms` → la carte supposera toujours le mapping explicite |
+
+Ce qui reste **définitivement** côté carte (interactif par nature, ne pas tenter de le
+transférer) : hit-test au clic, overlays de sélection pièces/zones, marqueur robot
+dynamique pendant nettoyage, pinch-zoom, header/chip/boutons, appels de service.
+
+### 1.2 Développement fusionnel — deux repos, UN produit
+
+La carte et l'intégration ne sont pas deux projets qui se parlent par attributs interposés :
+c'est **un seul produit** dont le code vit dans deux repos. Concrètement :
+
+- **Ce document est la source de vérité unique** du contrat, versionné dans le repo carte,
+  lisible sur disque par les deux sessions de dev. Toute évolution du contrat se fait ICI,
+  dans le même changement que le code.
+- **Toute feature visuelle se conçoit à deux** : l'intégration produit le rendu + les
+  données, la carte n'ajoute que l'interaction. Avant d'implémenter un contournement côté
+  carte, on se demande d'abord « l'intégration peut-elle exposer la donnée / faire le rendu
+  propre ? » — et inversement, l'intégration ne pousse pas une amélioration de rendu sans
+  dérouler la checklist §7 sur la carte réelle.
+- **Chaque transfert (§1.1) se livre en deux temps coordonnés** : l'intégration livre la
+  capacité, PUIS la carte supprime son code de compensation (jamais l'inverse, jamais
+  unilatéralement — cf. §6).
+- **Les tests de la carte servent l'intégration** : les suites navigateur
+  (`test-browser/`) et les fixtures exécutables sont le harnais de non-régression du
+  contrat. Une session côté intégration qui doute d'un format le vérifie dans ces
+  fixtures ; une session côté carte qui change une consommation met à jour fixtures ET
+  ce document.
+- **Même environnement, même device** : tout se valide sur le HA dev commun (§2) avec
+  l'Aqua10 réel, pas sur des suppositions.
+
+---
+
+## 2. Environnement de développement partagé
+
+- **HA dev** : container docker `homeassistant` (network host → `http://localhost:8123`),
+  config dans `/home/stephane/homeassistant/config/`.
+- **Dashboard de test** : `/lovelace/vacuum` — carte déjà configurée sur le **device réel**
+  Dreame Aqua10 Ultra :
+  - `vacuum.aqua10_ultra_track_complete_aqua10_ultra_track_complete`
+  - `camera.aqua10_ultra_track_complete_map` (+ `map_1`, `map_data`, `wifi_map_1`)
+- **Déploiement carte** : `dist/dreame-vacuum-card.js` →
+  `config/www/community/lovelace-xiaomi-vacuum-map-card/dreame-vacuum-card.js`.
+  Ressource Lovelace id `dreame_vacuum_card`. **Cache-bust obligatoire** à chaque dépôt
+  (piège service worker : même URL = ancien JS servi, même après Ctrl+Shift+R) :
+  bumper `?v=` via WebSocket `lovelace/resources/update` — jamais éditer `.storage/`
+  pendant que HA tourne.
+- **Déploiement intégration** : copier dans `config/custom_components/dreame_vacuum/`
+  puis `docker restart homeassistant`.
+- **Logs** : les erreurs de la CARTE ne vont **pas** dans `home-assistant.log` (console
+  navigateur F12 uniquement, ou rapatriement via service `system_log.write`).
+  Les logs de l'INTÉGRATION : `grep -iE "error|warning" config/home-assistant.log`.
+- **Auth headless** (captures/tests automatisés) : refresh token `token_type=normal` dans
+  `config/.storage/auth` (sudo requis), échange via `POST /auth/token`
+  (`client_id=http://192.168.1.183:8123/`), injection `localStorage.hassTokens`.
+  Token d'accès : TTL 30 min. Détails : mémoire projet `ha-dev-visual-harness`.
+
+---
+
+## 3. Le contrat d'attributs (entité `camera.*_map`) — STRICT
+
+### 3.1 `entity_picture` — le PNG final
+
+- URL avec cache-buster `?v=int(last_updated)` : ne doit changer **que si le contenu de
+  l'image change réellement**. La carte fait du double-buffering dessus : chaque bump
+  déclenche un télécharge-décode complet.
+- La zone **hors pièces doit rester transparente** : la carte laisse transparaître la
+  surface du thème HA (thèmes translucides inclus). Un fond opaque casse tous les thèmes.
+
+### 3.2 `calibration_points` — 3 ou 4 points `{map:{x,y}, vacuum:{x,y}}`
+
+- `map.x/y` en **pixels de l'image finale** (l'espace d'`entity_picture`, après tout
+  scale/crop/rotation du renderer).
+- **Recalculés atomiquement** avec l'image à chaque changement de résolution/crop/padding.
+- Jamais colinéaires, jamais dupliqués. 3 points → transformation affine,
+  4 points → perspective.
+- ⚠ Depuis la carte v5.10.0, une calibration incohérente (colinéaire, dupliquée, ou
+  désalignée avec les transformations) est **détectée par auto-vérification**
+  (`CoordinatesConverter.selfCheck`, `src/model/map_objects/coordinates-converter.ts`)
+  → la carte affiche « Invalid calibration » au lieu de rendre. Toute erreur de
+  calibration côté intégration est donc **immédiatement visible**.
+
+### 3.3 `segment_map` — PNG base64, hit-test des pièces
+
+- **Canal bleu = ID de segment** de chaque pixel ; `0` = hors pièce.
+- **Même emprise/cadrage** qu'`entity_picture`. La résolution peut différer : la carte
+  met à l'échelle par ratio largeur/hauteur.
+- **AUCUN anti-aliasing, lissage ou compression avec perte** sur ce buffer : un blend de
+  bord produit des IDs bleus faux. Rendu nearest, aplats purs.
+- Ne **jamais publier un buffer uniforme tout-à-zéro** (bug observé sur certains devices :
+  la carte détecte ce cas et bascule sur un fallback polygones, mais corriger la source
+  est préférable — ne publier l'attribut que s'il a du contenu).
+
+### 3.4 `rooms` — `Record<room_id, {…}>` en **coordonnées VACUUM**
+
+```
+{
+  "<room_id>": {
+    x0, y0, x1, y1,          // bounding box, coordonnées vacuum
+    outline?: [[x,y], ...],  // polygone optionnel (prioritaire sur la bbox)
+    visibility?: "Hidden",   // masque la pièce côté carte
+    color?: [r,g,b],         // ou color_index (palette par défaut)
+    color_index?: number,
+    segment_id?: number      // OBLIGATOIRE si valeur brute du canal bleu ≠ room_id
+  }
+}
+```
+
+- Exemple réel du besoin de `segment_id` : Kitchen `room_id=2` mais pixel brut `11`.
+
+### 3.5 `vacuum_position` — `{x, y, a}`
+
+- `x, y` en coordonnées vacuum ; `a` en **degrés dans le repère vacuum**.
+- La carte calcule le cap écran en transformant un vecteur unité `(cos a, sin a)` par la
+  calibration (donc robuste à toute rotation/perspective de la map) — mais cela suppose
+  que `a` est bien un angle du repère vacuum. **Convention exacte (origine, sens) à
+  documenter côté intégration** : c'est le seul point du contrat jamais validé sur robot
+  en mouvement réel.
+- ⚠ **FINDING intégration (2026-07-06)** : l'attribut `vacuum_position` EST bien exposé sur
+  `camera.*_map`, au format `{x, y, a}` — MAIS `a` est **l'angle BRUT du device**
+  (`robot_position.a`, offset 9 du header binaire), tel quel, sans transformation. Ce
+  n'est **PAS** le même angle que celui du renderer JSON (`camera.*_map_data`), qui
+  applique `map_data_json_renderer._convert_angle` =
+  `int((((180-a) if a<180 else (360-a+180))+270)%360)`. Exemple robot docké mesuré :
+  `vacuum_position.a = 184` alors que `_convert_angle(184) = 266`. **Deux consommateurs,
+  deux angles.** La carte doit donc valider que son calcul `(cos a, sin a)` + calibration
+  attend bien l'angle BRUT (184) et non le transformé — à confirmer sur robot en mouvement.
+  Si la carte a besoin du transformé, c'est un changement de contrat (§6) à coordonner.
+- ✅ **ANALYSE carte (2026-07-06) — le BRUT est très probablement le bon** :
+  la calibration de ce device mappe vacuum +x → écran +x et vacuum +y → écran −y
+  (flip Y : `(0,1000)→map y 923→763`). Le calcul carte `θ_écran = atan2(M·(cos a, sin a))`
+  donne donc `θ ≈ −a`. Avec `a_brut = 184` (docké) → **θ ≈ 176° = plein ouest à l'écran**,
+  cohérent avec le dock physiquement sur le mur DROIT du Cellier (le robot recule dans le
+  dock donc regarde vers l'ouest). Avec l'angle transformé (266) → θ ≈ 94° = vers le bas,
+  incohérent. Conclusion provisoire : `vacuum_position.a` = angle CCW depuis +x du repère
+  vacuum, la carte le consomme correctement TEL QUEL ; `_convert_angle` appartient à la
+  convention interne du renderer JSON et ne doit PAS être appliqué à `vacuum_position`.
+  Reste la confirmation définitive sur robot en mouvement (§7.6).
+
+### 3.6 `charger_position` — `{x, y}` en coordonnées vacuum
+
+- ✅ Exposé sur `camera.*_map` (via `optimized_charger_position` si dispo, sinon
+  `charger_position`). Robot docké : `charger_position == vacuum_position` (attendu).
+
+### 3.7 `robot_in_map` — booléen, doit refléter fidèlement le rendu
+
+- `true` : l'icône robot est incrustée dans le PNG (réglage « Hidden map objects »).
+- `false` : la carte active **automatiquement** son overlay robot client-side
+  (marqueur CSS interpolé, anti-flicker, suit `vacuum_position`).
+- Un booléen mensonger = double robot à l'écran, ou pas de robot du tout.
+
+---
+
+## 4. Pipeline de consommation côté carte (v5.10.0 — références de code)
+
+Repo carte : `/mnt/39c0f0e6-4018-4aa1-8d96-24720083fa77/Codage/GitHub/dreame/dreame-vacuum-card`
+
+| Étape | Fichier / fonction | Ce qui se passe |
+|---|---|---|
+| Image | `src/dreame-vacuum-card.ts` → `_getMapSrc()` (~l.831) | Lit `entity_picture`, préchargement + double-buffering : l'`<img>` visible ne bascule qu'une fois la nouvelle image décodée (zéro flash) |
+| Calibration | `_getCalibration()` (~l.709) → `CoordinatesConverter` | Source `calibration_source: camera` → lit `calibration_points` de la caméra ; construit affine (3 pts) ou perspective (4 pts) + **selfCheck anti-dégénérescence** |
+| Hit-test | `_buildPickCanvas()` / `_loadSegmentMap()` (~l.1631) | Décode `segment_map` dans un canvas à sa taille native, hit-test au clic par lecture du canal bleu (scale par ratio vs image affichée), mapping `_rawToRoomId` via `segment_id` |
+| Pièces | `_getRoomsConfig()` (~l.1208) | Convertit l'attribut `rooms` en objets `Room` (outline vacuum → pixels via calibration) pour l'overlay de sélection |
+| Robot | rendu (~l.420-462) + `components/robot-marker.ts` | Overlay auto si `robot_in_map === false` ; position en % de l'image ; cap par transformation de vecteur |
+| Chargeur | rendu (~l.401-416) | `charger_position` → % de l'image via calibration |
+| Perf | `shouldUpdate()` (~l.320) | Re-render filtré par entités observées + throttle 200 ms pendant nettoyage actif |
+
+**Contrat exécutable** : `test-browser/fixtures/hass.ts` — mock complet de ce que la carte
+attend (images générées par canvas, segment_map canal bleu, calibration ×10, rooms).
+En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.test.ts`
+(Chromium réel) vérifient hit-test, services, zones, overlay robot, double-buffering.
+
+---
+
+## 5. Backlog rendu côté intégration (par ordre de valeur)
+
+> Chaque item livré ici **soulage la carte** : la colonne de droite du tableau §1.1 dit
+> quel code de compensation côté carte devient supprimable une fois l'item en place.
+
+- **A. Résolution de rendu ×2 minimum** (idéalement configurable ×1/×2/×3).
+  ✅ **LIVRÉ côté intégration** (2026-07-06, option `map_scale` 1/2/3, défaut 2) : le
+  renderer multiplie `dimensions.scale` ; `calibration_points` se recalcule
+  automatiquement dans le nouvel espace pixels (dérivés de `dimensions.scale`), le
+  `segment_map` reste en résolution native. Vérifié sur r95285 : rendu 2384×2368,
+  fond transparent, 3 pts calibration non colinéaires scalés, ratios AR
+  segment_map/image identiques, 10/10 pièces cohérentes.
+  ✅ **2ᵉ temps carte LIVRÉ** (2026-07-06) : `image-rendering: crisp-edges` retiré
+  (+ classe `zoomed` morte). Validation croisée sur device réel : PNG 2384×2368 servi,
+  calibration scalée cohérente (selfCheck OK), hit-test spot-check 2 pièces exactes en
+  mode Pièce, zoom ×3 net, fond transparent en dark, 0 erreur console.
+- **B. Anti-aliasing du PNG visible uniquement** (murs, contours, path, meubles) —
+  jamais sur le segment_map (§3.3). Partiellement en place (path super-échantillonné
+  ×2 puis thumbnail) ; à étendre aux autres couches vectorielles.
+- **C. Qualité des couches** : labels nets à haute résolution, path lissé, tapis/matériaux,
+  meubles, seuils, no-go, obstacles lisibles — tout le statique/semi-statique va dans
+  le PNG. ⏸ **Murs vectoriels — décodés, rendu différé** (2026-07-06) : `walls_info`
+  du device (segments mm réels, portes distinguées `type 1`) est décodé et conservé
+  sur `MapData.wall_lines`/`door_lines`, mais **le rendu additif a été retiré** — dessiné
+  par-dessus les murs pixel existants, il produisait des cadres rectangulaires gris
+  redondants (cf. anomalie ci-dessous, résolue). Le bon usage — **remplacer** le contour
+  pixel Moore-Neighbor/Douglas-Peucker par ces vecteurs propres — reste à faire (nécessite
+  de désactiver simultanément le rendu pixel des murs, chantier plus large).
+- **D. Stabilité temporelle** : avec `robot_in_map=false`, seul le path devrait faire
+  évoluer le PNG pendant un nettoyage (fréquence modérée) ; le robot est l'overlay fluide
+  de la carte. Aucun bump de `?v=` sans changement visuel réel.
+- **E. Fix du segment_map dégénéré** à la source (§3.3). ✅ **LIVRÉ** (2026-07-06) :
+  `camera._build_segment_map` retourne désormais `None` quand aucune pièce ne mappe vers
+  une valeur brute (buffer tout-à-zéro) → l'attribut n'est plus publié dans ce cas, et le
+  fallback polygones de la carte peut prendre le relais (il se déclenche sur l'ABSENCE de
+  l'attribut). Chemin nominal inchangé (10/10 pièces publiées sur le device réel).
+  ✅ **2ᵉ temps carte LIVRÉ** (2026-07-06) : suite navigateur
+  `test-browser/segment-map-fallback.test.ts` — le fallback polygones est verrouillé de
+  bout en bout (pick-canvas reconstruit depuis les bboxes `rooms`, sélection/désélection
+  au clic, clic hors pièce inerte), 2 tests Chromium.
+- **F. Documentation de la convention `vacuum_position.a`** (§3.5). ⏸ **CONSTAT corrigé
+  (2026-07-06)** : `vacuum_position` **EST** exposé sur `camera.*_map` au format `{x, y, a}`
+  (cf. §3.5). L'`a` est l'angle **BRUT** du device, différent de celui du renderer JSON
+  (`_convert_angle`) — détail et exemple mesuré en §3.5. Ne reste donc qu'à **valider sur
+  robot en mouvement** quel angle (brut vs transformé) la carte doit consommer pour un cap
+  correct. Le robot était docké lors du constat, validation impossible ; à faire lors d'un
+  vrai nettoyage (§7.6). C'est aussi le préalable à activer proprement l'overlay robot
+  dynamique de la carte (`robot_in_map=false` en masquant l'objet `robot`).
+
+### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
+
+- ✅ **RÉSOLUE (2026-07-06) — Traits rectangulaires gris clair sur le rendu ×2** :
+  de fins contours rectangulaires gris apparaissaient autour des pièces (ligne au-dessus
+  du Salon, bord droit de la Buanderie vers le Cellier, ligne sous les chambres), nets au
+  zoom, dans les deux thèmes. C'étaient bien les couches `WALL_OUTLINE`/`DOOR` du rendu
+  `walls_info` : dessinées **par-dessus** les murs pixel existants, elles formaient des
+  cadres redondants (un rectangle de segments par pièce). **Correctif** : le rendu additif
+  des murs vectoriels a été retiré côté intégration (le décodage reste, cf. backlog C).
+  Le fond était déjà bien transparent (alpha=0) ; il n'y a plus de traits en trop.
+  ✅ **Contre-validé côté carte** (2026-07-06) : captures light + zoom ×3 sur device réel —
+  plus aucun trait, netteté intacte, 0 erreur console.
+
+---
+
+## 6. Procédure de changement de contrat
+
+Si un changement de contrat est réellement nécessaire (nouvel attribut, format modifié) :
+
+1. **Ne pas casser unilatéralement** — les deux côtés se mettent à jour de façon coordonnée.
+2. Décrire précisément : attribut, ancien format → nouveau format, stratégie de migration
+   (période de double exposition si possible).
+3. Côté carte, les points d'entrée à adapter sont listés au §4 ; les fixtures
+   `test-browser/fixtures/hass.ts` et les suites navigateur doivent être mises à jour
+   dans le même changement.
+
+---
+
+## 7. Checklist de validation croisée (après tout changement de rendu)
+
+Sur `/lovelace/vacuum` (device réel) :
+
+1. ☐ La carte s'affiche **sans** « Invalid calibration » (sinon : `calibration_points`
+   désalignés avec la nouvelle image — garde-fou v5.10.0).
+2. ☐ Onglet **Pièce** : cliquer CHAQUE pièce → c'est bien elle qui se sélectionne
+   (hit-test aligné = segment_map cohérent avec l'image).
+3. ☐ Onglet **Zone** : dessiner un rectangle → il suit exactement la souris.
+4. ☐ Fond hors pièces transparent (tester un thème sombre : pas de dalle claire).
+5. ☐ Zoom à fond → netteté (critère du backlog A).
+6. ☐ Nettoyage court réel : pas de flicker d'image, robot fluide, pas de double robot.
+7. ☐ Console navigateur (F12) : zéro erreur provenant de la carte.
+8. ☐ `home-assistant.log` : zéro erreur/warning côté intégration.
+
+Côté carte, les suites automatisées restent le filet : `npm test` (782 tests) et
+`CHROMIUM_BIN=/usr/bin/chromium npm run test:browser` (16 tests Chromium).
+
+---
+
+## 8. Interdits absolus
+
+- Anti-aliasing ou compression avec perte sur le `segment_map`.
+- Fond opaque hors pièces dans `entity_picture`.
+- Bump du cache-buster `?v=` sans changement réel de contenu.
+- `calibration_points` non recalculés lors d'un changement de résolution/crop.
+- `robot_in_map` ne reflétant pas l'état réel du rendu.
+- Casser un point du contrat sans suivre la procédure du §6.

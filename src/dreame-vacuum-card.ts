@@ -486,7 +486,6 @@ export class XiaomiVacuumMapCard extends LitElement {
                     decoding="async"
                     loading="eager"
                     fetchpriority="high"
-                    class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
                     @load="${() => {
                         this.mapLoaded = true;
