@@ -26,7 +26,6 @@ import {
     ACTIVE_VACUUM_STATES,
     CARD_CUSTOM_ELEMENT_NAME,
     CARD_VERSION,
-    DISCONNECTED_IMAGE,
     DISCONNECTION_TIME,
     EDITOR_CUSTOM_ELEMENT_NAME,
     EMPTY_MAP_MODE,
@@ -69,6 +68,7 @@ import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
 import { resolveCalibration } from "./model/map/calibration-resolver";
 import { computeRobotOverlayGeometry, INITIAL_ROBOT_SAMPLE, RobotSample } from "./model/map/robot-overlay-geometry";
+import { MapImageBuffer } from "./model/map/map-image-buffer";
 import { MapObject } from "./model/map_objects/map-object";
 import { MousePosition } from "./model/map_objects/mouse-position";
 import { HomeAssistantFixed } from "./types/fixes";
@@ -143,11 +143,13 @@ export class XiaomiVacuumMapCard extends LitElement {
     private shouldHandleMouseUp!: boolean;
     private lastHassUpdate!: Date;
     public isInEditor = false;
-    private lastValidMapUrl?: string;
-    // Double-buffering de l'image de carte : URL réellement affichée vs URL en cours de
-    // préchargement. On ne bascule l'<img> visible qu'une fois la nouvelle image décodée.
-    private _displayedMapUrl?: string;
-    private _pendingMapUrl?: string;
+    // Double-buffering de l'image de carte (URL affichée vs préchargement en cours) :
+    // voir `model/map/map-image-buffer.ts`. On ne bascule l'<img> visible qu'une fois la
+    // nouvelle image décodée.
+    private readonly _mapImageBuffer = new MapImageBuffer({
+        resolveUrl: (path) => this.hass.hassUrl(path),
+        onSwapped: () => this.requestUpdate(),
+    });
     private _overlayDirty = false;
     private _cachedContext: Context | undefined;
     private _pickCanvas: HTMLCanvasElement | null = null;
@@ -766,11 +768,9 @@ export class XiaomiVacuumMapCard extends LitElement {
     private _setPreset(config: CardPresetConfig): void {
         // Si la caméra change (preset multi-caméras), on purge les buffers d'image pour ne
         // jamais afficher transitoirement la carte de l'ancien robot/preset le temps que la
-        // nouvelle image se décode (cf. double-buffering dans _getMapSrc/_preloadMapImage).
+        // nouvelle image se décode (cf. double-buffering dans model/map/map-image-buffer.ts).
         if (this.currentPreset?.map_source?.camera !== config.map_source?.camera) {
-            this._displayedMapUrl = undefined;
-            this._pendingMapUrl = undefined;
-            this.lastValidMapUrl = undefined;
+            this._mapImageBuffer.reset();
             // Nouvelle source de map -> ré-arme le skeleton le temps du premier décodage.
             this.mapLoaded = false;
             // Nouveau robot/preset -> ne pas dérouler le cap à travers le changement (seul
@@ -797,76 +797,17 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _getMapSrc(config: CardPresetConfig): string {
-        if (config.map_source.camera) {
-            const cameraState = this.hass?.states?.[config.map_source.camera];
-            const entityPicture = cameraState?.attributes?.entity_picture;
-            if (
-                this.connected &&
-                this.lastHassUpdate &&
-                this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime() &&
-                entityPicture
-            ) {
-                // `entity_picture` de l'intégration contient DÉJÀ un cache-buster `?v=int(last_updated)`
-                // qui ne change que lorsque la carte/position change réellement. On n'ajoute donc plus
-                // de second `&v=${last_updated}` (qui forçait un re-fetch à chaque écriture d'état, même
-                // image identique). Couplé au double-buffering ci-dessous, cela supprime le flash.
-                const fullUrl = this.hass.hassUrl(entityPicture);
-                this.lastValidMapUrl = fullUrl;
-                this._preloadMapImage(fullUrl);
-                // Tant que la nouvelle image n'est pas décodée, on garde l'URL déjà affichée :
-                // l'<img> visible ne pointe jamais vers une ressource non prête -> aucun blanc.
-                return this._displayedMapUrl ?? fullUrl;
-            }
-            // Return cached map instead of disconnected image
-            if (this._displayedMapUrl) {
-                return this._displayedMapUrl;
-            }
-            if (this.lastValidMapUrl) {
-                return this.lastValidMapUrl;
-            }
-            return DISCONNECTED_IMAGE;
-        }
-        if (config.map_source.image) {
-            return `${config.map_source.image}`;
-        }
-        return DISCONNECTED_IMAGE;
-    }
-
-    /**
-     * Double-buffering : précharge l'URL de carte hors-écran et ne bascule la source
-     * affichée (`_displayedMapUrl`) qu'une fois l'image décodée. Le `<img>` visible
-     * continue d'afficher la frame précédente pendant le chargement -> pas de flash.
-     */
-    private _preloadMapImage(url: string): void {
-        if (url === this._displayedMapUrl || url === this._pendingMapUrl) {
-            return;
-        }
-        this._pendingMapUrl = url;
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        const finish = (): void => {
-            // Une URL plus récente a pris le relais entre-temps : on abandonne celle-ci.
-            if (this._pendingMapUrl !== url) {
-                return;
-            }
-            this._pendingMapUrl = undefined;
-            this._displayedMapUrl = url;
-            this.requestUpdate();
-        };
-        img.onload = finish;
-        img.onerror = (): void => {
-            if (this._pendingMapUrl === url) {
-                this._pendingMapUrl = undefined;
-            }
-        };
-        img.src = url;
-        // decode() garantit que la frame est prête à peindre (pas seulement téléchargée) ;
-        // en cas d'échec (header/navigateur) on retombe sur l'évènement onload.
-        if (img.decode) {
-            img.decode()
-                .then(finish)
-                .catch(() => undefined);
-        }
+        const cameraState = config.map_source.camera ? this.hass?.states?.[config.map_source.camera] : undefined;
+        const entityPicture = cameraState?.attributes?.entity_picture;
+        const isFresh =
+            !!this.connected &&
+            !!this.lastHassUpdate &&
+            this.lastHassUpdate.getTime() + DISCONNECTION_TIME >= new Date().getTime();
+        return this._mapImageBuffer.resolveSrc({
+            mapSource: config.map_source,
+            cameraEntityPicture: entityPicture,
+            isFresh,
+        });
     }
 
     private _getContext(): Context {
