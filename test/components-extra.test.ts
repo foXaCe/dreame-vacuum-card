@@ -17,7 +17,7 @@ import { StatusHeader } from "../src/components/status-header";
 import { CleaningProgressBar } from "../src/components/cleaning-progress-bar";
 import { cardStyles } from "../src/card-styles";
 import { createActionWithConfigHandler, handleActionWithConfig } from "../src/utils/actions";
-import type { XiaomiVacuumMapCard } from "../src/dreame-vacuum-card";
+import type { DreameVacuumCard } from "../src/dreame-vacuum-card";
 import type { ActionHandlerEvent } from "../src/ha";
 
 // ---------------------------------------------------------------------------
@@ -609,12 +609,12 @@ describe("cardStyles", () => {
 
 describe("utils/actions", () => {
     /**
-     * Minimal mock implementing only the surface of XiaomiVacuumMapCard that
+     * Minimal mock implementing only the surface of DreameVacuumCard that
      * handleActionWithConfig touches: hass, _getCurrentPreset, _getCurrentMode,
      * _getSelection, repeats, internalVariables. Cast through unknown because the
      * real class has a large public API we deliberately do not implement.
      */
-    function makeNode(overrides: Partial<Record<string, unknown>> = {}): XiaomiVacuumMapCard {
+    function makeNode(overrides: Partial<Record<string, unknown>> = {}): DreameVacuumCard {
         const callService = vi.fn();
         // Back the node with a real DOM element so handleAction can dispatch
         // DOM events on it (fireEvent calls node.dispatchEvent) for the
@@ -628,7 +628,7 @@ describe("utils/actions", () => {
             _getCurrentMode: () => undefined,
             _getSelection: () => ({ selection: [], variables: {} }),
             ...overrides,
-        }) as unknown as XiaomiVacuumMapCard;
+        }) as unknown as DreameVacuumCard;
     }
 
     it("handleActionWithConfig does nothing when hass is missing", () => {

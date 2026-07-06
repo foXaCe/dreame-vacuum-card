@@ -38,7 +38,7 @@ export class MapMode {
         return parsed as T;
     }
 
-    /** Active les warnings de parsing config (lu depuis XiaomiVacuumMapCardConfig.debug). */
+    /** Active les warnings de parsing config (lu depuis DreameVacuumCardConfig.debug). */
     public static debug = false;
 
     public name: string;

@@ -1,12 +1,12 @@
 import { CARD_CUSTOM_ELEMENT_NAME } from "../const";
 import { PlatformGenerator } from "../model/generators/platform-generator";
 import type { HomeAssistantFixed } from "../types/fixes";
-import type { XiaomiVacuumMapCardConfig } from "../types/types";
+import type { DreameVacuumCardConfig } from "../types/types";
 
 /** Suggestion de carte renvoyée à Home Assistant pour le card picker (HA 2026.6+). */
 export interface CardSuggestion {
     readonly label?: string;
-    readonly config: XiaomiVacuumMapCardConfig;
+    readonly config: DreameVacuumCardConfig;
 }
 
 /** Vrai si l'entité peut servir de source de carte (flux `camera` ou `image`). */
@@ -39,7 +39,7 @@ export function findCameraForVacuum(hass: HomeAssistantFixed, vacuumId: string):
 }
 
 /** Assemble une configuration minimale et valide pour un couple caméra + vacuum. */
-export function buildSuggestedConfig(cameraId: string, vacuumId: string): XiaomiVacuumMapCardConfig {
+export function buildSuggestedConfig(cameraId: string, vacuumId: string): DreameVacuumCardConfig {
     return {
         type: "custom:" + CARD_CUSTOM_ELEMENT_NAME,
         map_source: { camera: cameraId },

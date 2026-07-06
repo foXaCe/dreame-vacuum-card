@@ -1,18 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { validateConfig, isOldConfig, areAllEntitiesDefined } from "../src/config-validators";
-import type { XiaomiVacuumMapCardConfig } from "../src/types/types";
+import type { DreameVacuumCardConfig } from "../src/types/types";
 import type { HomeAssistantFixed } from "../src/types/fixes";
 
 // --- Helpers -----------------------------------------------------------------
 
-// validateConfig prend un XiaomiVacuumMapCardConfig; on construit des objets
+// validateConfig prend un DreameVacuumCardConfig; on construit des objets
 // partiels castés (cf. pattern test/utils.test.ts).
-const cfg = (overrides: Record<string, unknown>): XiaomiVacuumMapCardConfig =>
-    overrides as unknown as XiaomiVacuumMapCardConfig;
+const cfg = (overrides: Record<string, unknown>): DreameVacuumCardConfig =>
+    overrides as unknown as DreameVacuumCardConfig;
 
 // Préset minimal valide: plateforme par défaut "Dreame" (calibration par défaut
 // fournie => calibration_source non obligatoire), entity + map_source présents.
-const baseValid = (extra: Record<string, unknown> = {}): XiaomiVacuumMapCardConfig =>
+const baseValid = (extra: Record<string, unknown> = {}): DreameVacuumCardConfig =>
     cfg({
         language: "en",
         entity: "vacuum.test",

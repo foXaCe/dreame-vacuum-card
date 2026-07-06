@@ -36,3 +36,7 @@ prompt-*.md
 
 # NOTE: dist/ is intentionally committed so the card can be installed via raw
 # URL without a release. Do not ignore it.
+
+# Single-file release build (dist-release/dreame-vacuum-card.js) — built on demand
+# by release.yml via SINGLE_FILE=1, never committed.
+/dist-release/

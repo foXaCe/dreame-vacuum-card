@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { HomeAssistantFixed } from "../src/types/fixes";
-import type { XiaomiVacuumMapCardConfig } from "../src/types/types";
+import type { DreameVacuumCardConfig } from "../src/types/types";
 import { CARD_CUSTOM_ELEMENT_NAME } from "../src/const";
 import { PlatformGenerator } from "../src/model/generators/platform-generator";
 
@@ -17,7 +17,7 @@ vi.mock("lottie-web/build/player/lottie_light", () => ({
 
 // Importing the module registers the custom element AND pushes the window.customCards
 // entry as a side effect (top-level code in dreame-vacuum-card.ts).
-import { XiaomiVacuumMapCard } from "../src/dreame-vacuum-card";
+import { DreameVacuumCard } from "../src/dreame-vacuum-card";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,16 +33,16 @@ function makeHass(overrides: Partial<HomeAssistantFixed> = {}): HomeAssistantFix
     } as unknown as HomeAssistantFixed;
 }
 
-/** NOTE : `new XiaomiVacuumMapCard()` évite le même piège d'upgrade happy-dom que celui
+/** NOTE : `new DreameVacuumCard()` évite le même piège d'upgrade happy-dom que celui
  *  documenté pour RobotAnimation dans components-extra.test.ts — construction directe,
  *  sans passer par `document.createElement` + connexion au DOM (non nécessaire pour ces
  *  tests d'API pure, aucun d'eux n'a besoin d'un rendu). */
-function makeCard(): XiaomiVacuumMapCard {
-    return new XiaomiVacuumMapCard();
+function makeCard(): DreameVacuumCard {
+    return new DreameVacuumCard();
 }
 
 /** Config utilisateur réelle, telle qu'elle existe en prod (non-régression YAML). */
-function prodConfig(overrides: Partial<XiaomiVacuumMapCardConfig> = {}): XiaomiVacuumMapCardConfig {
+function prodConfig(overrides: Partial<DreameVacuumCardConfig> = {}): DreameVacuumCardConfig {
     return {
         type: "custom:dreame-vacuum-card",
         entity: "vacuum.a",
@@ -55,7 +55,7 @@ function prodConfig(overrides: Partial<XiaomiVacuumMapCardConfig> = {}): XiaomiV
         clean_selection_on_start: true,
         robot_overlay: false,
         ...overrides,
-    } as XiaomiVacuumMapCardConfig;
+    } as DreameVacuumCardConfig;
 }
 
 beforeEach(() => {
@@ -66,7 +66,7 @@ beforeEach(() => {
 // Sections view / layout API
 // ===========================================================================
 
-describe("XiaomiVacuumMapCard layout API", () => {
+describe("DreameVacuumCard layout API", () => {
     it("getGridOptions returns a full-width, content-driven Sections view config", () => {
         const card = makeCard();
         const options = card.getGridOptions();
@@ -103,7 +103,7 @@ describe("XiaomiVacuumMapCard layout API", () => {
 // getStubConfig
 // ===========================================================================
 
-describe("XiaomiVacuumMapCard.getStubConfig", () => {
+describe("DreameVacuumCard.getStubConfig", () => {
     const VACUUM = "vacuum.y";
     const CAMERA = "camera.x";
 
@@ -111,14 +111,14 @@ describe("XiaomiVacuumMapCard.getStubConfig", () => {
         const hass = makeHass({
             states: { [CAMERA]: { entity_id: CAMERA, state: "idle", attributes: {} } } as never,
         });
-        expect(XiaomiVacuumMapCard.getStubConfig(hass)).toBeUndefined();
+        expect(DreameVacuumCard.getStubConfig(hass)).toBeUndefined();
     });
 
     it("returns undefined when there is no camera/image entity", () => {
         const hass = makeHass({
             states: { [VACUUM]: { entity_id: VACUUM, state: "docked", attributes: {} } } as never,
         });
-        expect(XiaomiVacuumMapCard.getStubConfig(hass)).toBeUndefined();
+        expect(DreameVacuumCard.getStubConfig(hass)).toBeUndefined();
     });
 
     it("builds a config from a calibrated camera + vacuum sharing the same device_id", () => {
@@ -136,7 +136,7 @@ describe("XiaomiVacuumMapCard.getStubConfig", () => {
                 [VACUUM]: { device_id: "dev1" },
             } as never,
         });
-        const config = XiaomiVacuumMapCard.getStubConfig(hass);
+        const config = DreameVacuumCard.getStubConfig(hass);
         expect(config).toEqual({
             type: "custom:" + CARD_CUSTOM_ELEMENT_NAME,
             entity: VACUUM,
@@ -169,7 +169,7 @@ describe("XiaomiVacuumMapCard.getStubConfig", () => {
                 [VACUUM]: { device_id: "devB" },
             } as never,
         });
-        const config = XiaomiVacuumMapCard.getStubConfig(hass);
+        const config = DreameVacuumCard.getStubConfig(hass);
         expect(config?.entity).toBe(VACUUM);
         expect(config?.map_source.camera).toBe(CAMERA);
         expect(config?.calibration_source).toEqual({ camera: true });
@@ -197,15 +197,15 @@ describe("window.customCards registration", () => {
 // setConfig
 // ===========================================================================
 
-describe("XiaomiVacuumMapCard.setConfig", () => {
+describe("DreameVacuumCard.setConfig", () => {
     it("throws when config is null", () => {
         const card = makeCard();
-        expect(() => card.setConfig(null as unknown as XiaomiVacuumMapCardConfig)).toThrow();
+        expect(() => card.setConfig(null as unknown as DreameVacuumCardConfig)).toThrow();
     });
 
     it("throws when config is undefined", () => {
         const card = makeCard();
-        expect(() => card.setConfig(undefined as unknown as XiaomiVacuumMapCardConfig)).toThrow();
+        expect(() => card.setConfig(undefined as unknown as DreameVacuumCardConfig)).toThrow();
     });
 
     it("accepts the real production YAML config without throwing (backwards-compat)", () => {

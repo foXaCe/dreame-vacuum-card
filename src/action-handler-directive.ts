@@ -7,13 +7,13 @@ import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME } from "./const";
 
 const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-interface XiaomiVacuumMapCardActionHandlerInterface extends HTMLElement {
+interface DreameVacuumCardActionHandlerInterface extends HTMLElement {
     holdTime: number;
 
     bind(element: Element, options?: ActionHandlerOptions): void;
 }
 
-interface XiaomiVacuumMapCardActionHandlerElement extends HTMLElement {
+interface DreameVacuumCardActionHandlerElement extends HTMLElement {
     actionHandler?: boolean;
 }
 
@@ -23,7 +23,7 @@ declare global {
     }
 }
 
-export class XiaomiVacuumMapCardActionHandler extends HTMLElement implements XiaomiVacuumMapCardActionHandlerInterface {
+export class DreameVacuumCardActionHandler extends HTMLElement implements DreameVacuumCardActionHandlerInterface {
     public holdTime = 500;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,7 +75,7 @@ export class XiaomiVacuumMapCardActionHandler extends HTMLElement implements Xia
         this.documentListeners?.abort();
         this.documentListeners = new AbortController();
         const { signal } = this.documentListeners;
-        XiaomiVacuumMapCardActionHandler.CANCEL_EVENTS.forEach((ev) => {
+        DreameVacuumCardActionHandler.CANCEL_EVENTS.forEach((ev) => {
             document.addEventListener(ev, this.cancelInteraction, { passive: true, signal });
         });
     }
@@ -89,7 +89,7 @@ export class XiaomiVacuumMapCardActionHandler extends HTMLElement implements Xia
         this.dblClickTimeout = undefined;
     }
 
-    public bind(element: XiaomiVacuumMapCardActionHandlerElement, options?: ActionHandlerOptions): void {
+    public bind(element: DreameVacuumCardActionHandlerElement, options?: ActionHandlerOptions): void {
         if (element.actionHandler) {
             return;
         }
@@ -180,25 +180,25 @@ export class XiaomiVacuumMapCardActionHandler extends HTMLElement implements Xia
     }
 }
 
-customElements.define(ACTION_HANDLER_CUSTOM_ELEMENT_NAME, XiaomiVacuumMapCardActionHandler);
+customElements.define(ACTION_HANDLER_CUSTOM_ELEMENT_NAME, DreameVacuumCardActionHandler);
 
-const getActionHandler = (): XiaomiVacuumMapCardActionHandlerInterface => {
+const getActionHandler = (): DreameVacuumCardActionHandlerInterface => {
     const body = document.body;
     if (body.querySelector(ACTION_HANDLER_CUSTOM_ELEMENT_NAME)) {
-        return body.querySelector(ACTION_HANDLER_CUSTOM_ELEMENT_NAME) as XiaomiVacuumMapCardActionHandlerInterface;
+        return body.querySelector(ACTION_HANDLER_CUSTOM_ELEMENT_NAME) as DreameVacuumCardActionHandlerInterface;
     }
 
     const actionhandler = document.createElement(ACTION_HANDLER_CUSTOM_ELEMENT_NAME);
     body.appendChild(actionhandler);
 
-    return actionhandler as XiaomiVacuumMapCardActionHandlerInterface;
+    return actionhandler as DreameVacuumCardActionHandlerInterface;
 };
 
 export const actionHandlerBind = (
-    element: XiaomiVacuumMapCardActionHandlerElement,
+    element: DreameVacuumCardActionHandlerElement,
     options?: ActionHandlerOptions
 ): void => {
-    const handler: XiaomiVacuumMapCardActionHandlerInterface = getActionHandler();
+    const handler: DreameVacuumCardActionHandlerInterface = getActionHandler();
     if (!handler) {
         return;
     }
@@ -208,7 +208,7 @@ export const actionHandlerBind = (
 export const actionHandler = directive(
     class extends Directive {
         update(part: AttributePart, [options]: DirectiveParameters<this>): typeof noChange {
-            actionHandlerBind(part.element as XiaomiVacuumMapCardActionHandlerElement, options);
+            actionHandlerBind(part.element as DreameVacuumCardActionHandlerElement, options);
             return noChange;
         }
 

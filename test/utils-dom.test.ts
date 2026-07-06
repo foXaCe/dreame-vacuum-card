@@ -12,7 +12,7 @@ import type {
     CardPresetConfig,
     EntityRegistryEntry,
     MapModeConfig,
-    XiaomiVacuumMapCardConfig,
+    DreameVacuumCardConfig,
 } from "../src/types/types";
 import type { HomeAssistantFixed } from "../src/types/fixes";
 
@@ -319,7 +319,7 @@ describe("getWatchedEntities", () => {
             vacuum_platform: PLATFORM,
             map_source: { camera: "camera.map" },
             conditions: [{ entity: "vacuum.robot" }], // doublon volontaire avec entity
-        } as unknown as XiaomiVacuumMapCardConfig;
+        } as unknown as DreameVacuumCardConfig;
 
         const result = getWatchedEntities(config);
 
@@ -334,7 +334,7 @@ describe("getWatchedEntities", () => {
             entity: "vacuum.robot",
             language: undefined,
             map_source: {},
-        } as unknown as XiaomiVacuumMapCardConfig;
+        } as unknown as DreameVacuumCardConfig;
 
         const result = getWatchedEntities(config);
         expect(result).toEqual(["vacuum.robot"]);

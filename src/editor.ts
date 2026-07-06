@@ -2,7 +2,7 @@ import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { fireEvent, LovelaceCardEditor } from "./ha";
 
-import { TranslatableString, XiaomiVacuumMapCardConfig } from "./types/types";
+import { TranslatableString, DreameVacuumCardConfig } from "./types/types";
 import { localizeWithHass } from "./localize/localize";
 import { EDITOR_CUSTOM_ELEMENT_NAME } from "./const";
 import { HomeAssistantFixed } from "./types/fixes";
@@ -117,11 +117,11 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
 ];
 
 @customElement(EDITOR_CUSTOM_ELEMENT_NAME)
-export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<LovelaceCardEditor, "hass"> {
+export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceCardEditor, "hass"> {
     @property({ attribute: false }) public hass?: HomeAssistantFixed;
-    @state() private _config?: XiaomiVacuumMapCardConfig;
+    @state() private _config?: DreameVacuumCardConfig;
 
-    public setConfig(config: XiaomiVacuumMapCardConfig): void {
+    public setConfig(config: DreameVacuumCardConfig): void {
         this._config = config;
     }
 
@@ -188,7 +188,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             };
         };
 
-        // `XiaomiVacuumMapCardConfig` est `readonly` côté typage : on construit l'objet
+        // `DreameVacuumCardConfig` est `readonly` côté typage : on construit l'objet
         // mutable, puis on cast à la fin. Évite des spreads multiples.
         const draft: Record<string, unknown> = {
             ...this._config,
@@ -222,7 +222,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
             draft.calibration_source = { camera: true };
         }
 
-        this._config = draft as XiaomiVacuumMapCardConfig;
+        this._config = draft as DreameVacuumCardConfig;
         fireEvent(this, "config-changed", { config: this._config });
     };
 

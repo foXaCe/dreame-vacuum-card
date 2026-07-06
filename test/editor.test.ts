@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { HomeAssistantFixed } from "../src/types/fixes";
-import type { XiaomiVacuumMapCardConfig } from "../src/types/types";
+import type { DreameVacuumCardConfig } from "../src/types/types";
 
 // Importing the module registers the custom element as a side effect.
-import { XiaomiVacuumMapCardEditor } from "../src/editor";
+import { DreameVacuumCardEditor } from "../src/editor";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -26,22 +26,22 @@ async function mount<T extends HTMLElement & { updateComplete: Promise<unknown> 
     return el;
 }
 
-function makeEditor(): XiaomiVacuumMapCardEditor {
-    return document.createElement("dreame-vacuum-card-editor") as XiaomiVacuumMapCardEditor;
+function makeEditor(): DreameVacuumCardEditor {
+    return document.createElement("dreame-vacuum-card-editor") as DreameVacuumCardEditor;
 }
 
-function haForm(el: XiaomiVacuumMapCardEditor): HTMLElement {
+function haForm(el: DreameVacuumCardEditor): HTMLElement {
     return el.shadowRoot!.querySelector("ha-form") as HTMLElement;
 }
 
 /** Config minimale valide, telle que produite par le wizard / setConfig. */
-function baseConfig(overrides: Partial<XiaomiVacuumMapCardConfig> = {}): XiaomiVacuumMapCardConfig {
+function baseConfig(overrides: Partial<DreameVacuumCardConfig> = {}): DreameVacuumCardConfig {
     return {
         type: "custom:dreame-vacuum-card",
         entity: "vacuum.robot",
         map_source: { camera: "camera.robot" },
         ...overrides,
-    } as XiaomiVacuumMapCardConfig;
+    } as DreameVacuumCardConfig;
 }
 
 beforeEach(() => {
@@ -54,7 +54,7 @@ beforeEach(() => {
 
 describe("dreame-vacuum-card-editor", () => {
     it("is registered as a custom element", () => {
-        expect(customElements.get("dreame-vacuum-card-editor")).toBe(XiaomiVacuumMapCardEditor);
+        expect(customElements.get("dreame-vacuum-card-editor")).toBe(DreameVacuumCardEditor);
     });
 
     it("setConfig stores the config", () => {
@@ -175,7 +175,7 @@ describe("dreame-vacuum-card-editor", () => {
     // -- _valueChanged --------------------------------------------------------
 
     describe("_valueChanged", () => {
-        function emitValueChanged(el: XiaomiVacuumMapCardEditor, value: Record<string, unknown>): void {
+        function emitValueChanged(el: DreameVacuumCardEditor, value: Record<string, unknown>): void {
             haForm(el).dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
         }
 

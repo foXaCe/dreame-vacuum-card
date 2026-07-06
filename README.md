@@ -82,18 +82,28 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 
 ### Manual Installation
 
-1. Download `dreame-vacuum-card.zip` from the [latest release](https://github.com/foXaCe/dreame-vacuum-card/releases/latest)
-2. Extract **all** its files to `<ha config>/www/community/dreame-vacuum-card/`. The
+The [latest release](https://github.com/foXaCe/dreame-vacuum-card/releases/latest) publishes
+two assets — pick one:
+
+1. Download **`dreame-vacuum-card.js`** (self-contained, animation engine included) and copy
+   it alone to `<ha config>/www/community/dreame-vacuum-card/`. This is the simplest option.
+
+   — OR —
+
+   Download **`dreame-vacuum-card.zip`** and extract **all** its files to the same folder. The
    card lazy-loads its animation engine as separate chunk files
    (`dreame-vacuum-card.lottie_light-*.js`, `dreame-vacuum-card.anim_*.js`) next to
-   `dreame-vacuum-card.js` — copying only the main `.js` file will break washing/drying
-   animations.
-3. Add to [Lovelace resources](https://my.home-assistant.io/redirect/lovelace_resources/):
+   `dreame-vacuum-card.js` — copying only the main `.js` file from this archive will break
+   washing/drying animations.
+2. Add to [Lovelace resources](https://my.home-assistant.io/redirect/lovelace_resources/):
    ```yaml
    url: /local/community/dreame-vacuum-card/dreame-vacuum-card.js
    type: module
    ```
-4. Refresh your browser
+3. Refresh your browser
+
+> Installing straight from the raw `dist/` files on the repository (instead of a release
+> asset) always yields the chunked layout — grab the whole `dist/` directory in that case.
 
 ## Configuration
 

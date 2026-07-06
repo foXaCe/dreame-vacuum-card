@@ -13,20 +13,21 @@ const version = packageJson.version;
 
 // The version placeholder (src/const.ts) lives in the main entry chunk only — the
 // lazy-loaded lottie chunks (see robot-animation.ts / rollup.config.js) never
-// reference it. hacs.json.filename now points at the release zip archive (built
-// AFTER this script runs, see release.yml), so the JS filename is hardcoded here
-// instead of being read from hacs.json.
-const filename = "dreame-vacuum-card.js";
+// reference it (they don't exist at all in the SINGLE_FILE build, see
+// rollup.config.js). An optional path argument lets this script patch the
+// single-file release asset (dist-release/dreame-vacuum-card.js) in addition to
+// the default dist/ build output; the JS filename is otherwise hardcoded rather
+// than read from hacs.json.
+const targetPath = process.argv[2] ?? join(__dirname, "../dist/dreame-vacuum-card.js");
 
-// Read the dist file
-const distPath = join(__dirname, "../dist", filename);
-let content = readFileSync(distPath, "utf8");
+// Read the target file
+let content = readFileSync(targetPath, "utf8");
 
 // Replace the placeholder
 const placeholder = "@VACUUM_MAP_CARD_VERSION_PLACEHOLDER@";
 const updatedContent = content.replace(new RegExp(placeholder, "g"), version);
 
 // Write back
-writeFileSync(distPath, updatedContent, "utf8");
+writeFileSync(targetPath, updatedContent, "utf8");
 
-console.log(`✅ Replaced '${placeholder}' with '${version}' in ${filename}`);
+console.log(`✅ Replaced '${placeholder}' with '${version}' in ${targetPath}`);

@@ -1,18 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { validateConfig } from "../src/config-validators";
-import type { XiaomiVacuumMapCardConfig } from "../src/types/types";
+import type { DreameVacuumCardConfig } from "../src/types/types";
 
 // Cas COMPLEMENTAIRES a test/config-validators.test.ts: on cible les branches
 // non couvertes (calibration_source / calibration_points, validateIcon/Label via
 // label & icon mal formes, fusion de template, modes multiples, service vide).
 // On NE re-teste PAS ce que couvre deja le fichier existant.
 
-const cfg = (overrides: Record<string, unknown>): XiaomiVacuumMapCardConfig =>
-    overrides as unknown as XiaomiVacuumMapCardConfig;
+const cfg = (overrides: Record<string, unknown>): DreameVacuumCardConfig =>
+    overrides as unknown as DreameVacuumCardConfig;
 
 // Plateforme par defaut "Dreame": calibration par defaut => calibration_source
 // reste optionnel; mais s'il est present il est valide quand meme (ligne 230).
-const baseValid = (extra: Record<string, unknown> = {}): XiaomiVacuumMapCardConfig =>
+const baseValid = (extra: Record<string, unknown> = {}): DreameVacuumCardConfig =>
     cfg({
         language: "en",
         entity: "vacuum.test",
@@ -21,7 +21,7 @@ const baseValid = (extra: Record<string, unknown> = {}): XiaomiVacuumMapCardConf
     });
 
 // Mode predefini parametrable (selection_type + predefined_selections).
-const selectionMode = (selectionType: string, selections: unknown[]): XiaomiVacuumMapCardConfig =>
+const selectionMode = (selectionType: string, selections: unknown[]): DreameVacuumCardConfig =>
     baseValid({
         map_modes: [
             {
