@@ -102,11 +102,35 @@ export interface TestHass {
     behavior: HassBehavior;
 }
 
-export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<string, unknown> = {}): TestHass {
+/** État additionnel injecté tel quel dans `hass.states` (ex. `sensor.cal` pour les
+ *  tests de fallback de calibration). Minimal exprès : pas de `last_updated` custom,
+ *  pas de `device_id` — ajoute-les via `attributes` si un test en a besoin. */
+export interface ExtraStateSpec {
+    state: string;
+    attributes?: Record<string, unknown>;
+}
+
+export function makeHass(
+    vacuumState = "docked",
+    extraVacuumAttributes: Record<string, unknown> = {},
+    extraStates: Record<string, ExtraStateSpec> = {}
+): TestHass {
     const images = makeTestImages();
     const calls: ServiceCall[] = [];
     const behavior: HassBehavior = { rejectCalls: false };
     const now = new Date().toISOString();
+    const extraStateEntries = Object.fromEntries(
+        Object.entries(extraStates).map(([entityId, spec]) => [
+            entityId,
+            {
+                entity_id: entityId,
+                state: spec.state,
+                attributes: spec.attributes ?? {},
+                last_updated: now,
+                last_changed: now,
+            },
+        ])
+    );
     const hass = {
         language: "en",
         locale: { language: "en" },
@@ -140,6 +164,7 @@ export function makeHass(vacuumState = "docked", extraVacuumAttributes: Record<s
                 last_updated: now,
                 last_changed: now,
             },
+            ...extraStateEntries,
         },
         entities: {
             "vacuum.test": { device_id: "device_test" },
@@ -193,7 +218,8 @@ export interface CardElement extends HTMLElement {
 export function mountCard(
     config: Record<string, unknown> = makeCardConfig(),
     vacuumState = "docked",
-    extraVacuumAttributes: Record<string, unknown> = {}
+    extraVacuumAttributes: Record<string, unknown> = {},
+    extraStates: Record<string, ExtraStateSpec> = {}
 ): {
     card: CardElement;
     hass: Record<string, unknown>;
@@ -201,7 +227,7 @@ export function mountCard(
     images: TestImages;
     behavior: HassBehavior;
 } {
-    const { hass, calls, images, behavior } = makeHass(vacuumState, extraVacuumAttributes);
+    const { hass, calls, images, behavior } = makeHass(vacuumState, extraVacuumAttributes, extraStates);
     const card = document.createElement("dreame-vacuum-card") as CardElement;
     card.setConfig(config);
     card.hass = hass;
