@@ -161,8 +161,31 @@ c'est **un seul produit** dont le code vit dans deux repos. Concrètement :
   que `a` est bien un angle du repère vacuum. **Convention exacte (origine, sens) à
   documenter côté intégration** : c'est le seul point du contrat jamais validé sur robot
   en mouvement réel.
+- ⚠ **FINDING intégration (2026-07-06)** : l'attribut `vacuum_position` EST bien exposé sur
+  `camera.*_map`, au format `{x, y, a}` — MAIS `a` est **l'angle BRUT du device**
+  (`robot_position.a`, offset 9 du header binaire), tel quel, sans transformation. Ce
+  n'est **PAS** le même angle que celui du renderer JSON (`camera.*_map_data`), qui
+  applique `map_data_json_renderer._convert_angle` =
+  `int((((180-a) if a<180 else (360-a+180))+270)%360)`. Exemple robot docké mesuré :
+  `vacuum_position.a = 184` alors que `_convert_angle(184) = 266`. **Deux consommateurs,
+  deux angles.** La carte doit donc valider que son calcul `(cos a, sin a)` + calibration
+  attend bien l'angle BRUT (184) et non le transformé — à confirmer sur robot en mouvement.
+  Si la carte a besoin du transformé, c'est un changement de contrat (§6) à coordonner.
+- ✅ **ANALYSE carte (2026-07-06) — le BRUT est très probablement le bon** :
+  la calibration de ce device mappe vacuum +x → écran +x et vacuum +y → écran −y
+  (flip Y : `(0,1000)→map y 923→763`). Le calcul carte `θ_écran = atan2(M·(cos a, sin a))`
+  donne donc `θ ≈ −a`. Avec `a_brut = 184` (docké) → **θ ≈ 176° = plein ouest à l'écran**,
+  cohérent avec le dock physiquement sur le mur DROIT du Cellier (le robot recule dans le
+  dock donc regarde vers l'ouest). Avec l'angle transformé (266) → θ ≈ 94° = vers le bas,
+  incohérent. Conclusion provisoire : `vacuum_position.a` = angle CCW depuis +x du repère
+  vacuum, la carte le consomme correctement TEL QUEL ; `_convert_angle` appartient à la
+  convention interne du renderer JSON et ne doit PAS être appliqué à `vacuum_position`.
+  Reste la confirmation définitive sur robot en mouvement (§7.6).
 
 ### 3.6 `charger_position` — `{x, y}` en coordonnées vacuum
+
+- ✅ Exposé sur `camera.*_map` (via `optimized_charger_position` si dispo, sinon
+  `charger_position`). Robot docké : `charger_position == vacuum_position` (attendu).
 
 ### 3.7 `robot_in_map` — booléen, doit refléter fidèlement le rendu
 
@@ -215,25 +238,46 @@ En cas de doute sur un format, c'est la référence. Les suites `test-browser/*.
   ×2 puis thumbnail) ; à étendre aux autres couches vectorielles.
 - **C. Qualité des couches** : labels nets à haute résolution, path lissé, tapis/matériaux,
   meubles, seuils, no-go, obstacles lisibles — tout le statique/semi-statique va dans
-  le PNG. ✅ **Murs vectoriels LIVRÉS** (2026-07-06) : `walls_info` du device (segments
-  mm réels, portes distinguées `type 1`) rendu en couches `WALL_OUTLINE`/`DOOR`
-  (toggle `wall_outline`), remplace à terme le contour pixel Moore-Neighbor/Douglas-Peucker.
+  le PNG. ⏸ **Murs vectoriels — décodés, rendu différé** (2026-07-06) : `walls_info`
+  du device (segments mm réels, portes distinguées `type 1`) est décodé et conservé
+  sur `MapData.wall_lines`/`door_lines`, mais **le rendu additif a été retiré** — dessiné
+  par-dessus les murs pixel existants, il produisait des cadres rectangulaires gris
+  redondants (cf. anomalie ci-dessous, résolue). Le bon usage — **remplacer** le contour
+  pixel Moore-Neighbor/Douglas-Peucker par ces vecteurs propres — reste à faire (nécessite
+  de désactiver simultanément le rendu pixel des murs, chantier plus large).
 - **D. Stabilité temporelle** : avec `robot_in_map=false`, seul le path devrait faire
   évoluer le PNG pendant un nettoyage (fréquence modérée) ; le robot est l'overlay fluide
   de la carte. Aucun bump de `?v=` sans changement visuel réel.
-- **E. Fix du segment_map dégénéré** à la source (§3.3).
-- **F. Documentation de la convention `vacuum_position.a`** (§3.5).
+- **E. Fix du segment_map dégénéré** à la source (§3.3). ✅ **LIVRÉ** (2026-07-06) :
+  `camera._build_segment_map` retourne désormais `None` quand aucune pièce ne mappe vers
+  une valeur brute (buffer tout-à-zéro) → l'attribut n'est plus publié dans ce cas, et le
+  fallback polygones de la carte peut prendre le relais (il se déclenche sur l'ABSENCE de
+  l'attribut). Chemin nominal inchangé (10/10 pièces publiées sur le device réel).
+  ✅ **2ᵉ temps carte LIVRÉ** (2026-07-06) : suite navigateur
+  `test-browser/segment-map-fallback.test.ts` — le fallback polygones est verrouillé de
+  bout en bout (pick-canvas reconstruit depuis les bboxes `rooms`, sélection/désélection
+  au clic, clic hors pièce inerte), 2 tests Chromium.
+- **F. Documentation de la convention `vacuum_position.a`** (§3.5). ⏸ **CONSTAT corrigé
+  (2026-07-06)** : `vacuum_position` **EST** exposé sur `camera.*_map` au format `{x, y, a}`
+  (cf. §3.5). L'`a` est l'angle **BRUT** du device, différent de celui du renderer JSON
+  (`_convert_angle`) — détail et exemple mesuré en §3.5. Ne reste donc qu'à **valider sur
+  robot en mouvement** quel angle (brut vs transformé) la carte doit consommer pour un cap
+  correct. Le robot était docké lors du constat, validation impossible ; à faire lors d'un
+  vrai nettoyage (§7.6). C'est aussi le préalable à activer proprement l'overlay robot
+  dynamique de la carte (`robot_in_map=false` en masquant l'objet `robot`).
 
-### 🔍 Anomalies ouvertes (constatées côté carte, à traiter côté intégration)
+### 🔍 Anomalies (constatées côté carte, traitées côté intégration)
 
-- **Traits rectangulaires gris clair sur le rendu ×2** (constaté 2026-07-06, device réel) :
-  de fins contours rectangulaires gris apparaissent autour de blocs de la carte —
-  ligne au-dessus du Salon, bord vertical à droite de la Buanderie descendant vers le
-  Cellier, ligne horizontale sous les chambres. Visibles dans les DEUX thèmes (clair et
-  sombre) et très nets au zoom. Ressemble à des **bounding boxes de la nouvelle couche
-  `WALL_OUTLINE`/`DOOR`** (ou d'un groupe de segments `walls_info`) dessinées par erreur
-  avec leur stroke. Le fond reste bien transparent (vérifié canal alpha : coins à
-  alpha=0) — seuls les traits sont en trop. À corriger dans le renderer.
+- ✅ **RÉSOLUE (2026-07-06) — Traits rectangulaires gris clair sur le rendu ×2** :
+  de fins contours rectangulaires gris apparaissaient autour des pièces (ligne au-dessus
+  du Salon, bord droit de la Buanderie vers le Cellier, ligne sous les chambres), nets au
+  zoom, dans les deux thèmes. C'étaient bien les couches `WALL_OUTLINE`/`DOOR` du rendu
+  `walls_info` : dessinées **par-dessus** les murs pixel existants, elles formaient des
+  cadres redondants (un rectangle de segments par pièce). **Correctif** : le rendu additif
+  des murs vectoriels a été retiré côté intégration (le décodage reste, cf. backlog C).
+  Le fond était déjà bien transparent (alpha=0) ; il n'y a plus de traits en trop.
+  ✅ **Contre-validé côté carte** (2026-07-06) : captures light + zoom ×3 sur device réel —
+  plus aucun trait, netteté intacte, 0 erreur console.
 
 ---
 
