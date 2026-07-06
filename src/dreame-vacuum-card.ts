@@ -68,6 +68,7 @@ import { SelectionType } from "./model/map_mode/selection-type";
 import { RepeatsType } from "./model/map_mode/repeats-type";
 import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
+import { resolveCalibration } from "./model/map/calibration-resolver";
 import { MapObject } from "./model/map_objects/map-object";
 import { MousePosition } from "./model/map_objects/mouse-position";
 import { HomeAssistantFixed } from "./types/fixes";
@@ -740,45 +741,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     }
 
     private _getCalibration(config: CardPresetConfig): CalibrationPoint[] | undefined {
-        if (config.calibration_source?.identity) {
-            return [
-                { map: { x: 0, y: 0 }, vacuum: { x: 0, y: 0 } },
-                { map: { x: 1, y: 0 }, vacuum: { x: 1, y: 0 } },
-                { map: { x: 0, y: 1 }, vacuum: { x: 0, y: 1 } },
-            ];
-        }
-        if (
-            config.calibration_source?.calibration_points &&
-            [3, 4].includes(config.calibration_source.calibration_points.length)
-        ) {
-            return config.calibration_source.calibration_points;
-        }
-        if (!this.hass) {
-            return undefined;
-        }
-        if (config.calibration_source?.entity && !config.calibration_source?.attribute) {
-            try {
-                const state = this.hass.states[config.calibration_source.entity]?.state;
-                if (!state || state === "unavailable" || state === "unknown") return undefined;
-                return JSON.parse(state);
-            } catch {
-                return undefined;
-            }
-        }
-        if (config.calibration_source?.entity && config.calibration_source?.attribute) {
-            return this.hass.states[config.calibration_source.entity]?.attributes[config.calibration_source.attribute];
-        }
-        if (config.calibration_source?.camera) {
-            return this.hass.states[config.map_source?.camera ?? ""]?.attributes["calibration_points"];
-        }
-        if (config.calibration_source?.platform) {
-            return PlatformGenerator.getCalibration(config.calibration_source.platform);
-        }
-        const platformCalibration = PlatformGenerator.getCalibration(config.vacuum_platform);
-        if (platformCalibration) {
-            return platformCalibration;
-        }
-        return undefined;
+        return resolveCalibration(config, this.hass);
     }
 
     private _firstHass(): void {
