@@ -301,6 +301,41 @@ describe("dreame-action-buttons", () => {
         // "all" never uses selection buttons -> state buttons.
         expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Clean", "Dock"]);
     });
+
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never } });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new buttons when the watched vacuum entity changes", async () => {
+        const el = document.createElement("dreame-action-buttons") as ActionButtons;
+        el.hass = makeHass({ states: { "vacuum.test": { state: "docked" } as never } });
+        el.entityId = "vacuum.test";
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = { ...prevHass, states: { ...prevHass.states, "vacuum.test": { state: "cleaning" } as never } };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        const buttons = Array.from(el.shadowRoot!.querySelectorAll("button"));
+        expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Pause", "Stop"]);
+    });
 });
 
 // ===========================================================================
@@ -680,6 +715,50 @@ describe("dreame-cleaning-mode-chip", () => {
         } finally {
             window.removeEventListener("haptic", onHaptic);
         }
+    });
+
+    // -- shouldUpdate (perf: filters re-renders on unrelated hass ticks) ------
+
+    it("does not re-render when a new hass only changes an unrelated entity", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass();
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: { ...prevHass.states, "sensor.unrelated": { state: "x", attributes: {} } as never },
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).not.toHaveBeenCalled();
+    });
+
+    it("re-renders and reflects the new value when the resolved mode select changes reference", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = chipHass({}, ["sweeping", "mopping"], "sweeping");
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const renderSpy = vi.spyOn(el as unknown as { render: () => unknown }, "render");
+
+        const prevHass = el.hass;
+        el.hass = {
+            ...prevHass,
+            states: {
+                ...prevHass.states,
+                [SELECT_ID]: {
+                    entity_id: SELECT_ID,
+                    state: "mopping",
+                    attributes: { options: ["sweeping", "mopping"] },
+                },
+            } as never,
+        };
+        await el.updateComplete;
+
+        expect(renderSpy).toHaveBeenCalled();
+        expect(el.shadowRoot!.querySelector(".mode-label")?.textContent?.trim()).toBe("mopping");
     });
 
     it("does not open the menu when the select has no options", async () => {

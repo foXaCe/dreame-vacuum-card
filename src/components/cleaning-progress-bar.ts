@@ -1,7 +1,8 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 import { HomeAssistantFixed } from "../types/fixes";
+import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
 @customElement("dreame-cleaning-progress-bar")
 export class CleaningProgressBar extends LitElement {
@@ -27,6 +28,13 @@ export class CleaningProgressBar extends LitElement {
         }
 
         return null;
+    }
+
+    /** Seules l'entité vacuum et le sensor de progression résolu conditionnent
+     *  l'affichage : un tick `hass` qui ne touche ni l'une ni l'autre n'a rien de
+     *  neuf à peindre ici. */
+    protected shouldUpdate(changedProps: PropertyValues): boolean {
+        return shouldUpdateForEntities(changedProps, this.hass, [this.entityId, this._progressEntityId]);
     }
 
     protected render(): TemplateResult | typeof nothing {

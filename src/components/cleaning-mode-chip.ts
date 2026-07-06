@@ -1,10 +1,11 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { computeStateDisplay } from "../localize/hass/compute_state_display";
+import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
 /** Une entrée du menu de sélection de mode. */
 interface ModeChoice {
@@ -193,6 +194,17 @@ export class CleaningModeChip extends LitElement {
             forwardHaptic("failure");
             return;
         }
+    }
+
+    /** Seules l'entité vacuum et les deux selects résolus (mode manuel + CleanGenius)
+     *  conditionnent l'affichage : un tick `hass` qui ne touche aucun des trois n'a
+     *  rien de neuf à peindre ici. */
+    protected shouldUpdate(changedProps: PropertyValues): boolean {
+        return shouldUpdateForEntities(changedProps, this.hass, [
+            this.entityId,
+            this._cachedModeEntityId,
+            this._cachedCgEntityId,
+        ]);
     }
 
     protected render(): TemplateResult | typeof nothing {

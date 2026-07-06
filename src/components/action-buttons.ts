@@ -1,8 +1,9 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from "lit";
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
+import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
 type VacuumState =
     "idle" | "docked" | "returning" | "charged" | "cleaning" | "segment_cleaning" | "zoned_cleaning" | "paused";
@@ -140,6 +141,12 @@ export class ActionButtons extends LitElement {
                     },
                 ];
         }
+    }
+
+    /** Seule l'entité vacuum lue dans `render()` conditionne l'affichage : si un tick
+     *  `hass` ne touche pas sa référence, ce composant n'a rien de neuf à peindre. */
+    protected shouldUpdate(changedProps: PropertyValues): boolean {
+        return shouldUpdateForEntities(changedProps, this.hass, [this.entityId]);
     }
 
     protected render(): TemplateResult | typeof nothing {

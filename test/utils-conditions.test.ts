@@ -5,6 +5,7 @@ import {
     hasConfigOrAnyEntityChanged,
     checkIfEntitiesChanged,
     isHaVersionAtLeast,
+    shouldUpdateForEntities,
 } from "../src/utils/ha-change-detection";
 import { deleteFromArray, conditional, delay } from "../src/utils/misc";
 import type { HomeAssistantFixed } from "../src/types/fixes";
@@ -295,6 +296,58 @@ describe("checkIfEntitiesChanged", () => {
         const oldHass = mkHass({ "a.x": sharedA, "b.y": { state: "1" } });
         const newHass = mkHass({ "a.x": sharedA, "b.y": { state: "2" } });
         expect(checkIfEntitiesChanged(["a.x", "b.y"], oldHass, newHass)).toBe(true);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// shouldUpdateForEntities
+// ---------------------------------------------------------------------------
+
+describe("shouldUpdateForEntities", () => {
+    it("returns true when more than one prop changed (not just hass)", () => {
+        const changed = mkChanged([
+            ["hass", mkHass({})],
+            ["entityId", "old"],
+        ]);
+        expect(shouldUpdateForEntities(changed, mkHass({}), ["vacuum.robot"])).toBe(true);
+    });
+
+    it("returns true when the only changed key is not hass", () => {
+        const changed = mkChanged([["entityId", "old"]]);
+        expect(shouldUpdateForEntities(changed, mkHass({}), ["vacuum.robot"])).toBe(true);
+    });
+
+    it("returns true when oldHass is absent (first-ever hass assignment)", () => {
+        const changed = mkChanged([["hass", undefined]]);
+        expect(shouldUpdateForEntities(changed, mkHass({}), ["vacuum.robot"])).toBe(true);
+    });
+
+    it("returns true when newHass is undefined", () => {
+        const changed = mkChanged([["hass", mkHass({})]]);
+        expect(shouldUpdateForEntities(changed, undefined, ["vacuum.robot"])).toBe(true);
+    });
+
+    it("returns false when only hass changed and no watched entity reference changed", () => {
+        const shared = { state: "cleaning" };
+        const oldHass = mkHass({ "vacuum.robot": shared, "sensor.unrelated": { state: "x" } });
+        const newHass = mkHass({ "vacuum.robot": shared, "sensor.unrelated": { state: "y" } });
+        const changed = mkChanged([["hass", oldHass]]);
+        expect(shouldUpdateForEntities(changed, newHass, ["vacuum.robot"])).toBe(false);
+    });
+
+    it("returns true when only hass changed and a watched entity reference changed", () => {
+        const oldHass = mkHass({ "vacuum.robot": { state: "docked" } });
+        const newHass = mkHass({ "vacuum.robot": { state: "cleaning" } });
+        const changed = mkChanged([["hass", oldHass]]);
+        expect(shouldUpdateForEntities(changed, newHass, ["vacuum.robot"])).toBe(true);
+    });
+
+    it("ignores null/undefined entries in the entity ids list", () => {
+        const shared = { state: "cleaning" };
+        const oldHass = mkHass({ "vacuum.robot": shared });
+        const newHass = mkHass({ "vacuum.robot": shared });
+        const changed = mkChanged([["hass", oldHass]]);
+        expect(shouldUpdateForEntities(changed, newHass, [null, undefined, "vacuum.robot"])).toBe(false);
     });
 });
 
