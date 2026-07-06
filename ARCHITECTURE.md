@@ -148,7 +148,7 @@ l'importer dans `dreame-vacuum-card.ts`, le rendre dans le template. Privilégie
 `localize/localize.ts`. Les clés absentes retombent automatiquement sur `en`.
 
 **Ajouter une option de config** : déclarer la clé dans `types.ts` (`CardPresetConfig` /
-`XiaomiVacuumMapCardConfig`), l'exposer dans `editor.ts` (schéma + data + handler) avec
+`DreameVacuumCardConfig`), l'exposer dans `editor.ts` (schéma + data + handler) avec
 un label i18n (`editor.label.<clé>` dans en.json + fr.json), et la lire dans le composant.
 
 ## Tests
