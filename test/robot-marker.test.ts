@@ -83,7 +83,7 @@ describe("dreame-robot-marker (composant)", () => {
         el.remove();
     });
 
-    it("rend #marker avec left/top en % et rotate(0deg) quand visible (cap 0)", async () => {
+    it("rend #marker avec translate(x%, y%) et rotate(0deg) quand visible (cap 0)", async () => {
         const el = new RobotMarker();
         el.visible = true;
         el.xPercent = 25;
@@ -94,9 +94,10 @@ describe("dreame-robot-marker (composant)", () => {
 
         const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
         expect(marker).toBeTruthy();
-        // left/top sont injectés en pourcentage.
-        expect(marker?.style.left).toBe("25%");
-        expect(marker?.style.top).toBe("75%");
+        // Le déplacement passe par transform (compositor), pas left/top (repaint) :
+        // des rémanences « fantômes » du robot ont été observées sur certains
+        // GPU/WebView avec l'animation layout (signalement 2026-07-07).
+        expect(marker?.style.transform).toBe("translate(25%, 75%)");
 
         const icon = el.shadowRoot?.querySelector("#icon") as HTMLElement | null;
         expect(icon).toBeTruthy();
@@ -433,8 +434,7 @@ describe("intégration compute -> composant", () => {
 
         const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
         expect(marker).toBeTruthy();
-        expect(marker?.style.left).toBe("25%");
-        expect(marker?.style.top).toBe("12.5%");
+        expect(marker?.style.transform).toBe("translate(25%, 12.5%)");
         el.remove();
     });
 
