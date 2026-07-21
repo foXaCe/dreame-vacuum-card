@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.1] - 2026-07-21
+
+### Fixed
+- **The moving robot marker no longer leaves ghost after-images** ("traces"
+  and occasional duplicate robots along its path, seen on some GPU/WebView
+  combinations): the marker now moves via a compositor-driven
+  `transform: translate(x%, y%)` instead of animating `left/top`
+  (layout + repaint each frame on a promoted layer). Position verified
+  pixel-exact against a live cleaning run.
+
+### Changed
+- Dev dependencies refreshed (eslint & prettier bumps, lock file
+  maintenance).
+
 ## [5.11.0] - 2026-07-07
 
 ### Added
