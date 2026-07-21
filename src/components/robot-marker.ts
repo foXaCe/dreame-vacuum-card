@@ -52,7 +52,7 @@ export class RobotMarker extends LitElement {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
         }
-        const pos = `left: ${this.xPercent}%; top: ${this.yPercent}%; --rm-glide: ${this.transitionMs}ms;`;
+        const pos = `transform: translate(${this.xPercent}%, ${this.yPercent}%); --rm-glide: ${this.transitionMs}ms;`;
         const rot = `transform: rotate(${this.headingDeg}deg);`;
         return html`<div id="marker" style="${pos}">
             <div id="icon" style="${rot}">
@@ -85,20 +85,25 @@ export class RobotMarker extends LitElement {
 
             #marker {
                 position: absolute;
-                width: 0;
-                height: 0;
-                /* translate(-50%,-50%) : centre l'icône sur le point ; la transition sur
-                   left/top interpole les mises à jour discrètes en glissement fluide.
+                left: 0;
+                top: 0;
+                /* Boîte pleine taille : un translate(x%, y%) se réfère à la taille de
+                   l'ÉLÉMENT, donc ici au conteneur de la carte — le coin haut-gauche de
+                   #marker devient le point (x, y) et #icon (offsets négatifs) s'y centre.
+                   Le déplacement est animé par TRANSFORM (compositor) et non par left/top
+                   (layout + repaint) : sur certains GPU/WebView, un calque promu déplacé
+                   par left/top laissait des rémanences visibles — des « fantômes » du
+                   robot le long de sa trace (signalement 2026-07-07).
                    La durée est pilotée par la carte (--rm-glide) : elle mesure la cadence
                    réelle des échantillons vacuum_position (~3 s, push cloud Dreame) et fait
                    glisser le marqueur sur presque tout l'intervalle — mouvement continu au
                    lieu d'un à-coup de 0,4 s suivi d'une pause. linear voulu : vitesse
                    constante entre deux points de passage (un easing ferait « élastiquer »). */
-                transform: translate(-50%, -50%);
-                transition:
-                    left var(--rm-glide, 400ms) linear,
-                    top var(--rm-glide, 400ms) linear;
-                will-change: left, top;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                transition: transform var(--rm-glide, 400ms) linear;
+                will-change: transform;
             }
 
             #icon {
