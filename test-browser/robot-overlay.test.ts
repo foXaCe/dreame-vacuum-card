@@ -174,9 +174,19 @@ describe("dreame-robot-marker — interpolation adaptative (contrat §5.D)", () 
         expect(marker.transitionMs).toBeGreaterThanOrEqual(lower);
         expect(marker.transitionMs).toBeLessThanOrEqual(upper);
 
-        // La transition CSS est bien pilotée par la variable posée en style inline.
+        // Le déplacement est piloté par l'interpolation rAF (transform direct, pas de
+        // transition CSS interrompue — cf. robot-marker.ts) : le marqueur doit être en
+        // train de glisser vers sa cible, donc sa position interpolée se situe entre
+        // l'ancienne (25 %) et la nouvelle (40 %) — strictement au-delà de l'ancienne.
         const markerDiv = marker.shadowRoot!.querySelector<HTMLElement>("#marker")!;
-        expect(markerDiv.style.getPropertyValue("--rm-glide")).toBe(`${marker.transitionMs}ms`);
+        const oldPct = (ROOM_1_CENTER_PX.x / IMG_W) * 100;
+        await until(() => {
+            const t = markerDiv.style.transform;
+            const m = /translate\(([-\d.]+)%,/.exec(t);
+            return m !== null && parseFloat(m[1]) > oldPct + 1;
+        });
+        expect(markerDiv.style.transform).toContain("translate(");
+        expect(markerDiv.style.getPropertyValue("--rm-glide")).toBe("");
 
         // Échantillon quasi immédiat → borne basse (clamp à 400 ms, jamais en dessous).
         pushRobotPosition(card, hass, { ...base, x: base.x + 600 });
