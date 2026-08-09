@@ -1,18 +1,41 @@
 import { LitElement, html, css, nothing, CSSResultGroup } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 
 /**
  * Marqueur de robot en overlay (option 2 anti-flash).
  *
  * Le robot n'est plus « cuit » dans le PNG rendu par l'intégration (il faut cocher
  * « Robot Icon » dans les *Hidden map objects* de l'intégration) : il est dessiné ici,
- * positionné en pourcentage de l'image de carte et orienté selon son cap. Les
- * transitions CSS interpolent les sauts de position (~5 FPS) en un glissement fluide,
- * ce qui supprime le clignotement causé par le rechargement complet de l'<img>.
+ * positionné en pourcentage de l'image de carte et orienté selon son cap.
  *
- * Le marqueur est conçu pour pointer vers +x (la droite) à `rotate(0deg)` : l'appelant
- * fournit le cap déjà exprimé en angle écran (atan2 sur un vecteur transformé par la
- * calibration), donc valable quelle que soit la rotation/perspective de la carte.
+ * ## Pourquoi une interpolation JavaScript (requestAnimationFrame) et pas une
+ *    transition CSS ?
+ *
+ * Deux mécanismes ont été essayés avant celle-ci, tous deux en échec sur certains
+ * GPU/WebView (tablette Android en particulier) :
+ *
+ * 1. `left/top` animés par transition CSS → layout + repaint par frame sur un
+ *    calque promu (`will-change: left, top`) : rémanences visibles le long de la
+ *    trace (signalement 2026-07-07).
+ * 2. `transform: translate(x%, y%)` animé par transition CSS (fix 5.11.1) : le
+ *    déplacement passe par le compositor, mais la transition est **interrompue à
+ *    chaque nouvelle position** (~1 échantillon toutes les 3 s pendant le
+ *    nettoyage, glisse ~2,8 s). Une transition CSS interrompue sur un calque
+ *    promu (`will-change: transform`) laisse parfois la frame précédente
+ *    affichée — le robot apparaît alors en double, « en retard » sur sa position
+ *    réelle (signalement persistant post-5.11.1, tablette Android).
+ *
+ * La présente version interpole la position en JavaScript via
+ * `requestAnimationFrame` et écrit `transform` directement sur le nœud à chaque
+ * frame. Il n'y a **aucune transition CSS à interrompre** : le calque est promu
+ * une fois (un seul `will-change`, sur l'élément interne) et sa transform est
+ * mise à jour en continu — aucune frame résiduelle ne peut rester affichée.
+ *
+ * Le cap suit la même interpolation (déjà déroulé par l'appelant pour éviter le
+ * tour complet à ±180°). La durée de glisse est pilotée par la carte
+ * (`transitionMs`) : elle mesure la cadence réelle des échantillons
+ * `vacuum_position` (~3 s, push cloud Dreame) et fait glisser le marqueur sur
+ * presque tout l'intervalle — mouvement continu au lieu d'un à-coup.
  */
 @customElement("dreame-robot-marker")
 export class RobotMarker extends LitElement {
@@ -48,12 +71,129 @@ export class RobotMarker extends LitElement {
     @property({ attribute: false })
     public beamUrl?: string;
 
+    /** Position/cap courant (interpolés) — écrits dans le DOM à chaque frame. */
+    @state()
+    private _currentX = 0;
+
+    @state()
+    private _currentY = 0;
+
+    @state()
+    private _currentHeading = 0;
+
+    /** Animation en cours (interpolation rAF). */
+    private _rafId: number | undefined;
+    private _animStart = 0;
+    private _animDuration = 0;
+    private _fromX = 0;
+    private _fromY = 0;
+    private _fromHeading = 0;
+    private _toX = 0;
+    private _toY = 0;
+    private _toHeading = 0;
+    /** `true` une fois la première position reçue (permet de téléporter au lieu
+     *  de glisser depuis une position absente). */
+    private _hasPosition = false;
+    /** Date des dernières propriétés cibles appliquées — évite de relancer
+     *  l'animation quand le parent re-rend avec les mêmes valeurs. */
+    private _lastAppliedKey = "";
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        // Si une animation était en cours avant un disconnect (dashboard non
+        // visible), la reprendre : sans cela le marqueur resterait figé.
+        if (this.visible && this._rafId === undefined && this._animDuration > 0 && this._hasPosition) {
+            this._restartAnimation();
+        }
+    }
+
+    disconnectedCallback(): void {
+        this._cancelAnimation();
+        super.disconnectedCallback();
+    }
+
+    /** Recalcule les cibles d'interpolation quand les propriétés changent. */
+    protected willUpdate(changed: PropertiesChanged): void {
+        if (
+            changed.has("xPercent") ||
+            changed.has("yPercent") ||
+            changed.has("headingDeg") ||
+            changed.has("transitionMs")
+        ) {
+            const key = `${this.xPercent},${this.yPercent},${this.headingDeg}`;
+            if (key === this._lastAppliedKey && this._hasPosition) {
+                return; // le parent re-rend avec les mêmes valeurs : ne rien relancer
+            }
+            this._lastAppliedKey = key;
+
+            // Première position (ou re-masquage puis réapparition) : téléporter
+            // directement — aucune glisse depuis une position inexistante.
+            if (!this._hasPosition) {
+                this._hasPosition = true;
+                this._currentX = this.xPercent;
+                this._currentY = this.yPercent;
+                this._currentHeading = this.headingDeg;
+                this._animDuration = 0;
+                this._cancelAnimation();
+                return;
+            }
+
+            const duration = this.transitionMs > 0 ? this.transitionMs : 0;
+            this._fromX = this._currentX;
+            this._fromY = this._currentY;
+            this._fromHeading = this._currentHeading;
+            this._toX = this.xPercent;
+            this._toY = this.yPercent;
+            this._toHeading = this.headingDeg;
+            this._animDuration = duration;
+
+            if (duration <= 0) {
+                // Téléportation (saut > 20 % de la diagonale, changement de carte…) :
+                // poser la cible immédiatement, aucune interpolation.
+                this._currentX = this._toX;
+                this._currentY = this._toY;
+                this._currentHeading = this._toHeading;
+                this._cancelAnimation();
+                return;
+            }
+            this._restartAnimation();
+        }
+    }
+
+    private _restartAnimation(): void {
+        this._cancelAnimation();
+        this._animStart = performance.now();
+        const step = (now: number): void => {
+            const t = Math.min(1, (now - this._animStart) / this._animDuration);
+            // `linear` volontaire : vitesse constante entre deux points de passage
+            // (un easing ferait « élastiquer » le robot en fin de course).
+            this._currentX = this._fromX + (this._toX - this._fromX) * t;
+            this._currentY = this._fromY + (this._toY - this._fromY) * t;
+            this._currentHeading = this._fromHeading + (this._toHeading - this._fromHeading) * t;
+            if (t < 1) {
+                this._rafId = requestAnimationFrame(step);
+            } else {
+                this._rafId = undefined;
+            }
+        };
+        this._rafId = requestAnimationFrame(step);
+    }
+
+    private _cancelAnimation(): void {
+        if (this._rafId !== undefined) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = undefined;
+        }
+    }
+
     protected render(): unknown {
         if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
             return nothing;
         }
-        const pos = `transform: translate(${this.xPercent}%, ${this.yPercent}%); --rm-glide: ${this.transitionMs}ms;`;
-        const rot = `transform: rotate(${this.headingDeg}deg);`;
+        // Le translate utilise la position INTERPOLÉE (état _currentX/_currentY),
+        // mis à jour par rAF à chaque frame. Le rotate suit le cap interpolé.
+        const pos = `transform: translate(${this._currentX}%, ${this._currentY}%);`;
+        const rot = `transform: rotate(${this._currentHeading}deg);`;
         return html`<div id="marker" style="${pos}">
             <div id="icon" style="${rot}">
                 ${this.beamUrl ? html`<img id="beam-img" src="${this.beamUrl}" alt="" />` : nothing}
@@ -90,19 +230,12 @@ export class RobotMarker extends LitElement {
                 /* Boîte pleine taille : un translate(x%, y%) se réfère à la taille de
                    l'ÉLÉMENT, donc ici au conteneur de la carte — le coin haut-gauche de
                    #marker devient le point (x, y) et #icon (offsets négatifs) s'y centre.
-                   Le déplacement est animé par TRANSFORM (compositor) et non par left/top
-                   (layout + repaint) : sur certains GPU/WebView, un calque promu déplacé
-                   par left/top laissait des rémanences visibles — des « fantômes » du
-                   robot le long de sa trace (signalement 2026-07-07).
-                   La durée est pilotée par la carte (--rm-glide) : elle mesure la cadence
-                   réelle des échantillons vacuum_position (~3 s, push cloud Dreame) et fait
-                   glisser le marqueur sur presque tout l'intervalle — mouvement continu au
-                   lieu d'un à-coup de 0,4 s suivi d'une pause. linear voulu : vitesse
-                   constante entre deux points de passage (un easing ferait « élastiquer »). */
+                   Le déplacement est écrit à chaque frame par rAF (transform direct) :
+                   AUCUNE transition CSS, donc aucune transition à interrompre — c'est ce
+                   qui laissait des frames résiduelles (« fantômes ») sur WebView Android. */
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
-                transition: transform var(--rm-glide, 400ms) linear;
                 will-change: transform;
             }
 
@@ -113,8 +246,6 @@ export class RobotMarker extends LitElement {
                 width: 21px;
                 height: 21px;
                 transform-origin: center;
-                transition: transform 0.4s linear;
-                will-change: transform;
                 filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
             }
 
@@ -211,4 +342,9 @@ export class RobotMarker extends LitElement {
             }
         `;
     }
+}
+
+/** Type minimal des changedProperties de Lit pour willUpdate. */
+interface PropertiesChanged {
+    has(name: PropertyKey): boolean;
 }

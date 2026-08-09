@@ -222,6 +222,64 @@ describe("dreame-robot-marker (composant)", () => {
         expect(icon?.style.transform).toBe("rotate(45deg)");
         el.remove();
     });
+
+    it("téléporte à la première position (aucune glisse depuis une position absente)", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.transitionMs = 2000; // longue durée : ne doit PAS être utilisée pour la 1re pose
+        el.xPercent = 25;
+        el.yPercent = 75;
+        el.headingDeg = 0;
+        document.body.appendChild(el);
+        await flush(el);
+
+        const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
+        // La première position est posée immédiatement, sans interpolation.
+        expect(marker?.style.transform).toBe("translate(25%, 75%)");
+        el.remove();
+    });
+
+    it("interpole la position via rAF (pas de transition CSS interrompue)", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.transitionMs = 100;
+        el.xPercent = 10;
+        el.yPercent = 10;
+        el.headingDeg = 0;
+        document.body.appendChild(el);
+        await flush(el);
+
+        const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
+        expect(marker?.style.transform).toBe("translate(10%, 10%)");
+        // Aucune transition CSS : le déplacement est écrit frame par frame par rAF.
+        expect(marker?.style.transition).not.toContain("transform");
+
+        // Déplacement vers une nouvelle cible : la transform est mise à jour par
+        // l'interpolation rAF (pas de `--rm-glide`, pas de `transition: transform`).
+        el.xPercent = 40;
+        el.yPercent = 40;
+        await flush(el);
+        // Laisse l'animation rAF (100 ms) se dérouler, puis vérifie l'arrivée à la cible.
+        await new Promise((r) => setTimeout(r, 150));
+        expect(marker?.style.transform).toBe("translate(40%, 40%)");
+        el.remove();
+    });
+
+    it("annule l'animation rAF au disconnect (pas de fuite de frames)", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.transitionMs = 500;
+        el.xPercent = 10;
+        el.yPercent = 10;
+        document.body.appendChild(el);
+        await flush(el);
+
+        el.xPercent = 80;
+        el.yPercent = 80;
+        el.remove();
+        // Le disconnect ne doit pas lever d'exception (rafId annulé).
+        await flush(el);
+    });
 });
 
 // ---------------------------------------------------------------------------
