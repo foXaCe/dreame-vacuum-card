@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.2] - 2026-08-09
+
+### Fixed
+- **Ghost robot markers on Android WebView** (second report): the 5.11.1 fix
+  (left/top → `transform`) was not enough — the marker moved via a CSS
+  `transform` transition (~2.8 s) that was **interrupted at every
+  `vacuum_position` sample** (~1/3 s while cleaning) on a promoted layer
+  (`will-change: transform`, nested `#icon` with its own transition). An
+  interrupted transition leaves the previous frame displayed on some
+  WebViews: the robot appeared duplicated, "behind" its real position. The
+  marker now interpolates position/heading with `requestAnimationFrame` and
+  writes `transform` directly each frame — no CSS transition to interrupt,
+  the layer updates continuously. First position is teleported (no glide
+  from an absent position), heading interpolated, rAF cancelled on
+  disconnect. Pairs with the integration's background map refresh (6.8.4).
+
 ## [5.11.1] - 2026-07-21
 
 ### Fixed
