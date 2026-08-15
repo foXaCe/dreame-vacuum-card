@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.3] - 2026-08-15
+
+### Fixed
+- **Duplicate robot on the map when the overlay was force-enabled** (third
+  report, still visible after 5.11.1 and 5.11.2 — because it was never the
+  same bug): a config carrying `robot_overlay: true` bypassed the
+  anti-double-robot guard entirely, whatever the integration reported. On
+  installs whose integration entry predates the "robot hidden from the PNG"
+  default — existing entries are **never migrated** — the rendered map still
+  bakes the robot in, so the overlay was drawn *on top of* it: two robots at
+  once, the baked one lagging behind since it only moves when the map PNG is
+  re-rendered. This reproduces on every browser, not just Android WebView.
+  A forced `true` is now refused when the camera explicitly reports
+  `robot_in_map: true`; it still applies when the attribute is **absent**
+  (integration older than the contract), which is what the override exists
+  for, and the auto mode is unchanged. Note that the editor used to
+  materialise `robot_overlay: true` on its own at the slightest edit, so many
+  configs carry that flag without the user ever having chosen it — clearing
+  it is no longer required to get rid of the duplicate.
+
 ## [5.11.2] - 2026-08-09
 
 ### Fixed
