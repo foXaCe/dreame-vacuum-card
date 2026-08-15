@@ -5,8 +5,9 @@
  * - Le robot overlay lit l'attribut `vacuum_position` ({x, y, a}) sur la CAMÉRA
  *   (`preset.map_source.camera`), PAS sur l'entité vacuum elle-même — détail non
  *   intuitif confirmé en lisant le code (`camState.attributes?.vacuum_position`).
- * - `robot_overlay: true` en config force `robotOverlayEnabled = true` sans dépendre
- *   de l'attribut caméra `robot_in_map`.
+ * - `robot_overlay: true` en config force `robotOverlayEnabled = true`, SAUF quand la
+ *   caméra affirme `robot_in_map === true` (robot déjà cuit dans le PNG) : le forçage est
+ *   alors refusé, sinon on afficherait deux robots. Attribut absent = forçage appliqué.
  * - Position écran = `coordinatesConverter.vacuumToMap(x, y)` puis `/ natW,natH * 100`
  *   (pourcentages, PAS de `Context.roundMap` sur ce chemin — valeur exacte attendue).
  * - Cap écran = atan2 sur un vecteur direction transformé par la même calibration
@@ -119,6 +120,73 @@ describe("dreame-vacuum-card — overlay de position du robot", () => {
             visible: boolean;
         };
         expect(marker).toBeTruthy();
+        expect(marker.visible).toBe(false);
+    });
+});
+
+/** Monte la carte avec une `vacuum_position` ET un `robot_in_map` explicite sur la caméra,
+ *  pour exercer l'arbitrage entre le forçage de config et l'affirmation de l'intégration. */
+function mountWithRobotInMap(robotInMap: boolean | undefined, cfg: { robot_overlay?: boolean }): { card: CardElement } {
+    const built = makeHass("cleaning");
+    const states = built.hass.states as Record<string, { attributes: Record<string, unknown> }>;
+    states["camera.test_map"].attributes["vacuum_position"] = {
+        x: ROOM_1_CENTER_PX.x * 10,
+        y: ROOM_1_CENTER_PX.y * 10,
+        a: 0,
+    };
+    if (robotInMap !== undefined) {
+        states["camera.test_map"].attributes["robot_in_map"] = robotInMap;
+    }
+    const card = document.createElement("dreame-vacuum-card") as CardElement;
+    card.setConfig(makeCardConfig(cfg));
+    card.hass = built.hass;
+    document.body.appendChild(card);
+    return { card };
+}
+
+/** Attend que l'image de carte soit décodée, puis rend le marqueur (toujours présent). */
+async function settledMarker(card: CardElement): Promise<HTMLElement & { visible: boolean }> {
+    await until(() => !!card.shadowRoot?.querySelector("#map-image"));
+    const img = card.shadowRoot!.querySelector<HTMLImageElement>("#map-image")!;
+    await until(() => img.complete && img.naturalWidth > 0);
+    await card.updateComplete;
+    return card.shadowRoot!.querySelector("dreame-robot-marker") as HTMLElement & { visible: boolean };
+}
+
+describe("dreame-vacuum-card — anti double-robot (forçage vs robot_in_map)", () => {
+    it("refuse le forçage robot_overlay:true quand robot_in_map=true (robot déjà dans le PNG)", async () => {
+        // Cas réel : entrée d'intégration antérieure au défaut « robot masqué » (jamais
+        // migrée) + `robot_overlay: true` écrit par l'ancien éditeur → deux robots à l'écran.
+        const { card } = mountWithRobotInMap(true, { robot_overlay: true });
+        const marker = await settledMarker(card);
+        expect(marker).toBeTruthy();
+        expect(marker.visible).toBe(false);
+    });
+
+    it("applique le forçage robot_overlay:true quand robot_in_map est absent (vieille intégration)", async () => {
+        const { card } = mountWithRobotInMap(undefined, { robot_overlay: true });
+        const marker = await settledMarker(card);
+        await until(() => marker.visible === true);
+        expect(marker.visible).toBe(true);
+    });
+
+    it("applique le forçage robot_overlay:true quand robot_in_map=false", async () => {
+        const { card } = mountWithRobotInMap(false, { robot_overlay: true });
+        const marker = await settledMarker(card);
+        await until(() => marker.visible === true);
+        expect(marker.visible).toBe(true);
+    });
+
+    it("mode AUTO (clé absente) : marqueur affiché dès que robot_in_map=false", async () => {
+        const { card } = mountWithRobotInMap(false, {});
+        const marker = await settledMarker(card);
+        await until(() => marker.visible === true);
+        expect(marker.visible).toBe(true);
+    });
+
+    it("mode AUTO (clé absente) : pas de marqueur quand robot_in_map=true", async () => {
+        const { card } = mountWithRobotInMap(true, {});
+        const marker = await settledMarker(card);
         expect(marker.visible).toBe(false);
     });
 });

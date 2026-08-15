@@ -430,18 +430,30 @@ export class DreameVacuumCard extends LitElement {
 
         // Compute robot position/heading as percentage of map image (option 2 anti-flash).
         // Résolution de l'overlay robot client-side :
-        //  - un réglage explicite (preset puis config) est toujours respecté ;
+        //  - un réglage explicite (preset puis config) est respecté, SAUF s'il demande
+        //    l'overlay alors que l'intégration affirme dessiner déjà le robot dans le PNG ;
         //  - sinon « auto » : on l'active UNIQUEMENT si l'intégration a masqué le robot
         //    du PNG (attribut caméra `robot_in_map === false`). Zéro double-robot, suivi
         //    fluide (le marqueur glisse en CSS, sans recharger l'<img> à chaque déplacement).
-        //    Les installs avec un réglage explicite restent inchangées.
+        //
+        // Le garde-fou sur le forçage vient d'un cas réel : l'éditeur matérialisait
+        // `robot_overlay: true` tout seul à la moindre édition (cf. editor.ts, contrat §5.D),
+        // et ce `true` hérité court-circuitait la protection. Sur une install dont l'entrée
+        // d'intégration est antérieure au défaut « robot masqué » (les entrées existantes ne
+        // sont jamais migrées), le PNG contient encore le robot : l'overlay s'ajoutait au
+        // robot cuit et on voyait DEUX robots, celui du PNG en retard puisqu'il n'est
+        // régénéré qu'à chaque rendu de carte. `robot_in_map === true` est une affirmation
+        // de l'intégration, pas une supposition : on refuse alors le forçage.
+        // L'attribut ABSENT (intégration antérieure au contrat) laisse le forçage
+        // s'appliquer — c'est précisément à ça qu'il sert.
         const robotOverlayCfg = preset.robot_overlay ?? this.config?.robot_overlay;
         const robotCamState = preset.map_source?.camera ? this.hass.states[preset.map_source.camera] : undefined;
+        const robotInMap = robotCamState?.attributes?.["robot_in_map"];
         let robotOverlayEnabled: boolean;
         if (typeof robotOverlayCfg === "boolean") {
-            robotOverlayEnabled = robotOverlayCfg;
+            robotOverlayEnabled = robotOverlayCfg && robotInMap !== true;
         } else {
-            robotOverlayEnabled = robotCamState?.attributes?.["robot_in_map"] === false;
+            robotOverlayEnabled = robotInMap === false;
         }
         // Le calcul de position/cap/cadence de glisse est délégué à une fonction pure
         // (voir model/map/robot-overlay-geometry.ts) ; seul l'état `_robotSample` persiste
