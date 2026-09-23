@@ -115,7 +115,21 @@ export class RobotMarker extends LitElement {
 
     /** Recalcule les cibles d'interpolation quand les propriétés changent. */
     protected willUpdate(changed: PropertiesChanged): void {
+        // Marqueur masqué ou position absente (-1 : calibration/position retirée un
+        // instant par l'intégration, robot non localisé…) : oublier la position. Sans
+        // cela, `-1` devenait la position courante et la réapparition GLISSAIT depuis
+        // le coin haut-gauche jusqu'au robot — le « fantôme » qui traverse la carte
+        // (mesuré en direct le 2026-09-23 : translate(14.3 %, 15.4 %) pour une cible
+        // à (68.3 %, 73.1 %), soit exactement une glisse partie de (-1, -1)).
+        if (!this.visible || this.xPercent < 0 || this.yPercent < 0) {
+            this._hasPosition = false;
+            this._lastAppliedKey = "";
+            this._animDuration = 0;
+            this._cancelAnimation();
+            return;
+        }
         if (
+            changed.has("visible") ||
             changed.has("xPercent") ||
             changed.has("yPercent") ||
             changed.has("headingDeg") ||

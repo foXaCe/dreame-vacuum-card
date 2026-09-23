@@ -265,6 +265,51 @@ describe("dreame-robot-marker (composant)", () => {
         el.remove();
     });
 
+    it("après une position absente (-1), réapparaît SUR PLACE — aucune glisse depuis le coin", async () => {
+        // Régression mesurée en direct (2026-09-23) : l'intégration retire un instant
+        // vacuum_position, la carte passe (-1, -1), puis la position revient. Le
+        // marqueur glissait depuis (-1, -1) : un robot fantôme traversait la carte.
+        const el = new RobotMarker();
+        el.visible = true;
+        el.transitionMs = 2000;
+        el.xPercent = 71.7;
+        el.yPercent = 72.9;
+        document.body.appendChild(el);
+        await flush(el);
+
+        el.xPercent = -1;
+        el.yPercent = -1;
+        await flush(el);
+        expect(el.shadowRoot?.querySelector("#marker")).toBeNull();
+
+        el.xPercent = 68.3;
+        el.yPercent = 73.1;
+        await flush(el);
+        const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
+        expect(marker?.style.transform).toBe("translate(68.3%, 73.1%)");
+        el.remove();
+    });
+
+    it("après visible=false puis true, réapparaît sur place (pas de glisse depuis l'ancienne position)", async () => {
+        const el = new RobotMarker();
+        el.visible = true;
+        el.transitionMs = 2000;
+        el.xPercent = 10;
+        el.yPercent = 10;
+        document.body.appendChild(el);
+        await flush(el);
+
+        el.visible = false;
+        await flush(el);
+        el.visible = true;
+        el.xPercent = 60;
+        el.yPercent = 60;
+        await flush(el);
+        const marker = el.shadowRoot?.querySelector("#marker") as HTMLElement | null;
+        expect(marker?.style.transform).toBe("translate(60%, 60%)");
+        el.remove();
+    });
+
     it("annule l'animation rAF au disconnect (pas de fuite de frames)", async () => {
         const el = new RobotMarker();
         el.visible = true;
