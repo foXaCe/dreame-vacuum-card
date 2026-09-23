@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing, CSSResultGroup } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 
 /**
  * Marqueur de robot en overlay (option 2 anti-flash).
@@ -37,7 +38,7 @@ import { customElement, property, state } from "lit/decorators.js";
  * `vacuum_position` (~3 s, push cloud Dreame) et fait glisser le marqueur sur
  * presque tout l'intervalle — mouvement continu au lieu d'un à-coup.
  */
-@customElement("dreame-robot-marker")
+@safeCustomElement("dreame-robot-marker")
 export class RobotMarker extends LitElement {
     @property({ type: Number })
     public xPercent = -1;

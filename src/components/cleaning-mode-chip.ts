@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 
 import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
@@ -16,7 +17,7 @@ interface ModeChoice {
     readonly selected: boolean;
 }
 
-@customElement("dreame-cleaning-mode-chip")
+@safeCustomElement("dreame-cleaning-mode-chip")
 export class CleaningModeChip extends LitElement {
     @property({ attribute: false })
     public hass!: HomeAssistantFixed;

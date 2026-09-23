@@ -4,6 +4,7 @@ import { AttributePart, directive, Directive, DirectiveParameters } from "lit/di
 import { ActionHandlerDetail, ActionHandlerOptions } from "./ha";
 import { fireEvent } from "./ha";
 import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME } from "./const";
+import { defineElementOnce } from "./utils/define-element";
 
 const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
@@ -180,7 +181,7 @@ export class DreameVacuumCardActionHandler extends HTMLElement implements Dreame
     }
 }
 
-customElements.define(ACTION_HANDLER_CUSTOM_ELEMENT_NAME, DreameVacuumCardActionHandler);
+defineElementOnce(ACTION_HANDLER_CUSTOM_ELEMENT_NAME, DreameVacuumCardActionHandler);
 
 const getActionHandler = (): DreameVacuumCardActionHandlerInterface => {
     const body = document.body;
