@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.4] - 2026-09-23
+
+### Fixed
+- **Card sometimes failed to load ("Custom element doesn't exist")**, needing
+  several browser reloads, or leaving and re-entering the companion app, to
+  "wake it up". The bundle declared the bare `pinch-zoom` element *before*
+  `dreame-vacuum-card`, without checking whether the name was already taken.
+  When another Lovelace resource had declared it first (cards bundling
+  pinch-zoom-element, such as Xiaomi Vacuum Map Card), the resulting
+  exception aborted the whole bundle and the card itself was never defined;
+  resources load in parallel, hence the intermittent failure. The element is
+  now `dreame-pinch-zoom`, and every custom element declaration is idempotent
+  (first declaration wins), which also covers the card being registered twice
+  under `/hacsfiles/…` and `/local/community/…`. Public tags are unchanged.
+- **Ghost robot sliding across the map** while the robot moves: when the
+  integration briefly withdraws `vacuum_position` (calibration not yet
+  recomputed, robot not located), the overlay marker was set to (-1, -1) and
+  kept that as its current position — on the next update it glided from the
+  top-left corner to the robot. Measured live during a clean:
+  `translate(14.3%, 15.4%)` for a target at (68.3%, 73.1%), exactly a glide
+  from (-1, -1). A hidden marker, or one given no position, now forgets its
+  position and reappears in place.
+
 ## [5.11.3] - 2026-08-15
 
 ### Fixed
