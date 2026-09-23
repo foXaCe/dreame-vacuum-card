@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing, CSSResultGroup } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 import type { AnimationItem } from "lottie-web/build/player/lottie_light";
 
 // Le moteur lottie-web (~168 Ko minifié) et les 3 JSON d'animation (~43 Ko) ne sont
@@ -43,7 +44,7 @@ function loadLottie(): Promise<LottieModule["default"]> {
     return lottiePromise;
 }
 
-@customElement("dreame-robot-animation")
+@safeCustomElement("dreame-robot-animation")
 export class RobotAnimation extends LitElement {
     @property({ type: String })
     public robotState = "";

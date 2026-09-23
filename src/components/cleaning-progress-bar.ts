@@ -1,10 +1,11 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 
 import { HomeAssistantFixed } from "../types/fixes";
 import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
-@customElement("dreame-cleaning-progress-bar")
+@safeCustomElement("dreame-cleaning-progress-bar")
 export class CleaningProgressBar extends LitElement {
     @property({ attribute: false })
     public hass!: HomeAssistantFixed;

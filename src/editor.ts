@@ -1,5 +1,6 @@
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
+import { safeCustomElement } from "./utils/define-element";
 import { fireEvent, LovelaceCardEditor } from "./ha";
 
 import { TranslatableString, DreameVacuumCardConfig } from "./types/types";
@@ -116,7 +117,7 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
     },
 ];
 
-@customElement(EDITOR_CUSTOM_ELEMENT_NAME)
+@safeCustomElement(EDITOR_CUSTOM_ELEMENT_NAME)
 export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceCardEditor, "hass"> {
     @property({ attribute: false }) public hass?: HomeAssistantFixed;
     @state() private _config?: DreameVacuumCardConfig;

@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
@@ -15,7 +16,7 @@ interface ButtonConfig {
     action: () => void;
 }
 
-@customElement("dreame-action-buttons")
+@safeCustomElement("dreame-action-buttons")
 export class ActionButtons extends LitElement {
     @property({ attribute: false })
     public hass!: HomeAssistantFixed;

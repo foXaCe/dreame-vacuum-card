@@ -1,9 +1,10 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 
 import { localize } from "../localize/localize";
 
-@customElement("dreame-tab-selector")
+@safeCustomElement("dreame-tab-selector")
 export class DreameTabSelector extends LitElement {
     @property({ type: String })
     public activeTab = "room";

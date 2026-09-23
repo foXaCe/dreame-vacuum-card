@@ -1,5 +1,6 @@
 import { CSSResultGroup, html, LitElement, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
+import { safeCustomElement } from "./utils/define-element";
 import type { HassEntity } from "home-assistant-js-websocket";
 import { forwardHaptic, LovelaceCard, LovelaceCardEditor } from "./ha";
 
@@ -106,7 +107,7 @@ windowWithCards.customCards.push({
     getEntitySuggestion: suggestForEntity,
 });
 
-@customElement(CARD_CUSTOM_ELEMENT_NAME)
+@safeCustomElement(CARD_CUSTOM_ELEMENT_NAME)
 export class DreameVacuumCard extends LitElement {
     @state() private oldConfig = false;
     @state() private config!: DreameVacuumCardConfig;
@@ -574,7 +575,7 @@ export class DreameVacuumCard extends LitElement {
                         .showTitle=${this.config.show_title ?? false}
                     ></dreame-status-header>
                     <div class="map-container ${this.mapLoaded ? "" : "map-loading"}" part="map">
-                        <pinch-zoom
+                        <dreame-pinch-zoom
                             min-scale="0.5"
                             id="map-zoomer"
                             @change="${this._calculateScale}"
@@ -584,7 +585,7 @@ export class DreameVacuumCard extends LitElement {
                             style="touch-action: none;"
                         >
                             ${mapZoomerContent}
-                        </pinch-zoom>
+                        </dreame-pinch-zoom>
                         ${this.mapLoaded ? null : html`<div id="map-skeleton" aria-hidden="true"></div>`}
                     </div>
                     <div id="map-zoomer-overlay">

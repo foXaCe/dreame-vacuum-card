@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
+import { safeCustomElement } from "../utils/define-element";
 
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
@@ -7,7 +8,7 @@ import { computeStateDisplay } from "../localize/hass/compute_state_display";
 import { ACTIVE_VACUUM_STATES } from "../const";
 import { shouldUpdateForEntities } from "../utils/ha-change-detection";
 
-@customElement("dreame-status-header")
+@safeCustomElement("dreame-status-header")
 export class StatusHeader extends LitElement {
     @property({ attribute: false })
     public hass!: HomeAssistantFixed;
