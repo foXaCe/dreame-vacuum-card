@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`map_source` is now optional**: when it is omitted (or left empty by the
+  visual editor), the card uses the main map camera of the vacuum's device,
+  found through the entity registry (`translation_key: current_map`, falling
+  back to an entity id ending in `_map`), and — unless `calibration_source` is
+  set — that camera's calibration, so `type` + `entity` is enough for a working
+  card. The camera follows entity registry updates (e.g. a renamed entity).
+  An explicit `map_source` always wins; when no camera can be found, the card
+  still reports "Missing property: map_source" as before. The card picker
+  suggestion now prefers the same main map camera.
+
 ## [5.11.4] - 2026-09-23
 
 ### Fixed

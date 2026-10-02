@@ -2,6 +2,7 @@ import { CARD_CUSTOM_ELEMENT_NAME } from "../const";
 import { PlatformGenerator } from "../model/generators/platform-generator";
 import type { HomeAssistantFixed } from "../types/fixes";
 import type { DreameVacuumCardConfig } from "../types/types";
+import { findMapCameraOnDevice } from "./auto-map-source";
 
 /** Suggestion de carte renvoyée à Home Assistant pour le card picker (HA 2026.6+). */
 export interface CardSuggestion {
@@ -29,7 +30,10 @@ export function findCameraForVacuum(hass: HomeAssistantFixed, vacuumId: string):
     }
     const vacuumDeviceId = hass?.entities?.[vacuumId]?.device_id;
     if (vacuumDeviceId) {
-        const sameDevice = cameras.find((c) => hass?.entities?.[c]?.device_id === vacuumDeviceId);
+        const mainMap = findMapCameraOnDevice(hass, vacuumId);
+        const sameDevice =
+            (mainMap && cameras.includes(mainMap) ? mainMap : undefined) ??
+            cameras.find((c) => hass?.entities?.[c]?.device_id === vacuumDeviceId);
         if (sameDevice) {
             return sameDevice;
         }

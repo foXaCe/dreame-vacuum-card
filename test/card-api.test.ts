@@ -221,3 +221,122 @@ describe("DreameVacuumCard.setConfig", () => {
         expect((card as unknown as { configErrors: string[] }).configErrors).toEqual([]);
     });
 });
+
+// ===========================================================================
+// map_source auto-détecté depuis le device du vacuum
+// ===========================================================================
+
+describe("DreameVacuumCard map_source auto-detection", () => {
+    const MAP = "camera.top_floor_x50_master_map";
+
+    function hassWithMap(): HomeAssistantFixed {
+        return makeHass({
+            states: {
+                "vacuum.a": { entity_id: "vacuum.a", state: "docked", attributes: {} },
+                [MAP]: { entity_id: MAP, state: "idle", attributes: {} },
+                "camera.b": { entity_id: "camera.b", state: "idle", attributes: {} },
+            } as never,
+            entities: {
+                "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" },
+                [`${MAP}_data`]: { entity_id: `${MAP}_data`, device_id: "dev1", translation_key: "current_map_data" },
+                [MAP]: { entity_id: MAP, device_id: "dev1", translation_key: "current_map" },
+            } as never,
+        });
+    }
+
+    type CardInternals = { configErrors: string[]; config: DreameVacuumCardConfig };
+    const internals = (card: DreameVacuumCard) => card as unknown as CardInternals;
+    const withoutMapSource = (): DreameVacuumCardConfig => {
+        const { map_source: _omit, ...rest } = prodConfig();
+        return rest as DreameVacuumCardConfig;
+    };
+
+    // NB : dans HA, setConfig précède toujours la première assignation de hass.
+    it("an explicit map_source always wins", () => {
+        const card = makeCard();
+        card.setConfig(prodConfig());
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe("camera.b");
+    });
+
+    it("derives the main map camera when map_source is missing (hass already set, e.g. editor preview)", () => {
+        const card = makeCard();
+        card.setConfig(prodConfig());
+        card.hass = hassWithMap();
+        card.setConfig(withoutMapSource());
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+    });
+
+    it("defers the derivation until hass is available (setConfig runs first)", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        // Pas d'erreur affichée avant hass : la carte ne rend rien tant que hass manque.
+        expect(internals(card).configErrors).toEqual([]);
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+    });
+
+    it("works with a truly minimal { type, entity } config (camera calibration included)", () => {
+        const card = makeCard();
+        card.setConfig({ type: "custom:dreame-vacuum-card", entity: "vacuum.a" } as DreameVacuumCardConfig);
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source).toEqual({ camera: MAP });
+        expect(internals(card).config.calibration_source).toEqual({ camera: true });
+    });
+
+    it("follows a renamed map camera on entity registry updates", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = hassWithMap();
+        const renamed = "camera.renamed_map";
+        const hass = hassWithMap();
+        card.hass = makeHass({
+            states: { ...hass.states, [renamed]: { entity_id: renamed, state: "idle", attributes: {} } } as never,
+            entities: {
+                "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" },
+                [renamed]: { entity_id: renamed, device_id: "dev1", translation_key: "current_map" },
+            } as never,
+        });
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(renamed);
+    });
+
+    it("does not re-apply the config when the registry changes but the camera stays the same", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = hassWithMap();
+        const applied = internals(card).config;
+        const setPresetIndex = vi.spyOn(card as unknown as { _setPresetIndex: () => void }, "_setPresetIndex");
+        card.hass = hassWithMap(); // nouvel objet `entities`, même caméra
+        expect(setPresetIndex).not.toHaveBeenCalled();
+        expect(internals(card).config).toBe(applied);
+    });
+
+    it("keeps the previous 'Missing property: map_source' error when no camera can be derived", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = makeHass({ entities: { "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" } } as never });
+        expect(internals(card).configErrors).toEqual(["Missing property: map_source"]);
+    });
+
+    it("reports the error, without crashing, when hass exposes no entity registry", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = makeHass({ entities: undefined } as never);
+        expect(internals(card).configErrors).toEqual(["Missing property: map_source"]);
+    });
+
+    it("retries when the entity registry is updated after a failed derivation", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = makeHass({ entities: { "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" } } as never });
+        expect(internals(card).configErrors).toEqual(["Missing property: map_source"]);
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+    });
+});
