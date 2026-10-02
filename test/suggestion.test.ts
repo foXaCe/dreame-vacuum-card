@@ -41,6 +41,26 @@ describe("findCameraForVacuum", () => {
         expect(findCameraForVacuum(hass, VACUUM)).toBe(CAMERA);
     });
 
+    it("prefers the current map camera of the device over its other cameras", () => {
+        const hass = makeHass({
+            states: {
+                [VACUUM]: { entity_id: VACUUM, state: "docked", attributes: {} },
+                "camera.robot_map_data": { entity_id: "camera.robot_map_data", state: "idle", attributes: {} },
+                [CAMERA]: { entity_id: CAMERA, state: "idle", attributes: {} },
+            } as never,
+            entities: {
+                [VACUUM]: { entity_id: VACUUM, device_id: "dev1" },
+                "camera.robot_map_data": {
+                    entity_id: "camera.robot_map_data",
+                    device_id: "dev1",
+                    translation_key: "current_map_data",
+                },
+                [CAMERA]: { entity_id: CAMERA, device_id: "dev1", translation_key: "current_map" },
+            } as never,
+        });
+        expect(findCameraForVacuum(hass, VACUUM)).toBe(CAMERA);
+    });
+
     it("falls back to a calibrated camera when none shares the device", () => {
         const hass = makeHass({
             states: {

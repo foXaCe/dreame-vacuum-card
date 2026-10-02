@@ -62,6 +62,7 @@ import { PredefinedPoint } from "./model/map_objects/predefined-point";
 import { PredefinedMultiRectangle } from "./model/map_objects/predefined-multi-rectangle";
 import { Room } from "./model/map_objects/room";
 import { areAllEntitiesDefined, isOldConfig, validateConfig } from "./config-validators";
+import { needsAutoMapSource, withAutoMapSource } from "./utils/auto-map-source";
 import { MapMode } from "./model/map_mode/map-mode";
 import { SelectionType } from "./model/map_mode/selection-type";
 import { RepeatsType } from "./model/map_mode/repeats-type";
@@ -129,6 +130,11 @@ export class DreameVacuumCard extends LitElement {
     @state() private mapLoaded = false;
     @state() public internalVariables = {};
     private currentPreset!: CardPresetConfig;
+    /** Config telle que fournie par l'utilisateur ; `config` en est la version effective
+     *  (avec `map_source` auto-détecté le cas échéant). */
+    private _userConfig?: DreameVacuumCardConfig;
+    /** Registre d'entités ayant servi à la dernière auto-détection de `map_source`. */
+    private _autoMapSourceEntities?: HomeAssistantFixed["entities"];
     private watchedEntities: string[] = [];
     private selectedManualRectangles: ManualRectangle[] = [];
     private selectedManualPoint?: ManualPoint;
@@ -195,7 +201,9 @@ export class DreameVacuumCard extends LitElement {
         const firstHass = !this._hass && hass;
         this._hass = hass;
         this.lastHassUpdate = new Date();
-        if (firstHass) {
+        if (this._shouldReapplyAutoMapSource(!!firstHass)) {
+            this._applyConfig();
+        } else if (firstHass) {
             this._firstHass();
         }
     }
@@ -245,9 +253,38 @@ export class DreameVacuumCard extends LitElement {
             throw new Error(this._localize("common.invalid_configuration"));
         }
         this.config = config;
+        this._userConfig = undefined;
         MapMode.debug = config.debug ?? false;
         if (isOldConfig(config)) {
             this.oldConfig = true;
+            return;
+        }
+        this._userConfig = config;
+        this._applyConfig();
+    }
+
+    /** Sans source de carte explicite, la caméra suit le registre d'entités : résolue au
+     *  premier `hass`, puis re-résolue seulement quand `hass.entities` change d'identité
+     *  (mise à jour du registre : caméra renommée, ajoutée tardivement…). */
+    private _shouldReapplyAutoMapSource(firstHass: boolean): boolean {
+        if (!this._userConfig || !needsAutoMapSource(this._userConfig)) return false;
+        if (firstHass) return true;
+        if (this.hass?.entities === this._autoMapSourceEntities) return false;
+        this._autoMapSourceEntities = this.hass?.entities;
+        return withAutoMapSource(this._userConfig, this.hass).map_source?.camera !== this.config.map_source?.camera;
+    }
+
+    /** Valide et applique la config utilisateur. Sans `map_source`, la caméra est déduite
+     *  du device du vacuum (voir utils/auto-map-source.ts) ; tant que `hass` n'est pas
+     *  disponible, la validation est différée au premier `hass` reçu. */
+    private _applyConfig(): void {
+        const userConfig = this._userConfig;
+        if (!userConfig) return;
+        const config = withAutoMapSource(userConfig, this.hass);
+        this._autoMapSourceEntities = this.hass?.entities;
+        this.config = config;
+        if (needsAutoMapSource(config) && !this.hass) {
+            this.configErrors = [];
             return;
         }
         this.configErrors = validateConfig(this.config);

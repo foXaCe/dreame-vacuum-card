@@ -124,7 +124,7 @@ vacuum_platform: tasshackDreameVacuum
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `entity` | string | **required** | Vacuum entity ID |
-| `map_source.camera` | string | **required** | Camera entity providing the map image |
+| `map_source.camera` | string | auto-detected | Camera entity providing the map image. When omitted, the main map camera of the vacuum's device is used |
 | `calibration_source.camera` | boolean | `true` | Use camera calibration points |
 | `vacuum_platform` | string | `tasshackDreameVacuum` | Platform identifier |
 | `show_title` | boolean | `false` | Show device name in the header |
@@ -144,7 +144,7 @@ This card is designed to work with the [foXaCe/dreame-vacuum](https://github.com
 - Sensor entities for battery, cleaning time, cleaned area, cleaning progress, state
 - Select entity for cleaning mode
 
-The card automatically discovers sibling entities on the same device using `device_id`.
+The card automatically discovers sibling entities on the same device using `device_id` — including the map camera when `map_source` is omitted.
 
 ## How it works
 
