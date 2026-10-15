@@ -233,7 +233,7 @@
         "label": {
             "name": "Títol (opcional)",
             "entity": "Entitat de l'aspiradora (obligatori)",
-            "camera": "Entitat de la càmera (obligatori)",
+            "camera": "Entitat de la càmera",
             "vacuum_platform": "Plataforma de la aspiradora (obligatori)",
             "map_locked": "Mapa bloquejat(opcional)",
             "two_finger_pan": "Moure amb dos dits (opcional)",
