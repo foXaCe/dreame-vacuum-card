@@ -247,7 +247,7 @@
         "label": {
             "name": "Titel (optional)",
             "entity": "Staubsauger Entität (required)",
-            "camera": "Kamera Entität (required)",
+            "camera": "Kamera Entität",
             "vacuum_platform": "Staubsauger-Plattform (required)",
             "map_locked": "Karte gesperrt (optional)",
             "two_finger_pan": "Zwei-Finger-Pan (optional)",

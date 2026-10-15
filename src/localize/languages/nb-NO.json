@@ -219,7 +219,7 @@
         "label": {
             "name": "Tittel (valgfritt)",
             "entity": "Støvsuger-entitet (obligatorisk)",
-            "camera": "Kamera-entitet (obligatorisk)",
+            "camera": "Kamera-entitet",
             "vacuum_platform": "Støvsugerplattform (obligatorisk)",
             "map_locked": "Låst kart (valgfritt)",
             "two_finger_pan": "Panorering med to fingre (valgfritt)",

@@ -245,7 +245,7 @@
         "label": {
             "name": "Titel (optioneel)",
             "entity": "Stofzuigerentiteit (verplicht)",
-            "camera": "Camera-entiteit (verplicht)",
+            "camera": "Camera-entiteit",
             "vacuum_platform": "Stofzuigerplatform (verplicht)",
             "map_locked": "Kaart vergrendelen (optioneel)",
             "two_finger_pan": "Kaart verplaatsen met twee vingers (optioneel)",

@@ -109,12 +109,18 @@ describe("withAutoMapSource", () => {
 
 
 describe("V6 — filtrage état/visibilité (V2)", () => {
-    it("renvoie undefined quand la caméra est marquée hidden", () => {
+    it("renvoie undefined quand la caméra est masquée dans le registre", () => {
         const hass = makeHass(
-            { "camera.hidden_map": { device_id: "dev1" } },
-            { "camera.hidden_map": { entity_id: "camera.hidden_map", state: "idle", attributes: { hidden: true } } }
+            { "camera.hidden_map": { device_id: "dev1", hidden: true } }
         );
         expect(findMapCameraOnDevice(hass, VACUUM)).toBeUndefined();
+    });
+
+    it("trouve une caméra explicitement non masquée dans le registre", () => {
+        const hass = makeHass(
+            { "camera.visible_map": { device_id: "dev1", hidden: false } }
+        );
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBe("camera.visible_map");
     });
 
     it("renvoie undefined quand la caméra est absente de hass.states", () => {

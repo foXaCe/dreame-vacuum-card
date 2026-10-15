@@ -339,7 +339,7 @@
             "show_title": "Show title",
             "name": "Title (optional)",
             "entity": "Vacuum entity (required)",
-            "camera": "Camera entity (required)",
+            "camera": "Camera entity",
             "vacuum_platform": "Vacuum platform (required)",
             "map_locked": "Map locked (optional)",
             "two_finger_pan": "Two finger pan (optional)",

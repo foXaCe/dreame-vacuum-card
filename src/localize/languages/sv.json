@@ -219,7 +219,7 @@
         "label": {
             "name": "Titel (valfritt)",
             "entity": "Dammsugar-entitet (obligatoriskt)",
-            "camera": "Kamera-entitet (obligatoriskt)",
+            "camera": "Kamera-entitet",
             "vacuum_platform": "Dammsugarplattform (obligatoriskt)",
             "map_locked": "Låst karta (valfritt)",
             "two_finger_pan": "Panorering med två fingrar (valfritt)",
