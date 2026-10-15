@@ -339,4 +339,30 @@ describe("DreameVacuumCard map_source auto-detection", () => {
         expect(internals(card).configErrors).toEqual([]);
         expect(internals(card).config.map_source.camera).toBe(MAP);
     });
+
+    // V6 : rôle du premier hass — preset et watchedEntities calculés après un setConfig différé.
+    it("computes watchedEntities and preset on the first hass after a deferred setConfig", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        // Avant hass : validation différée, rien n'est encore calculé.
+        expect(internals(card).configErrors).toEqual([]);
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+        const state = card as unknown as { watchedEntities: string[]; presetIndex: number };
+        expect(state.watchedEntities).toContain(MAP);
+        expect(state.presetIndex).toBe(0);
+    });
+
+    // V6 : une caméra auto-détectée qui disparaît laisse une erreur claire, sans crash.
+    it("reports 'Missing property: map_source' when the derived camera disappears", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        card.hass = hassWithMap();
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+        // Le registre perd la caméra : plus rien à déduire -> erreur claire, pas de crash.
+        card.hass = makeHass({ entities: { "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" } } as never });
+        expect(internals(card).configErrors).toEqual(["Missing property: map_source"]);
+    });
 });
