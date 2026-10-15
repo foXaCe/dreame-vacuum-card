@@ -17,7 +17,8 @@ export function needsAutoMapSource(config: DreameVacuumCardConfig): boolean {
  * l'autre (ex. `vacuum.etage` ↔ `camera.etage_x50_map`). Priorité au `translation_key`
  * `current_map` ; à défaut (intégration plus ancienne), la première caméra dont l'entity_id
  * finit par `_map` (hors `_wifi_map`) — l'ordre d'itération tranche s'il y en a plusieurs.
- * Seules les caméras présentes dans `hass.states` et non `hidden` sont retenues (comme le
+ * Seules les caméras présentes dans `hass.states` et non masquées dans le registre
+ * (`hass.entities[].hidden`) sont retenues (comme le card picker).
  * card picker). Renvoie `undefined` si aucune caméra éligible n'est trouvée.
  */
 export function findMapCameraOnDevice(hass: HomeAssistantFixed, vacuumId: string): string | undefined {
@@ -31,7 +32,7 @@ export function findMapCameraOnDevice(hass: HomeAssistantFixed, vacuumId: string
             e.device_id === deviceId &&
             e.entity_id?.startsWith("camera.") &&
             state !== undefined &&
-            !state?.attributes?.hidden
+            !hass.entities?.[e.entity_id]?.hidden
         );
     });
     const main =
