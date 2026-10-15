@@ -109,12 +109,28 @@ describe("withAutoMapSource", () => {
 
 
 describe("V6 — filtrage état/visibilité (V2)", () => {
-    it("renvoie undefined quand la caméra est marquée hidden", () => {
-        const hass = makeHass(
-            { "camera.hidden_map": { device_id: "dev1" } },
-            { "camera.hidden_map": { entity_id: "camera.hidden_map", state: "idle", attributes: { hidden: true } } }
-        );
+    // Le marqueur de masquage de HA est porté par le registre d'entités (`hidden` /
+    // `hidden_by`), jamais par les attributs d'état.
+    it("renvoie undefined quand la caméra est masquée au registre (hidden + hidden_by)", () => {
+        const hass = makeHass({
+            "camera.hidden_map": { device_id: "dev1", translation_key: "current_map", hidden: true, hidden_by: "user" },
+        });
         expect(findMapCameraOnDevice(hass, VACUUM)).toBeUndefined();
+    });
+
+    it("renvoie undefined quand seule `hidden_by` est renseignée", () => {
+        const hass = makeHass({
+            "camera.hidden_by_map": { device_id: "dev1", hidden_by: "integration" },
+        });
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBeUndefined();
+    });
+
+    it("écarte la caméra masquée au profit d'une caméra visible du même device", () => {
+        const hass = makeHass({
+            "camera.hidden_map": { device_id: "dev1", translation_key: "current_map", hidden: true, hidden_by: "user" },
+            "camera.visible_map": { device_id: "dev1", translation_key: "current_map" },
+        });
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBe("camera.visible_map");
     });
 
     it("renvoie undefined quand la caméra est absente de hass.states", () => {
