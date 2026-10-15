@@ -135,6 +135,9 @@ export class DreameVacuumCard extends LitElement {
     private _userConfig?: DreameVacuumCardConfig;
     /** Registre d'entités ayant servi à la dernière auto-détection de `map_source`. */
     private _autoMapSourceEntities?: HomeAssistantFixed["entities"];
+    /** Identité des états au dernier calcul : `hass.states` conditionne aussi la
+     *  dérivation (état de caméra livré après le premier `hass`). */
+    private _autoMapSourceStates?: HomeAssistantFixed["states"];
     private watchedEntities: string[] = [];
     private selectedManualRectangles: ManualRectangle[] = [];
     private selectedManualPoint?: ManualPoint;
@@ -263,14 +266,18 @@ export class DreameVacuumCard extends LitElement {
         this._applyConfig();
     }
 
-    /** Sans source de carte explicite, la caméra suit le registre d'entités : résolue au
-     *  premier `hass`, puis re-résolue seulement quand `hass.entities` change d'identité
-     *  (mise à jour du registre : caméra renommée, ajoutée tardivement…). */
+    /** Sans source de carte explicite, la caméra suit le registre d'entités et les états :
+     *  résolue au premier `hass`, puis re-résolue dès que `hass.entities` (caméra renommée,
+     *  ajoutée tardivement…) ou `hass.states` (état de caméra livré après le premier `hass`,
+     *  caméra retirée) change d'identité — la dérivation dépend des deux. */
     private _shouldReapplyAutoMapSource(firstHass: boolean): boolean {
         if (!this._userConfig || !needsAutoMapSource(this._userConfig)) return false;
         if (firstHass) return true;
-        if (this.hass?.entities === this._autoMapSourceEntities) return false;
+        const sameRegistry = this.hass?.entities === this._autoMapSourceEntities;
+        const sameStates = this.hass?.states === this._autoMapSourceStates;
+        if (sameRegistry && sameStates) return false;
         this._autoMapSourceEntities = this.hass?.entities;
+        this._autoMapSourceStates = this.hass?.states;
         return withAutoMapSource(this._userConfig, this.hass).map_source?.camera !== this.config.map_source?.camera;
     }
 
@@ -282,6 +289,7 @@ export class DreameVacuumCard extends LitElement {
         if (!userConfig) return;
         const config = withAutoMapSource(userConfig, this.hass);
         this._autoMapSourceEntities = this.hass?.entities;
+        this._autoMapSourceStates = this.hass?.states;
         this.config = config;
         if (needsAutoMapSource(config) && !this.hass) {
             this.configErrors = [];
