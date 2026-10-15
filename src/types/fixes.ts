@@ -36,6 +36,7 @@ export interface EntityRegistryDisplayEntry {
     device_id?: string;
     area_id?: string;
     hidden?: boolean;
+    hidden_by?: string;
     entity_category?: entityCategory;
     translation_key?: string;
     platform?: string;
