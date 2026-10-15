@@ -340,6 +340,32 @@ describe("DreameVacuumCard map_source auto-detection", () => {
         expect(internals(card).config.map_source.camera).toBe(MAP);
     });
 
+    // Relecture : depuis V2 la dérivation dépend aussi de `hass.states` — un état de caméra
+    // livré après le premier `hass` (registre inchangé) doit relancer la dérivation.
+    it("resolves the camera when its state arrives after the first hass (registry unchanged)", () => {
+        const card = makeCard();
+        card.setConfig(withoutMapSource());
+        const entities = {
+            "vacuum.a": { entity_id: "vacuum.a", device_id: "dev1" },
+            [MAP]: { entity_id: MAP, device_id: "dev1", translation_key: "current_map" },
+        } as never;
+        card.hass = makeHass({
+            states: { "vacuum.a": { entity_id: "vacuum.a", state: "docked", attributes: {} } } as never,
+            entities,
+        });
+        expect(internals(card).configErrors).toEqual(["Missing property: map_source"]);
+        // Mêmes `entities` (identité conservée) : seul `hass.states` a changé.
+        card.hass = makeHass({
+            states: {
+                "vacuum.a": { entity_id: "vacuum.a", state: "docked", attributes: {} },
+                [MAP]: { entity_id: MAP, state: "idle", attributes: {} },
+            } as never,
+            entities,
+        });
+        expect(internals(card).configErrors).toEqual([]);
+        expect(internals(card).config.map_source.camera).toBe(MAP);
+    });
+
     // V6 : rôle du premier hass — preset et watchedEntities calculés après un setConfig différé.
     it("computes watchedEntities and preset on the first hass after a deferred setConfig", () => {
         const card = makeCard();
