@@ -70,7 +70,7 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
         schema: [
             {
                 name: "camera",
-                required: true,
+                required: false,
                 selector: { entity: { domain: ["camera", "image"] } },
             },
         ],
