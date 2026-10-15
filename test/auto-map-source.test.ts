@@ -7,14 +7,26 @@ const VACUUM = "vacuum.top_floor_master";
 
 /** Registre d'entités d'un robot dreame_vacuum réel : entity_id de la caméra non
  *  déductible de celui du vacuum, plusieurs caméras sur le même device. */
-function makeHass(entities: Record<string, Record<string, unknown>> = {}): HomeAssistantFixed {
+function makeHass(
+    entities: Record<string, Record<string, unknown>> = {},
+    states: Record<string, Record<string, unknown>> = {}
+): HomeAssistantFixed {
     const registry: Record<string, unknown> = {
         [VACUUM]: { entity_id: VACUUM, device_id: "dev1", platform: "dreame_vacuum" },
     };
+    const statesObj: Record<string, unknown> = {
+        [VACUUM]: { entity_id: VACUUM, state: "docked", attributes: {} },
+    };
     for (const [id, entry] of Object.entries(entities)) {
         registry[id] = { entity_id: id, platform: "dreame_vacuum", ...entry };
+        // Chaque entité du registre est « présente » dans hass.states par défaut ; les
+        // tests V2 passent un `states` explicite pour simuler une caméra cachée/absente.
+        statesObj[id] = { entity_id: id, state: "idle", attributes: {} };
     }
-    return { states: {}, entities: registry } as unknown as HomeAssistantFixed;
+    for (const [id, state] of Object.entries(states)) {
+        statesObj[id] = state;
+    }
+    return { states: statesObj, entities: registry } as unknown as HomeAssistantFixed;
 }
 
 const DREAME_CAMERAS = {
@@ -92,5 +104,40 @@ describe("withAutoMapSource", () => {
         expect(withAutoMapSource(cfg, undefined)).toBe(cfg);
         expect(withAutoMapSource(cfg, makeHass())).toBe(cfg);
         expect(needsAutoMapSource(cfg)).toBe(true);
+    });
+});
+
+
+describe("V6 — filtrage état/visibilité (V2)", () => {
+    it("renvoie undefined quand la caméra est marquée hidden", () => {
+        const hass = makeHass(
+            { "camera.hidden_map": { device_id: "dev1" } },
+            { "camera.hidden_map": { entity_id: "camera.hidden_map", state: "idle", attributes: { hidden: true } } }
+        );
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBeUndefined();
+    });
+
+    it("renvoie undefined quand la caméra est absente de hass.states", () => {
+        const hass = {
+            states: { [VACUUM]: { entity_id: VACUUM, state: "docked", attributes: {} } },
+            entities: {
+                [VACUUM]: { entity_id: VACUUM, device_id: "dev1" },
+                "camera.gone_map": { entity_id: "camera.gone_map", device_id: "dev1" },
+            },
+        } as unknown as HomeAssistantFixed;
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBeUndefined();
+    });
+
+    it("fige le cas regex d'origine : premier _map quand plusieurs candidats", () => {
+        const hass = makeHass({
+            "camera.aaa_map": { device_id: "dev1" },
+            "camera.zzz_map": { device_id: "dev1" },
+        });
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBe("camera.aaa_map");
+    });
+
+    it("continue de trouver une caméra présente et visible", () => {
+        const hass = makeHass({ "camera.good_map": { device_id: "dev1" } });
+        expect(findMapCameraOnDevice(hass, VACUUM)).toBe("camera.good_map");
     });
 });
