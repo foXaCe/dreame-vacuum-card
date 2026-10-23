@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.13.0] - 2026-10-23
+
+### Added
+- **Dock & care page.** A collapsible panel under the action buttons, with a badge counting the care alerts:
+  - **Dock**: status (ready, washing, wash paused, drying with progress, emptying), clean water, dirty water, dust bag and detergent, and the **Empty bin**, **Wash mops** and **Dry mops** actions.
+  - **Parts**: every consumable the robot has, with its level, time left and a **reset** button (asks for confirmation).
+  - **Alerts**: part below the threshold, robot error (with **Clear** when available), low water, missing tank. **Later** hides an alert for 24 hours.
+  - New options: `show_care` (default `true`, also in the visual editor), `care_warning` (default 20 %) and `care_critical` (default 10 %).
+
 ## [5.12.0] - 2026-10-23
 
 ### Added
