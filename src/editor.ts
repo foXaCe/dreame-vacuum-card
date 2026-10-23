@@ -82,6 +82,7 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
         schema: [
             { name: "show_title", selector: { boolean: {} } },
             { name: "show_care", selector: { boolean: {} } },
+            { name: "show_settings", selector: { boolean: {} } },
             {
                 name: "appearance",
                 selector: {
@@ -139,6 +140,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             display: {
                 show_title: this._config.show_title ?? false,
                 show_care: this._config.show_care ?? true,
+                show_settings: this._config.show_settings ?? true,
                 appearance: this._config.appearance ?? "premium",
                 language: this._config.language ?? "",
             },
@@ -182,7 +184,13 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         const value = ev.detail.value as {
             entity?: string;
             map_source?: { camera?: string };
-            display?: { show_title?: boolean; show_care?: boolean; appearance?: string; language?: string };
+            display?: {
+                show_title?: boolean;
+                show_care?: boolean;
+                show_settings?: boolean;
+                appearance?: string;
+                language?: string;
+            };
             map_behavior?: {
                 map_locked?: boolean;
                 two_finger_pan?: boolean;
@@ -200,6 +208,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             show_title: value.display?.show_title,
             // Défaut : affichée. On ne stocke que la désactivation, pour garder le YAML propre.
             show_care: value.display?.show_care === false ? false : undefined,
+            show_settings: value.display?.show_settings === false ? false : undefined,
             // On ne stocke que l'écart au défaut (premium) pour garder le YAML propre.
             appearance: value.display?.appearance === "minimal" ? "minimal" : undefined,
             language: value.display?.language || undefined,
@@ -216,6 +225,9 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         }
         if (draft.show_care === undefined) {
             delete draft.show_care;
+        }
+        if (draft.show_settings === undefined) {
+            delete draft.show_settings;
         }
 
         // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`

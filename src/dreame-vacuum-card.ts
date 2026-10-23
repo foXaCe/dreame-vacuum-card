@@ -85,6 +85,7 @@ import "./components/cleaning-progress-bar";
 import "./components/robot-animation";
 import "./components/robot-marker";
 import "./components/care-panel";
+import "./components/settings-panel";
 import { careWatchedEntities, resolveDeviceEntities, DEFAULT_CARE_THRESHOLDS } from "./model/care/care-model";
 
 /** Palette Dreame par défaut, indexée par color_index 0-3 */
@@ -760,6 +761,14 @@ export class DreameVacuumCard extends LitElement {
                                   critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
                               }}
                           ></dreame-care-panel>`
+                        : nothing
+                }
+                ${
+                    this.config.show_settings !== false
+                        ? html`<dreame-settings-panel
+                              .hass=${this.hass}
+                              .entityId=${preset.entity}
+                          ></dreame-settings-panel>`
                         : nothing
                 }
             </ha-card>

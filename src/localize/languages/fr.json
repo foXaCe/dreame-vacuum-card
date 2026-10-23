@@ -373,6 +373,19 @@
                 "onboard_dirty_water_tank": "Réservoir d'eau sale embarqué",
                 "tank_filter": "Filtre du réservoir"
             }
+        },
+        "settings": {
+            "title": "Réglages",
+            "category": {
+                "cleaning": "Nettoyage",
+                "mopping": "Serpillières",
+                "carpet": "Tapis",
+                "dock": "Station",
+                "obstacle": "Obstacles et caméra",
+                "dnd_sound": "Ne pas déranger et son",
+                "system": "Système",
+                "other": "Autres"
+            }
         }
     },
     "editor": {
@@ -391,6 +404,7 @@
         "label": {
             "show_title": "Afficher le titre",
             "show_care": "Afficher la station et l'entretien",
+            "show_settings": "Afficher les réglages",
             "name": "Titre (optionnel)",
             "entity": "Entité de l'aspirateur (obligatoire)",
             "camera": "Entité de la caméra",
