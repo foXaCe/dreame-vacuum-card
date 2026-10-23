@@ -142,3 +142,28 @@ describe("dreame-tab-selector keyboard navigation", () => {
         expect(tabs(el).map((t) => t.getAttribute("aria-selected"))).toEqual(["false", "false", "true"]);
     });
 });
+
+describe("dreame-tab-selector with the spot tab", () => {
+    it("renders a fourth 'spot' tab when the card passes it", async () => {
+        const el = makeSelector();
+        el.tabs = ["room", "all", "zone", "spot"];
+        el.language = "en";
+        await mount(el);
+        expect(tabs(el)).toHaveLength(4);
+        expect(tabs(el)[3].textContent).toContain("Spot");
+        expect(tablist(el).getAttribute("style")).toContain("--dvc-tab-count: 4");
+    });
+
+    it("keyboard navigation wraps over the four tabs", async () => {
+        const el = makeSelector();
+        el.tabs = ["room", "all", "zone", "spot"];
+        el.activeTab = "zone";
+        await mount(el);
+        pressKey(el, "ArrowRight");
+        expect(el.activeTab).toBe("spot");
+        pressKey(el, "ArrowRight");
+        expect(el.activeTab).toBe("room");
+        pressKey(el, "End");
+        expect(el.activeTab).toBe("spot");
+    });
+});

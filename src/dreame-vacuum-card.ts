@@ -67,6 +67,7 @@ import { needsAutoMapSource, withAutoMapSource } from "./utils/auto-map-source";
 import { MapMode } from "./model/map_mode/map-mode";
 import { SelectionType } from "./model/map_mode/selection-type";
 import { RepeatsType } from "./model/map_mode/repeats-type";
+import { CardTab, findSpotModeIndex, visibleTabs } from "./model/map_mode/card-tabs";
 import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
 import { resolveCalibration, isCalibrationSourceConfigured } from "./model/map/calibration-resolver";
@@ -125,7 +126,7 @@ export class DreameVacuumCard extends LitElement {
     @state() private mapY!: number;
     @state() public repeats = 1;
     @state() private selectedMode = 0;
-    @state() private activeTab: "room" | "all" | "zone" = "all";
+    @state() private activeTab: CardTab = "all";
     @state() private mapLocked = true;
     @state() private configErrors: string[] = [];
     @state() private connected = false;
@@ -572,6 +573,7 @@ export class DreameVacuumCard extends LitElement {
         const calibrationSourceFailed = !!this.coordinatesConverter?.calibrationSourceFailed;
 
         const hasSelection = this._hasActiveSelection();
+        const tabs = this._visibleTabs();
 
         const mapZoomerContent = html`
             <div
@@ -607,7 +609,7 @@ export class DreameVacuumCard extends LitElement {
                         xmlns="http://www.w3.org/2000/svg"
                         version="2.0"
                         id="svg-wrapper"
-                        class="${this.activeTab === "room" ? "room-mode" : ""}"
+                        class="${this.activeTab === "room" ? "room-mode" : this.activeTab === "spot" ? "spot-mode" : ""}"
                         width="100%"
                         height="100%"
                         @mousedown="${(e: MouseEvent): void => this._mouseDown(e)}"
@@ -698,7 +700,7 @@ export class DreameVacuumCard extends LitElement {
                                     : null
                             }
                             ${
-                                this.activeTab === "zone" || this.activeTab === "room"
+                                this.activeTab === "zone" || this.activeTab === "room" || this.activeTab === "spot"
                                     ? html`
                                           <div
                                               class="icon-on-map clickable ripple cycle-counter"
@@ -724,6 +726,14 @@ export class DreameVacuumCard extends LitElement {
                                 @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._restoreMap)}"
                             ></ha-icon>
                         </div>
+                        ${
+                            this.activeTab === "spot" && !this.selectedManualPoint
+                                ? html`<div class="map-hint" role="status">
+                                      <ha-icon icon="mdi:gesture-tap"></ha-icon>
+                                      ${this._localize("dreame_ui.map.spot_hint")}
+                                  </div>`
+                                : null
+                        }
                     </div>
                 </div>
                 ${conditional(!validCalibration, () =>
@@ -735,6 +745,7 @@ export class DreameVacuumCard extends LitElement {
                 <dreame-cleaning-mode-chip .hass=${this.hass} .entityId=${preset.entity}></dreame-cleaning-mode-chip>
                 <dreame-tab-selector
                     .activeTab=${this.activeTab}
+                    .tabs=${tabs}
                     .language=${this.hass?.locale?.language ?? ""}
                     @tab-changed=${(e: CustomEvent) => this._handleTabChange(e.detail.tab)}
                 ></dreame-tab-selector>
@@ -823,7 +834,15 @@ export class DreameVacuumCard extends LitElement {
         );
     }
 
-    private _handleTabChange(tab: "room" | "all" | "zone"): void {
+    /** Onglets du sélecteur : « Point » seulement si un mode `vacuum_clean_spot` existe. */
+    private _visibleTabs(): CardTab[] {
+        return visibleTabs({
+            spotAvailable: findSpotModeIndex(this.modes) >= 0,
+            showSpot: this.config.show_spot !== false,
+        });
+    }
+
+    private _handleTabChange(tab: CardTab): void {
         this.activeTab = tab;
         this._clearSelection();
         const modes = this.modes;
@@ -840,6 +859,12 @@ export class DreameVacuumCard extends LitElement {
                     // Attend le prochain rendu Lit puis ajoute le rectangle initial
                     this.updateComplete.then(() => this._addRectangle());
                 }
+                break;
+            }
+            case "spot": {
+                // Un toucher sur la carte pose le point (cf. _mouseUp, MANUAL_POINT).
+                const spotIdx = findSpotModeIndex(this.modes);
+                if (spotIdx >= 0) this._setCurrentMode(spotIdx);
                 break;
             }
             case "all":

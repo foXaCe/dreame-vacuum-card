@@ -35,7 +35,8 @@ describe("dreame-vacuum-card — navigation clavier des onglets", () => {
         const { card } = mountCard();
         const tabSelector = await getTabSelector(card);
         const buttons = getTabButtons(tabSelector);
-        expect(buttons.map((b) => b.getAttribute("role"))).toEqual(["tab", "tab", "tab"]);
+        // Ordre : room, all, zone, spot (« Point » : le template Dreame sert vacuum_clean_spot).
+        expect(buttons.map((b) => b.getAttribute("role"))).toEqual(["tab", "tab", "tab", "tab"]);
 
         // Onglet par défaut : "all" (index 1) — cf. `activeTab: "room"|"all"|"zone" = "all"`.
         expect(buttons[1].classList.contains("active")).toBe(true);
@@ -55,12 +56,17 @@ describe("dreame-vacuum-card — navigation clavier des onglets", () => {
         expect(buttonsAfterRight[2].getAttribute("tabindex")).toBe("0");
         expect(buttonsAfterRight[0].getAttribute("tabindex")).toBe("-1");
         expect(buttonsAfterRight[1].getAttribute("tabindex")).toBe("-1");
+        expect(buttonsAfterRight[3].getAttribute("tabindex")).toBe("-1");
 
         // La carte elle-même a bien reçu le `tab-changed` (pas seulement le sous-composant).
         expect((card as unknown as { activeTab: string }).activeTab).toBe("zone");
 
-        // Depuis "zone" (dernier onglet), ArrowRight doit boucler vers "room" (index 0).
+        // "zone" → "spot" (dernier onglet), puis ArrowRight boucle vers "room" (index 0).
         buttonsAfterRight[2].dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })
+        );
+        await until(() => (tabSelector as unknown as { activeTab: string }).activeTab === "spot");
+        getTabButtons(tabSelector)[3].dispatchEvent(
             new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })
         );
         await until(() => (tabSelector as unknown as { activeTab: string }).activeTab === "room");
@@ -78,13 +84,13 @@ describe("dreame-vacuum-card — navigation clavier des onglets", () => {
         await until(() => (tabSelector as unknown as { activeTab: string }).activeTab === "room");
         expect((card as unknown as { activeTab: string }).activeTab).toBe("room");
 
-        // Depuis "room" (premier onglet), ArrowLeft doit boucler vers "zone" (dernier, index 2).
+        // Depuis "room" (premier onglet), ArrowLeft doit boucler vers "spot" (dernier, index 3).
         const roomButton = getTabButtons(tabSelector)[0];
         roomButton.dispatchEvent(
             new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true })
         );
-        await until(() => (tabSelector as unknown as { activeTab: string }).activeTab === "zone");
-        await until(() => tabSelector.shadowRoot!.activeElement === getTabButtons(tabSelector)[2]);
-        expect((card as unknown as { activeTab: string }).activeTab).toBe("zone");
+        await until(() => (tabSelector as unknown as { activeTab: string }).activeTab === "spot");
+        await until(() => tabSelector.shadowRoot!.activeElement === getTabButtons(tabSelector)[3]);
+        expect((card as unknown as { activeTab: string }).activeTab).toBe("spot");
     });
 });

@@ -5,6 +5,7 @@ import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { shouldUpdateForEntities } from "../utils/ha-change-detection";
+import { CardTab } from "../model/map_mode/card-tabs";
 
 type VacuumState =
     "idle" | "docked" | "returning" | "charged" | "cleaning" | "segment_cleaning" | "zoned_cleaning" | "paused";
@@ -25,7 +26,7 @@ export class ActionButtons extends LitElement {
     public entityId!: string;
 
     @property({ type: String })
-    public activeTab: "room" | "all" | "zone" = "all";
+    public activeTab: CardTab = "all";
 
     @property({ type: Boolean })
     public hasSelection = false;
@@ -162,7 +163,7 @@ export class ActionButtons extends LitElement {
 
         const vacuumState = stateObj.state as VacuumState;
 
-        const useSelectionButtons = (this.activeTab === "room" || this.activeTab === "zone") && this.hasSelection;
+        const useSelectionButtons = this.activeTab !== "all" && this.hasSelection;
 
         const [primary, secondary] = useSelectionButtons
             ? this._getSelectionButtons()

@@ -3,6 +3,15 @@ import { property } from "lit/decorators.js";
 import { safeCustomElement } from "../utils/define-element";
 
 import { localize } from "../localize/localize";
+import { CardTab } from "../model/map_mode/card-tabs";
+
+/** Icône de chaque onglet. */
+const TAB_ICONS: Record<CardTab, string> = {
+    room: "mdi:floor-plan",
+    all: "mdi:home",
+    zone: "mdi:select-drag",
+    spot: "mdi:map-marker-radius",
+};
 
 @safeCustomElement("dreame-tab-selector")
 export class DreameTabSelector extends LitElement {
@@ -11,6 +20,10 @@ export class DreameTabSelector extends LitElement {
 
     @property({ type: String })
     public language = "";
+
+    /** Onglets affichés, dans l'ordre (« Point » n'existe que si la carte sait le servir). */
+    @property({ attribute: false })
+    public tabs: CardTab[] = ["room", "all", "zone"];
 
     static get styles(): CSSResultGroup {
         return css`
@@ -35,9 +48,9 @@ export class DreameTabSelector extends LitElement {
                 top: 3px;
                 bottom: 3px;
                 left: 3px;
-                /* 3 segments : largeur = (track - 2×3px padding - 2×4px gaps) / 3 ;
+                /* N segments : largeur = (track - 2×3px padding - (N-1)×4px gaps) / N ;
                    le pas de glissement = sa propre largeur + le gap. */
-                width: calc((100% - 6px - 8px) / 3);
+                width: calc((100% - 6px - (var(--dvc-tab-count, 3) - 1) * 4px) / var(--dvc-tab-count, 3));
                 border-radius: 11px;
                 background: var(--dvc-glass-tint-strong, var(--card-background-color, #fff));
                 box-shadow: var(--dvc-shadow-1);
@@ -101,60 +114,41 @@ export class DreameTabSelector extends LitElement {
         `;
     }
 
-    private static readonly _TAB_ORDER = ["room", "all", "zone"];
-
     protected render(): TemplateResult {
-        const tabIndex = Math.max(0, DreameTabSelector._TAB_ORDER.indexOf(this.activeTab));
+        const tabIndex = Math.max(0, this.tabs.indexOf(this.activeTab as CardTab));
         return html`
             <div
                 class="tabs"
                 part="tabs"
                 role="tablist"
-                style="--dvc-tab-index: ${tabIndex}"
+                style="--dvc-tab-index: ${tabIndex}; --dvc-tab-count: ${this.tabs.length}"
                 @keydown=${this._handleTablistKeydown}
             >
                 <div class="tab-indicator" aria-hidden="true"></div>
-                <button
-                    class="tab ${this.activeTab === "room" ? "active" : ""}"
-                    part="tab tab-room${this.activeTab === "room" ? " tab-active" : ""}"
-                    role="tab"
-                    aria-selected=${this.activeTab === "room"}
-                    tabindex=${this.activeTab === "room" ? "0" : "-1"}
-                    @click=${(): void => this._selectTab("room")}
-                >
-                    <ha-icon icon="mdi:floor-plan"></ha-icon>
-                    ${localize("dreame_ui.tab.room", this.language)}
-                </button>
-                <button
-                    class="tab ${this.activeTab === "all" ? "active" : ""}"
-                    part="tab tab-all${this.activeTab === "all" ? " tab-active" : ""}"
-                    role="tab"
-                    aria-selected=${this.activeTab === "all"}
-                    tabindex=${this.activeTab === "all" ? "0" : "-1"}
-                    @click=${(): void => this._selectTab("all")}
-                >
-                    <ha-icon icon="mdi:home"></ha-icon>
-                    ${localize("dreame_ui.tab.all", this.language)}
-                </button>
-                <button
-                    class="tab ${this.activeTab === "zone" ? "active" : ""}"
-                    part="tab tab-zone${this.activeTab === "zone" ? " tab-active" : ""}"
-                    role="tab"
-                    aria-selected=${this.activeTab === "zone"}
-                    tabindex=${this.activeTab === "zone" ? "0" : "-1"}
-                    @click=${(): void => this._selectTab("zone")}
-                >
-                    <ha-icon icon="mdi:select-drag"></ha-icon>
-                    ${localize("dreame_ui.tab.zone", this.language)}
-                </button>
+                ${this.tabs.map((tab) => {
+                    const active = this.activeTab === tab;
+                    return html`
+                        <button
+                            class="tab ${active ? "active" : ""}"
+                            part="tab tab-${tab}${active ? " tab-active" : ""}"
+                            role="tab"
+                            aria-selected=${active}
+                            tabindex=${active ? "0" : "-1"}
+                            @click=${(): void => this._selectTab(tab)}
+                        >
+                            <ha-icon icon=${TAB_ICONS[tab]}></ha-icon>
+                            ${localize(`dreame_ui.tab.${tab}`, this.language)}
+                        </button>
+                    `;
+                })}
             </div>
         `;
     }
 
     /** Pattern WAI-ARIA tabs : flèches gauche/droite (avec wrap) + Home/End. */
     private _handleTablistKeydown(ev: KeyboardEvent): void {
-        const order = DreameTabSelector._TAB_ORDER;
-        const current = order.indexOf(this.activeTab);
+        const order = this.tabs;
+        const current = order.indexOf(this.activeTab as CardTab);
         let next: number;
         switch (ev.key) {
             case "ArrowRight":

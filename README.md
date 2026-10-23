@@ -36,7 +36,12 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 ### Zone cleaning mode
 
 - **Manual rectangle drawing** on the map
-- **Repeat counter** (x1, x2, x3) for zone and room cleaning
+- **Repeat counter** (x1, x2, x3) for zone, room and spot cleaning
+
+### Spot cleaning mode
+
+- **Spot tab**: tap the map to place a point, pick 1 to 3 passes, then clean (`dreame_vacuum.vacuum_clean_spot`)
+- Shown only when a map mode serves `vacuum_clean_spot` (the default Dreame modes do); hide it with `show_spot: false`
 
 ### Accessibility (5.2.2+)
 
@@ -128,6 +133,7 @@ vacuum_platform: tasshackDreameVacuum
 | `calibration_source.camera` | boolean | `true` | Use camera calibration points |
 | `vacuum_platform` | string | `tasshackDreameVacuum` | Platform identifier |
 | `show_title` | boolean | `false` | Show device name in the header |
+| `show_spot` | boolean | `true` | Show the Spot tab (spot cleaning) next to Room / All / Zone |
 | `map_locked` | boolean | `false` | Disable map pan/zoom |
 | `two_finger_pan` | boolean | `false` | Require two fingers to pan |
 | `clean_selection_on_start` | boolean | `true` | Clear the current selection when a clean starts |

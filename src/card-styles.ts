@@ -650,6 +650,51 @@ export const cardStyles: CSSResultGroup = css`
         border-radius: 50%;
     }
 
+    /* Onglet « Point » : le toucher pose le point, d'où le curseur en croix. */
+    #svg-wrapper.spot-mode {
+        cursor: crosshair;
+    }
+
+    /* Le point manuel par défaut (mode « aller à ») est un fin cercle : en mode Point,
+       un repère plein et cerclé, lisible sur toutes les couleurs de pièce. */
+    #svg-wrapper.spot-mode .manual-point-wrapper {
+        stroke: var(--card-background-color, #fff);
+        stroke-width: calc(2.5px / var(--map-scale));
+        --radius: calc(9px / var(--map-scale));
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+    }
+
+    #svg-wrapper.spot-mode .manual-point {
+        fill: var(--primary-color, #03a9f4);
+    }
+
+    /* Consigne discrète en bas à gauche de la carte tant qu'aucun point n'est posé
+       (le haut est pris par l'en-tête d'état, la droite par les contrôles). */
+    .map-hint {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: calc(100% - 76px);
+        padding: 6px 12px;
+        border-radius: var(--dvc-radius-pill, 980px);
+        background: var(--dvc-glass-tint);
+        -webkit-backdrop-filter: var(--dvc-glass-blur);
+        backdrop-filter: var(--dvc-glass-blur);
+        border: 0.5px solid var(--dvc-hairline);
+        box-shadow: var(--dvc-shadow-1);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        font-weight: 510;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        --mdc-icon-size: 16px;
+    }
+
     .cycle-counter {
         font-size: 14px;
         font-weight: 700;

@@ -103,6 +103,7 @@ describe("dreame-vacuum-card-editor", () => {
                 show_title: false,
                 show_care: true,
                 show_settings: true,
+                show_spot: true,
                 appearance: "premium",
                 language: "",
             });
