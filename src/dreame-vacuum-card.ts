@@ -61,6 +61,7 @@ import { buildSuggestedConfig, suggestForEntity } from "./utils/suggestion";
 import { PredefinedPoint } from "./model/map_objects/predefined-point";
 import { PredefinedMultiRectangle } from "./model/map_objects/predefined-multi-rectangle";
 import { Room } from "./model/map_objects/room";
+import { findRoomName } from "./utils/room-name";
 import { areAllEntitiesDefined, isOldConfig, validateConfig } from "./config-validators";
 import { needsAutoMapSource, withAutoMapSource } from "./utils/auto-map-source";
 import { MapMode } from "./model/map_mode/map-mode";
@@ -730,6 +731,7 @@ export class DreameVacuumCard extends LitElement {
                         ? this._showCalibrationSourceFailedWarning()
                         : this._showInvalidCalibrationWarning()
                 )}
+                ${this._renderRoomChips()}
                 <dreame-cleaning-mode-chip .hass=${this.hass} .entityId=${preset.entity}></dreame-cleaning-mode-chip>
                 <dreame-tab-selector
                     .activeTab=${this.activeTab}
@@ -773,6 +775,42 @@ export class DreameVacuumCard extends LitElement {
                 }
             </ha-card>
         `;
+    }
+
+    /** Mode Pièce : les pièces en puces, en plus du toucher sur la carte. Une petite pièce
+     *  (W.C, cellier) est difficile à viser au doigt ; la puce affiche aussi le rang de la
+     *  pièce dans la sélection, qui est l'ordre de nettoyage envoyé. */
+    private _renderRoomChips(): TemplateResult | typeof nothing {
+        if (this.activeTab !== "room" || this.selectableRooms.length === 0) return nothing;
+        return html`<div class="room-chips" role="group" aria-label="${this._localize("dreame_ui.tab.room")}">
+            ${this.selectableRooms.map((room) => {
+                const rank = this.selectedRooms.indexOf(room) + 1;
+                return html`<button
+                    class="room-chip ${rank ? "selected" : ""}"
+                    aria-pressed="${rank > 0}"
+                    @click=${() => this._toggleRoomChip(room)}
+                >
+                    ${rank ? html`<span class="room-chip-rank">${rank}</span>` : nothing}${this._roomName(room)}
+                </button>`;
+            })}
+        </div>`;
+    }
+
+    private _roomName(room: Room): string {
+        return (
+            findRoomName(
+                this.hass,
+                this.currentPreset?.entity,
+                room.toVacuum(),
+                this.currentPreset?.map_source?.camera
+            ) ?? room.name
+        );
+    }
+
+    private async _toggleRoomChip(room: Room): Promise<void> {
+        await room.toggleFromHitTest();
+        this._overlayDirty = true;
+        this.requestUpdate();
     }
 
     private _hasActiveSelection(): boolean {
