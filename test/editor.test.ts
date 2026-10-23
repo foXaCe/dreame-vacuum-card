@@ -106,6 +106,7 @@ describe("dreame-vacuum-card-editor", () => {
                 show_spot: true,
                 show_remote: true,
                 show_history: true,
+                panel_position: "bottom",
                 appearance: "premium",
                 language: "",
             });
@@ -219,6 +220,26 @@ describe("dreame-vacuum-card-editor", () => {
             });
             const ev = handler.mock.calls[0][0] as CustomEvent;
             expect(ev.detail.config.robot_overlay).toBe(true);
+        });
+
+        it("panel_position : « left » stocké, « bottom » (défaut) retiré du YAML", async () => {
+            const el = makeEditor();
+            el.hass = makeHass();
+            el.setConfig(baseConfig());
+            await mount(el);
+            const handler = vi.fn();
+            el.addEventListener("config-changed", handler);
+            const emit = (panel_position: string) =>
+                emitValueChanged(el, {
+                    entity: "vacuum.robot",
+                    map_source: { camera: "camera.robot" },
+                    display: { show_title: false, appearance: "premium", language: "", panel_position },
+                    map_behavior: {},
+                });
+            emit("left");
+            expect((handler.mock.calls[0][0] as CustomEvent).detail.config.panel_position).toBe("left");
+            emit("bottom");
+            expect("panel_position" in (handler.mock.calls[1][0] as CustomEvent).detail.config).toBe(false);
         });
 
         it("maps display.appearance 'minimal' to config.appearance === 'minimal'", async () => {

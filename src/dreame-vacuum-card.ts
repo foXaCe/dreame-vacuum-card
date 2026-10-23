@@ -574,6 +574,8 @@ export class DreameVacuumCard extends LitElement {
         // différent de « Invalid calibration » (points géométriquement dégénérés).
         const calibrationSourceFailed = !!this.coordinatesConverter?.calibrationSourceFailed;
 
+        // Boutons de panneaux en colonne à gauche de la carte (barre latérale).
+        const sidePanels = this.config.panel_position === "left";
         const hasSelection = this._hasActiveSelection();
         const tabs = this._visibleTabs();
 
@@ -646,169 +648,182 @@ export class DreameVacuumCard extends LitElement {
                 data-appearance="${this.config.appearance ?? "premium"}"
                 style="--map-scale: ${this.mapScale}; --real-scale: ${this.realScale};"
             >
-                <div class="map-wrapper ${this.config.show_title ? "with-title" : ""}" part="map-wrapper">
-                    <dreame-status-header
-                        .hass=${this.hass}
-                        .entityId=${preset.entity}
-                        .showTitle=${this.config.show_title ?? false}
-                    ></dreame-status-header>
-                    <div class="map-container ${this.mapLoaded ? "" : "map-loading"}" part="map">
-                        <dreame-pinch-zoom
-                            min-scale="0.5"
-                            id="map-zoomer"
-                            style="--dvc-map-aspect: ${
-                                this.realImageWidth && this.realImageHeight
-                                    ? this.realImageWidth / this.realImageHeight
-                                    : 100
-                            };"
-                            @change="${this._calculateScale}"
-                            two-finger-pan="${preset.two_finger_pan}"
-                            locked="${this.mapLocked}"
-                            no-default-pan="${this.mapLocked || preset.two_finger_pan}"
-                            style="touch-action: none;"
-                        >
-                            ${mapZoomerContent}
-                        </dreame-pinch-zoom>
-                        ${this.mapLoaded ? null : html`<div id="map-skeleton" aria-hidden="true"></div>`}
-                    </div>
-                    <div id="map-zoomer-overlay">
-                        <div class="map-zoom-icons">
-                            <ha-icon
-                                icon="${this.mapLocked ? "mdi:lock" : "mdi:lock-open-variant"}"
-                                class="icon-on-map clickable ripple ${this.mapLocked ? "lock-active" : ""}"
-                                role="button"
-                                tabindex="0"
-                                aria-pressed="${this.mapLocked ? "true" : "false"}"
-                                aria-label="${this._localize(
-                                    this.mapLocked ? "dreame_ui.map.unlock" : "dreame_ui.map.lock"
-                                )}"
-                                @click="${this._toggleMapLock}"
-                                @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._toggleMapLock)}"
-                            ></ha-icon>
-                            ${
-                                this.activeTab === "zone"
-                                    ? html`
-                                          <ha-icon
-                                              icon="mdi:plus"
-                                              class="icon-on-map clickable ripple"
-                                              role="button"
-                                              tabindex="0"
-                                              aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
-                                              @click="${() => this._addRectangle()}"
-                                              @keydown="${(e: KeyboardEvent) =>
-                                                  this._handleIconKey(e, () => this._addRectangle())}"
-                                          ></ha-icon>
-                                      `
-                                    : null
-                            }
-                            ${
-                                this.activeTab === "zone" || this.activeTab === "room" || this.activeTab === "spot"
-                                    ? html`
-                                          <div
-                                              class="icon-on-map clickable ripple cycle-counter"
-                                              role="button"
-                                              tabindex="0"
-                                              aria-label="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
-                                              title="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
-                                              @click="${this._cycleRepeats}"
-                                              @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
-                                          >
-                                              x${this.repeats}
-                                          </div>
-                                      `
-                                    : null
-                            }
-                            <ha-icon
-                                icon="mdi:image-filter-center-focus"
-                                class="icon-on-map clickable ripple"
-                                role="button"
-                                tabindex="0"
-                                aria-label="${this._localize("dreame_ui.map.recenter")}"
-                                @click="${this._restoreMap}"
-                                @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._restoreMap)}"
-                            ></ha-icon>
+                <div class="layout ${sidePanels ? "side" : ""}">
+                    <div class="main">
+                        <div class="map-wrapper ${this.config.show_title ? "with-title" : ""}" part="map-wrapper">
+                            <dreame-status-header
+                                .hass=${this.hass}
+                                .entityId=${preset.entity}
+                                .showTitle=${this.config.show_title ?? false}
+                            ></dreame-status-header>
+                            <div class="map-container ${this.mapLoaded ? "" : "map-loading"}" part="map">
+                                <dreame-pinch-zoom
+                                    min-scale="0.5"
+                                    id="map-zoomer"
+                                    style="--dvc-map-aspect: ${
+                                        this.realImageWidth && this.realImageHeight
+                                            ? this.realImageWidth / this.realImageHeight
+                                            : 100
+                                    };"
+                                    @change="${this._calculateScale}"
+                                    two-finger-pan="${preset.two_finger_pan}"
+                                    locked="${this.mapLocked}"
+                                    no-default-pan="${this.mapLocked || preset.two_finger_pan}"
+                                    style="touch-action: none;"
+                                >
+                                    ${mapZoomerContent}
+                                </dreame-pinch-zoom>
+                                ${this.mapLoaded ? null : html`<div id="map-skeleton" aria-hidden="true"></div>`}
+                            </div>
+                            <div id="map-zoomer-overlay">
+                                <div class="map-zoom-icons">
+                                    <ha-icon
+                                        icon="${this.mapLocked ? "mdi:lock" : "mdi:lock-open-variant"}"
+                                        class="icon-on-map clickable ripple ${this.mapLocked ? "lock-active" : ""}"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-pressed="${this.mapLocked ? "true" : "false"}"
+                                        aria-label="${this._localize(
+                                            this.mapLocked ? "dreame_ui.map.unlock" : "dreame_ui.map.lock"
+                                        )}"
+                                        @click="${this._toggleMapLock}"
+                                        @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._toggleMapLock)}"
+                                    ></ha-icon>
+                                    ${
+                                        this.activeTab === "zone"
+                                            ? html`
+                                                  <ha-icon
+                                                      icon="mdi:plus"
+                                                      class="icon-on-map clickable ripple"
+                                                      role="button"
+                                                      tabindex="0"
+                                                      aria-label="${this._localize("dreame_ui.map.add_rectangle")}"
+                                                      @click="${() => this._addRectangle()}"
+                                                      @keydown="${(e: KeyboardEvent) =>
+                                                          this._handleIconKey(e, () => this._addRectangle())}"
+                                                  ></ha-icon>
+                                              `
+                                            : null
+                                    }
+                                    ${
+                                        this.activeTab === "zone" ||
+                                        this.activeTab === "room" ||
+                                        this.activeTab === "spot"
+                                            ? html`
+                                                  <div
+                                                      class="icon-on-map clickable ripple cycle-counter"
+                                                      role="button"
+                                                      tabindex="0"
+                                                      aria-label="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
+                                                      title="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
+                                                      @click="${this._cycleRepeats}"
+                                                      @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
+                                                  >
+                                                      x${this.repeats}
+                                                  </div>
+                                              `
+                                            : null
+                                    }
+                                    <ha-icon
+                                        icon="mdi:image-filter-center-focus"
+                                        class="icon-on-map clickable ripple"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-label="${this._localize("dreame_ui.map.recenter")}"
+                                        @click="${this._restoreMap}"
+                                        @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._restoreMap)}"
+                                    ></ha-icon>
+                                </div>
+                                ${
+                                    this.activeTab === "spot" && !this.selectedManualPoint
+                                        ? html`<div class="map-hint" role="status">
+                                              <ha-icon icon="mdi:gesture-tap"></ha-icon>
+                                              ${this._localize("dreame_ui.map.spot_hint")}
+                                          </div>`
+                                        : null
+                                }
+                            </div>
                         </div>
+                        ${conditional(!validCalibration, () =>
+                            calibrationSourceFailed
+                                ? this._showCalibrationSourceFailedWarning()
+                                : this._showInvalidCalibrationWarning()
+                        )}
+                        ${this._renderRoomChips()}
+                        <dreame-cleaning-mode-chip
+                            .hass=${this.hass}
+                            .entityId=${preset.entity}
+                        ></dreame-cleaning-mode-chip>
+                        <dreame-tab-selector
+                            .activeTab=${this.activeTab}
+                            .tabs=${tabs}
+                            .language=${this.hass?.locale?.language ?? ""}
+                            @tab-changed=${(e: CustomEvent) => this._handleTabChange(e.detail.tab)}
+                        ></dreame-tab-selector>
+                        <dreame-cleaning-progress-bar
+                            .hass=${this.hass}
+                            .entityId=${preset.entity}
+                        ></dreame-cleaning-progress-bar>
+                        <dreame-action-buttons
+                            .hass=${this.hass}
+                            .entityId=${preset.entity}
+                            .activeTab=${this.activeTab}
+                            .hasSelection=${hasSelection}
+                            .selectionCount=${this.selectedRooms.length + this.selectedPredefinedRectangles.length}
+                            .canAppendRooms=${this._getRoomsInProgress().length > 0 && this.activeTab === "room"}
+                            @action-run=${() => this._run(false)}
+                            @action-append=${() => this._runAppend()}
+                            @action-cancel=${() => this._clearSelection()}
+                        ></dreame-action-buttons>
+                    </div>
+                    <div class="panel-bar" @dreame-panel-open=${this._onPanelOpen}>
                         ${
-                            this.activeTab === "spot" && !this.selectedManualPoint
-                                ? html`<div class="map-hint" role="status">
-                                      <ha-icon icon="mdi:gesture-tap"></ha-icon>
-                                      ${this._localize("dreame_ui.map.spot_hint")}
-                                  </div>`
-                                : null
+                            showCare
+                                ? html`<dreame-care-panel
+                                      tab
+                                      ?side=${sidePanels}
+                                      .hass=${this.hass}
+                                      .entityId=${preset.entity}
+                                      .thresholds=${{
+                                          warning: this.config.care_warning ?? DEFAULT_CARE_THRESHOLDS.warning,
+                                          critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
+                                      }}
+                                  ></dreame-care-panel>`
+                                : nothing
+                        }
+                        ${
+                            this.config.show_settings !== false
+                                ? html`<dreame-settings-panel
+                                      tab
+                                      ?side=${sidePanels}
+                                      .hass=${this.hass}
+                                      .entityId=${preset.entity}
+                                  ></dreame-settings-panel>`
+                                : nothing
+                        }
+                        ${
+                            this.config.show_remote !== false
+                                ? html`<dreame-remote-panel
+                                      tab
+                                      ?side=${sidePanels}
+                                      .hass=${this.hass}
+                                      .entityId=${preset.entity}
+                                      .stateSensorId=${stateSensorId}
+                                  ></dreame-remote-panel>`
+                                : nothing
+                        }
+                        ${
+                            this.config.show_history !== false
+                                ? html`<dreame-history-panel
+                                      tab
+                                      ?side=${sidePanels}
+                                      .hass=${this.hass}
+                                      .entityId=${preset.entity}
+                                      .cameraId=${preset.map_source?.camera}
+                                  ></dreame-history-panel>`
+                                : nothing
                         }
                     </div>
-                </div>
-                ${conditional(!validCalibration, () =>
-                    calibrationSourceFailed
-                        ? this._showCalibrationSourceFailedWarning()
-                        : this._showInvalidCalibrationWarning()
-                )}
-                ${this._renderRoomChips()}
-                <dreame-cleaning-mode-chip .hass=${this.hass} .entityId=${preset.entity}></dreame-cleaning-mode-chip>
-                <dreame-tab-selector
-                    .activeTab=${this.activeTab}
-                    .tabs=${tabs}
-                    .language=${this.hass?.locale?.language ?? ""}
-                    @tab-changed=${(e: CustomEvent) => this._handleTabChange(e.detail.tab)}
-                ></dreame-tab-selector>
-                <dreame-cleaning-progress-bar
-                    .hass=${this.hass}
-                    .entityId=${preset.entity}
-                ></dreame-cleaning-progress-bar>
-                <dreame-action-buttons
-                    .hass=${this.hass}
-                    .entityId=${preset.entity}
-                    .activeTab=${this.activeTab}
-                    .hasSelection=${hasSelection}
-                    .selectionCount=${this.selectedRooms.length + this.selectedPredefinedRectangles.length}
-                    .canAppendRooms=${this._getRoomsInProgress().length > 0 && this.activeTab === "room"}
-                    @action-run=${() => this._run(false)}
-                    @action-append=${() => this._runAppend()}
-                    @action-cancel=${() => this._clearSelection()}
-                ></dreame-action-buttons>
-                <div class="panel-bar" @dreame-panel-open=${this._onPanelOpen}>
-                    ${
-                        showCare
-                            ? html`<dreame-care-panel
-                                  tab
-                                  .hass=${this.hass}
-                                  .entityId=${preset.entity}
-                                  .thresholds=${{
-                                      warning: this.config.care_warning ?? DEFAULT_CARE_THRESHOLDS.warning,
-                                      critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
-                                  }}
-                              ></dreame-care-panel>`
-                            : nothing
-                    }
-                    ${
-                        this.config.show_settings !== false
-                            ? html`<dreame-settings-panel
-                                  tab
-                                  .hass=${this.hass}
-                                  .entityId=${preset.entity}
-                              ></dreame-settings-panel>`
-                            : nothing
-                    }
-                    ${
-                        this.config.show_remote !== false
-                            ? html`<dreame-remote-panel
-                                  tab
-                                  .hass=${this.hass}
-                                  .entityId=${preset.entity}
-                                  .stateSensorId=${stateSensorId}
-                              ></dreame-remote-panel>`
-                            : nothing
-                    }
-                    ${
-                        this.config.show_history !== false
-                            ? html`<dreame-history-panel
-                                  tab
-                                  .hass=${this.hass}
-                                  .entityId=${preset.entity}
-                                  .cameraId=${preset.map_source?.camera}
-                              ></dreame-history-panel>`
-                            : nothing
-                    }
                 </div>
             </ha-card>
         `;

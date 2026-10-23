@@ -473,14 +473,17 @@
             "appearance": "Apparence",
             "show_spot": "Afficher l'onglet Point",
             "show_remote": "Afficher la télécommande",
-            "show_history": "Afficher l'historique"
+            "show_history": "Afficher l'historique",
+            "panel_position": "Position des boutons de panneaux"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"
         },
         "option": {
             "appearance_premium": "Premium (effets translucides)",
-            "appearance_minimal": "Minimale (opaque, sans animations ambiantes)"
+            "appearance_minimal": "Minimale (opaque, sans animations ambiantes)",
+            "panel_position_bottom": "En bas (rangée)",
+            "panel_position_left": "À gauche (barre latérale)"
         }
     }
 }

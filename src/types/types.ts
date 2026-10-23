@@ -59,6 +59,9 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
     readonly show_remote?: boolean;
     /** Panneau « Historique » : derniers nettoyages et photos d'obstacles (défaut : affiché). */
     readonly show_history?: boolean;
+    /** Place des boutons de panneaux : `bottom` (défaut, rangée sous la carte) ou `left`
+     *  (colonne à gauche de la carte, comme une barre latérale). */
+    readonly panel_position?: "bottom" | "left";
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {

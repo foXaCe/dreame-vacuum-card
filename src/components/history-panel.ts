@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../utils/define-element";
+import { sidePanelStyles } from "./panel-tab-styles";
 
 import { forwardHaptic } from "../ha";
 import { HomeAssistantFixed } from "../types/fixes";
@@ -265,274 +266,277 @@ export class HistoryPanel extends LitElement {
     }
 
     public static get styles(): CSSResultGroup {
-        return css`
-            /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
+        return [
+            sidePanelStyles,
+            css`
+                /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
                l'hôte disparaît du rendu (display: contents) pour que les boutons partagent la
                rangée, et le contenu ouvert passe à la ligne sur toute la largeur. */
-            :host([tab]) {
-                display: contents;
-            }
-            :host([tab]) .toggle {
-                position: relative;
-                flex: 1 1 0;
-                min-width: 0;
-                width: auto;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                min-height: 56px;
-                padding: 8px 4px;
-                font-size: 12px;
-                text-align: center;
-            }
-            :host([tab]) .toggle .grow {
-                flex: none;
-                max-width: 100%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            :host([tab]) .toggle .chevron,
-            :host([tab]) .toggle .muted {
-                display: none !important;
-            }
-            :host([tab]) .toggle[aria-expanded="true"] {
-                background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
-            }
-            :host([tab]) .toggle[aria-expanded="true"] ha-icon {
-                color: var(--primary-color);
-            }
-            :host([tab]) .toggle .badge {
-                position: absolute;
-                top: 4px;
-                right: 6px;
-                min-width: 18px;
-                height: 18px;
-                font-size: 11px;
-            }
-            :host([tab]) .content {
-                order: 1;
-                flex-basis: 100%;
-                width: 100%;
-                box-sizing: border-box;
-            }
-            :host {
-                display: block;
-                padding: 0 16px 16px;
-                color: var(--primary-text-color);
-            }
-            button {
-                font: inherit;
-                color: inherit;
-            }
-            button:focus-visible {
-                outline: 2px solid var(--primary-color);
-                outline-offset: 2px;
-            }
-            .toggle {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                width: 100%;
-                min-height: 44px;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 14px;
-                background: var(--secondary-background-color);
-                font-size: 14px;
-                font-weight: 590;
-                text-align: start;
-                cursor: pointer;
-            }
-            ha-icon {
-                --mdc-icon-size: 20px;
-                color: var(--secondary-text-color);
-                flex: none;
-            }
-            .grow {
-                flex: 1;
-                min-width: 0;
-            }
-            .muted {
-                color: var(--secondary-text-color);
-                font-size: 13px;
-            }
-            .chevron {
-                transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
-            }
-            .chevron.open {
-                transform: rotate(180deg);
-            }
-            .content {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                padding-top: 10px;
-            }
-            .runs {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                max-height: 232px;
-                overflow-y: auto;
-                overscroll-behavior: contain;
-            }
-            .run {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                width: 100%;
-                min-height: 52px;
-                padding: 6px 10px;
-                border: none;
-                border-radius: 12px;
-                background: transparent;
-                text-align: start;
-                cursor: pointer;
-            }
-            @media (hover: hover) {
-                .run:hover {
+                :host([tab]) {
+                    display: contents;
+                }
+                :host([tab]) .toggle {
+                    position: relative;
+                    flex: 1 1 0;
+                    min-width: 0;
+                    width: auto;
+                    flex-direction: column;
+                    justify-content: center;
+                    gap: 4px;
+                    min-height: 56px;
+                    padding: 8px 4px;
+                    font-size: 12px;
+                    text-align: center;
+                }
+                :host([tab]) .toggle .grow {
+                    flex: none;
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                :host([tab]) .toggle .chevron,
+                :host([tab]) .toggle .muted {
+                    display: none !important;
+                }
+                :host([tab]) .toggle[aria-expanded="true"] {
+                    background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
+                }
+                :host([tab]) .toggle[aria-expanded="true"] ha-icon {
+                    color: var(--primary-color);
+                }
+                :host([tab]) .toggle .badge {
+                    position: absolute;
+                    top: 4px;
+                    right: 6px;
+                    min-width: 18px;
+                    height: 18px;
+                    font-size: 11px;
+                }
+                :host([tab]) .content {
+                    order: 1;
+                    flex-basis: 100%;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                :host {
+                    display: block;
+                    padding: 0 16px 16px;
+                    color: var(--primary-text-color);
+                }
+                button {
+                    font: inherit;
+                    color: inherit;
+                }
+                button:focus-visible {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                .toggle {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                    min-height: 44px;
+                    padding: 8px 12px;
+                    border: none;
+                    border-radius: 14px;
+                    background: var(--secondary-background-color);
+                    font-size: 14px;
+                    font-weight: 590;
+                    text-align: start;
+                    cursor: pointer;
+                }
+                ha-icon {
+                    --mdc-icon-size: 20px;
+                    color: var(--secondary-text-color);
+                    flex: none;
+                }
+                .grow {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .muted {
+                    color: var(--secondary-text-color);
+                    font-size: 13px;
+                }
+                .chevron {
+                    transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+                }
+                .chevron.open {
+                    transform: rotate(180deg);
+                }
+                .content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding-top: 10px;
+                }
+                .runs {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    max-height: 232px;
+                    overflow-y: auto;
+                    overscroll-behavior: contain;
+                }
+                .run {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
+                    min-height: 52px;
+                    padding: 6px 10px;
+                    border: none;
+                    border-radius: 12px;
+                    background: transparent;
+                    text-align: start;
+                    cursor: pointer;
+                }
+                @media (hover: hover) {
+                    .run:hover {
+                        background: var(--secondary-background-color);
+                    }
+                }
+                .run.on {
+                    background: color-mix(in oklab, var(--primary-color) 12%, transparent);
+                }
+                .run.on .kind {
+                    color: var(--primary-color);
+                }
+                .run .grow {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                .run-title {
+                    font-size: 14px;
+                    font-weight: 510;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .run .muted {
+                    font-size: 12px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .badge {
+                    flex: none;
+                    padding: 2px 8px;
+                    border-radius: 980px;
+                    font-size: 12px;
+                    font-weight: 510;
+                }
+                .badge.ok {
+                    color: var(--success-color, #43a047);
+                    background: color-mix(in oklab, var(--success-color, #43a047) 14%, transparent);
+                }
+                .badge.warn {
+                    color: var(--warning-color, #ffa600);
+                    background: color-mix(in oklab, var(--warning-color, #ffa600) 16%, transparent);
+                }
+                figure {
+                    margin: 0;
+                }
+                .map {
+                    display: grid;
+                    place-items: center;
+                    min-height: 160px;
+                    padding: 8px;
+                    border-radius: 14px;
                     background: var(--secondary-background-color);
                 }
-            }
-            .run.on {
-                background: color-mix(in oklab, var(--primary-color) 12%, transparent);
-            }
-            .run.on .kind {
-                color: var(--primary-color);
-            }
-            .run .grow {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            .run-title {
-                font-size: 14px;
-                font-weight: 510;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .run .muted {
-                font-size: 12px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .badge {
-                flex: none;
-                padding: 2px 8px;
-                border-radius: 980px;
-                font-size: 12px;
-                font-weight: 510;
-            }
-            .badge.ok {
-                color: var(--success-color, #43a047);
-                background: color-mix(in oklab, var(--success-color, #43a047) 14%, transparent);
-            }
-            .badge.warn {
-                color: var(--warning-color, #ffa600);
-                background: color-mix(in oklab, var(--warning-color, #ffa600) 16%, transparent);
-            }
-            figure {
-                margin: 0;
-            }
-            .map {
-                display: grid;
-                place-items: center;
-                min-height: 160px;
-                padding: 8px;
-                border-radius: 14px;
-                background: var(--secondary-background-color);
-            }
-            .map img {
-                display: block;
-                max-width: 100%;
-                max-height: 300px;
-                object-fit: contain;
-            }
-            .placeholder {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--secondary-text-color);
-                font-size: 13px;
-            }
-            .section-title {
-                margin-top: 4px;
-                color: var(--secondary-text-color);
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.02em;
-                text-transform: uppercase;
-            }
-            .photos {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-                gap: 8px;
-            }
-            .photo {
-                position: relative;
-                display: grid;
-                place-items: center;
-                aspect-ratio: 1;
-                padding: 0;
-                overflow: hidden;
-                border: 2px solid transparent;
-                border-radius: 12px;
-                background: var(--secondary-background-color);
-                cursor: pointer;
-            }
-            .photo.on {
-                border-color: var(--primary-color);
-            }
-            .photo img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-            .photo-label {
-                position: absolute;
-                inset: auto 0 0;
-                padding: 12px 6px 4px;
-                background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
-                color: #fff;
-                font-size: 11px;
-                font-weight: 510;
-                text-align: start;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .zoom {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .zoom-btn {
-                padding: 0;
-                border: none;
-                border-radius: 14px;
-                overflow: hidden;
-                background: var(--secondary-background-color);
-                cursor: zoom-out;
-            }
-            .zoom img {
-                display: block;
-                width: 100%;
-                max-height: 320px;
-                object-fit: contain;
-            }
-            figcaption {
-                color: var(--secondary-text-color);
-                font-size: 13px;
-            }
-            @media (prefers-reduced-motion: reduce) {
-                .chevron {
-                    transition: none;
+                .map img {
+                    display: block;
+                    max-width: 100%;
+                    max-height: 300px;
+                    object-fit: contain;
                 }
-            }
-        `;
+                .placeholder {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: var(--secondary-text-color);
+                    font-size: 13px;
+                }
+                .section-title {
+                    margin-top: 4px;
+                    color: var(--secondary-text-color);
+                    font-size: 12px;
+                    font-weight: 600;
+                    letter-spacing: 0.02em;
+                    text-transform: uppercase;
+                }
+                .photos {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+                    gap: 8px;
+                }
+                .photo {
+                    position: relative;
+                    display: grid;
+                    place-items: center;
+                    aspect-ratio: 1;
+                    padding: 0;
+                    overflow: hidden;
+                    border: 2px solid transparent;
+                    border-radius: 12px;
+                    background: var(--secondary-background-color);
+                    cursor: pointer;
+                }
+                .photo.on {
+                    border-color: var(--primary-color);
+                }
+                .photo img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+                .photo-label {
+                    position: absolute;
+                    inset: auto 0 0;
+                    padding: 12px 6px 4px;
+                    background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+                    color: #fff;
+                    font-size: 11px;
+                    font-weight: 510;
+                    text-align: start;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .zoom {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .zoom-btn {
+                    padding: 0;
+                    border: none;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    background: var(--secondary-background-color);
+                    cursor: zoom-out;
+                }
+                .zoom img {
+                    display: block;
+                    width: 100%;
+                    max-height: 320px;
+                    object-fit: contain;
+                }
+                figcaption {
+                    color: var(--secondary-text-color);
+                    font-size: 13px;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .chevron {
+                        transition: none;
+                    }
+                }
+            `,
+        ];
     }
 }
 

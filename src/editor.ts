@@ -87,6 +87,18 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
             { name: "show_remote", selector: { boolean: {} } },
             { name: "show_history", selector: { boolean: {} } },
             {
+                name: "panel_position",
+                selector: {
+                    select: {
+                        mode: "dropdown",
+                        options: [
+                            { value: "bottom", label: t("editor.option.panel_position_bottom") },
+                            { value: "left", label: t("editor.option.panel_position_left") },
+                        ],
+                    },
+                },
+            },
+            {
                 name: "appearance",
                 selector: {
                     select: {
@@ -147,6 +159,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
                 show_spot: this._config.show_spot ?? true,
                 show_remote: this._config.show_remote ?? true,
                 show_history: this._config.show_history ?? true,
+                panel_position: this._config.panel_position ?? "bottom",
                 appearance: this._config.appearance ?? "premium",
                 language: this._config.language ?? "",
             },
@@ -197,6 +210,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
                 show_spot?: boolean;
                 show_remote?: boolean;
                 show_history?: boolean;
+                panel_position?: string;
                 appearance?: string;
                 language?: string;
             };
@@ -221,6 +235,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             show_spot: value.display?.show_spot === false ? false : undefined,
             show_remote: value.display?.show_remote === false ? false : undefined,
             show_history: value.display?.show_history === false ? false : undefined,
+            panel_position: value.display?.panel_position === "left" ? "left" : undefined,
             // On ne stocke que l'écart au défaut (premium) pour garder le YAML propre.
             appearance: value.display?.appearance === "minimal" ? "minimal" : undefined,
             language: value.display?.language || undefined,
@@ -249,6 +264,9 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         }
         if (draft.show_history === undefined) {
             delete draft.show_history;
+        }
+        if (draft.panel_position === undefined) {
+            delete draft.panel_position;
         }
 
         // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`

@@ -473,14 +473,17 @@
             "appearance": "Appearance",
             "show_spot": "Show spot tab",
             "show_remote": "Show remote control",
-            "show_history": "Show history"
+            "show_history": "Show history",
+            "panel_position": "Panel buttons position"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"
         },
         "option": {
             "appearance_premium": "Premium (translucent effects)",
-            "appearance_minimal": "Minimal (opaque, no ambient animations)"
+            "appearance_minimal": "Minimal (opaque, no ambient animations)",
+            "panel_position_bottom": "Bottom (row)",
+            "panel_position_left": "Left (sidebar)"
         }
     }
 }

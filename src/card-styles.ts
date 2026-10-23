@@ -442,6 +442,33 @@ export const cardStyles: CSSResultGroup = css`
         padding: 0 16px 16px;
     }
 
+    /* Mise en page : par défaut, tout s'empile (les deux enveloppes s'effacent). */
+    .layout,
+    .layout > .main {
+        display: contents;
+    }
+    /* panel_position: left — boutons de panneaux en colonne à gauche de la carte. Les
+       boutons occupent les rangées 1 à 4 de la colonne 1, la carte et ses commandes la
+       colonne 2 ; le panneau ouvert se place en rangée 6, sous l'ensemble, pleine largeur
+       (cf. panel-tab-styles.ts). */
+    .layout.side {
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr);
+        grid-template-rows: repeat(4, auto) 1fr auto;
+        column-gap: 4px;
+        row-gap: 8px;
+        padding: 12px 0 16px 12px;
+    }
+    .layout.side > .main {
+        display: block;
+        grid-column: 2;
+        grid-row: 1 / 6;
+        min-width: 0;
+    }
+    .layout.side > .panel-bar {
+        display: contents;
+    }
+
     .room-chips {
         display: flex;
         flex-wrap: wrap;
