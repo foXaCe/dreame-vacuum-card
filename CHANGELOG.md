@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.12.0] - 2026-10-23
+
+### Added
+- **The map camera is found automatically.** A card configured with only `entity: vacuum.…` no longer fails with "Missing property: map_source": the card picks the map camera on the same device as the vacuum. Cameras hidden in Home Assistant are skipped, and the camera is now optional in the visual editor (7 languages).
+
+### Fixed
+- **The map no longer stays empty after a Home Assistant restart.** When the integration's first render was still running, the map image failed and the card kept a broken image until the map changed. The card now retries the image after an error (with a growing delay), and requests the first image only once. Use it with Dreame Vacuum 6.10.2 or newer, which keeps that first render.
+- The automatic map camera is picked up again when the camera's state arrives after the card has loaded.
+
 ## [5.11.4] - 2026-09-23
 
 ### Fixed
