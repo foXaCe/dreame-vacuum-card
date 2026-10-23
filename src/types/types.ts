@@ -51,6 +51,8 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
     readonly care_warning?: number;
     /** Seuil (%) sous lequel l'alerte devient critique (défaut 10). */
     readonly care_critical?: number;
+    /** Menu « Réglages » du robot sous la page Station et entretien (défaut : affiché). */
+    readonly show_settings?: boolean;
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {

@@ -373,6 +373,19 @@
                 "onboard_dirty_water_tank": "Onboard dirty water tank",
                 "tank_filter": "Tank filter"
             }
+        },
+        "settings": {
+            "title": "Settings",
+            "category": {
+                "cleaning": "Cleaning",
+                "mopping": "Mopping",
+                "carpet": "Carpet",
+                "dock": "Dock",
+                "obstacle": "Obstacles & camera",
+                "dnd_sound": "Do not disturb & sound",
+                "system": "System",
+                "other": "Other"
+            }
         }
     },
     "editor": {
@@ -391,6 +404,7 @@
         "label": {
             "show_title": "Show title",
             "show_care": "Show dock & care",
+            "show_settings": "Show settings",
             "name": "Title (optional)",
             "entity": "Vacuum entity (required)",
             "camera": "Camera entity",

@@ -102,6 +102,7 @@ describe("dreame-vacuum-card-editor", () => {
             expect(data.display).toEqual({
                 show_title: false,
                 show_care: true,
+                show_settings: true,
                 appearance: "premium",
                 language: "",
             });
@@ -406,7 +407,10 @@ describe("dreame-vacuum-card-editor", () => {
             await mount(el);
             const schema = (
                 haForm(el) as unknown as {
-                    schema: Array<{ name: string; schema?: Array<{ name: string; selector?: Record<string, unknown> }> }>;
+                    schema: Array<{
+                        name: string;
+                        schema?: Array<{ name: string; selector?: Record<string, unknown> }>;
+                    }>;
                 }
             ).schema;
             const display = schema.find((s) => s.name === "display");
@@ -425,8 +429,7 @@ describe("dreame-vacuum-card-editor", () => {
         el.hass = makeHass();
         el.setConfig(baseConfig());
         await mount(el);
-        const computeLabel = (haForm(el) as unknown as { computeLabel: (s: { name: string }) => string })
-            .computeLabel;
+        const computeLabel = (haForm(el) as unknown as { computeLabel: (s: { name: string }) => string }).computeLabel;
         expect(computeLabel({ name: "show_title" })).toBe("Show title");
     });
 });
