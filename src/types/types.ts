@@ -55,6 +55,8 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
     readonly show_settings?: boolean;
     /** Onglet « Point » (nettoyage par point) à côté de Pièce / Toutes / Zone (défaut : affiché). */
     readonly show_spot?: boolean;
+    /** Panneau « Télécommande » (croix directionnelle), quand le robot l'accepte (défaut : affiché). */
+    readonly show_remote?: boolean;
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {

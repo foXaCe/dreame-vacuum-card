@@ -388,6 +388,19 @@
                 "system": "System",
                 "other": "Other"
             }
+        },
+        "remote": {
+            "title": "Remote control",
+            "hint": "Press and hold an arrow to drive the robot.",
+            "forward": "Forward",
+            "backward": "Backward",
+            "left": "Turn left",
+            "right": "Turn right",
+            "stop": "Stop",
+            "speed": "Speed",
+            "speed_slow": "Slow",
+            "speed_normal": "Normal",
+            "speed_fast": "Fast"
         }
     },
     "editor": {
@@ -434,7 +447,8 @@
             "display": "Display",
             "map_behavior": "Map behavior",
             "appearance": "Appearance",
-            "show_spot": "Show spot tab"
+            "show_spot": "Show spot tab",
+            "show_remote": "Show remote control"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"
