@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.15.1] - 2026-10-23
+
+### Fixed
+- **The cleaning mode chip shows the running mode during a clean.** While the robot cleans, the integration makes the mode selects unavailable (the mode can't be changed mid-run) and the chip only showed "—". It now shows the current mode from the vacuum, translated like the select option (for example "CleanGenius · Deep cleaning"), read-only.
+
 ## [5.15.0] - 2026-10-23
 
 ### Added
