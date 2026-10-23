@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.14.0] - 2026-10-23
+
+### Added
+- **Settings menu.** A collapsible panel under Dock & care with the robot's settings sorted into Cleaning, Mopping, Carpet, Dock, Obstacles & camera, Do not disturb & sound and System (plus Other). Each setting is Home Assistant's own entity row (toggle, list, slider, time, button), with a short name. Settings the robot does not have, hidden ones, per-room ones and what Dock & care already covers are left out. New option `show_settings` (default `true`, also in the visual editor).
+- **Room chips in Room mode.** The rooms also appear as chips under the map: small rooms are easy to pick, and a selected room shows its rank in the selection. Names are the ones shown on the map (renamed rooms included).
+
+### Fixed
+- **The map no longer pushes the buttons off screen on wide dashboards.** Its height is now capped (`--dvc-map-max-height`, default `65vh`), centred, and zones and points follow the actual displayed size, also after a window resize.
+- The dock button reads "Return to base" in French ("Retour à la base") instead of "Station d'accueil", on one line.
+- The passes button tells how many passes are set in its tooltip and accessible label.
+
 ## [5.13.0] - 2026-10-23
 
 ### Added
