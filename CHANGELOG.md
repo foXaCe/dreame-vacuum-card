@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.16.0] - 2026-10-23
+
+### Changed
+- **The bottom panels take far less room.** Care, Settings, Remote and History were four full-width bars stacked on top of each other; they are now one row of compact buttons (icon, short label, care alert badge). The open panel unfolds under the row at full width, one at a time.
+- In French, the dock button now reads "Retour base", on one line on phones.
+
 ## [5.15.1] - 2026-10-23
 
 ### Fixed
