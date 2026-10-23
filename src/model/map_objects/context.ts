@@ -6,6 +6,7 @@ import { ManualRectangle } from "./manual-rectangle";
 import { CoordinatesConverter } from "./coordinates-converter";
 import { TranslatableString } from "../../types/types";
 import { MapMode } from "../map_mode/map-mode";
+import { CardTab } from "../map_mode/card-tabs";
 
 /** Dépendances injectées dans les objets de carte (callbacks vers l'état du composant).
  *  Objet nommé plutôt qu'une longue liste de paramètres positionnels : auto-documenté,
@@ -30,7 +31,7 @@ export interface ContextOptions {
     toggleEntity: (entity: string) => void;
     getCurrentMode: () => MapMode | undefined;
     activateRoomMode: () => void;
-    activeTab: () => "room" | "all" | "zone";
+    activeTab: () => CardTab;
 }
 
 export class Context {
@@ -53,7 +54,7 @@ export class Context {
     public readonly toggleEntity: (entity: string) => void;
     public readonly getCurrentMode: () => MapMode | undefined;
     public readonly activateRoomMode: () => void;
-    public readonly activeTab: () => "room" | "all" | "zone";
+    public readonly activeTab: () => CardTab;
 
     constructor(options: ContextOptions) {
         this.scale = options.scale;

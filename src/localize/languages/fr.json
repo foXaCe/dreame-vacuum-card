@@ -297,7 +297,8 @@
         "tab": {
             "room": "Pièce",
             "all": "Toutes",
-            "zone": "Zone"
+            "zone": "Zone",
+            "spot": "Point"
         },
         "action": {
             "clean": "Nettoyer",
@@ -316,7 +317,8 @@
             "unlock": "Déverrouiller la carte",
             "add_rectangle": "Ajouter une zone",
             "cycle_repeats": "Changer le nombre de répétitions",
-            "recenter": "Recentrer la carte"
+            "recenter": "Recentrer la carte",
+            "spot_hint": "Touchez la carte pour placer le point"
         },
         "status": {
             "ready": "Prêt"
@@ -431,7 +433,8 @@
             "map_source": "Source de la carte",
             "display": "Affichage",
             "map_behavior": "Comportement de la carte",
-            "appearance": "Apparence"
+            "appearance": "Apparence",
+            "show_spot": "Afficher l'onglet Point"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"

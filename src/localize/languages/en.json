@@ -297,7 +297,8 @@
         "tab": {
             "room": "Room",
             "all": "All",
-            "zone": "Zone"
+            "zone": "Zone",
+            "spot": "Spot"
         },
         "action": {
             "clean": "Clean",
@@ -316,7 +317,8 @@
             "unlock": "Unlock map",
             "add_rectangle": "Add rectangle",
             "cycle_repeats": "Cycle repeat count",
-            "recenter": "Recenter map"
+            "recenter": "Recenter map",
+            "spot_hint": "Tap the map to place the spot"
         },
         "status": {
             "ready": "Ready"
@@ -431,7 +433,8 @@
             "map_source": "Map source",
             "display": "Display",
             "map_behavior": "Map behavior",
-            "appearance": "Appearance"
+            "appearance": "Appearance",
+            "show_spot": "Show spot tab"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"

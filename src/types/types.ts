@@ -53,6 +53,8 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
     readonly care_critical?: number;
     /** Menu « Réglages » du robot sous la page Station et entretien (défaut : affiché). */
     readonly show_settings?: boolean;
+    /** Onglet « Point » (nettoyage par point) à côté de Pièce / Toutes / Zone (défaut : affiché). */
+    readonly show_spot?: boolean;
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {
