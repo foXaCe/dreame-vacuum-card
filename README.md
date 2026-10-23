@@ -148,6 +148,7 @@ vacuum_platform: tasshackDreameVacuum
 | `show_spot` | boolean | `true` | Show the Spot tab (spot cleaning) next to Room / All / Zone |
 | `show_remote` | boolean | `true` | Show the remote control panel when the robot can be driven |
 | `show_history` | boolean | `true` | Show the history panel (last cleanings and obstacle photos) |
+| `panel_position` | string | `bottom` | Where the panel buttons (Care, Settings, Remote, History) sit: `bottom` (row under the controls) or `left` (column beside the map, like a sidebar) |
 | `map_locked` | boolean | `false` | Disable map pan/zoom |
 | `two_finger_pan` | boolean | `false` | Require two fingers to pan |
 | `clean_selection_on_start` | boolean | `true` | Clear the current selection when a clean starts |

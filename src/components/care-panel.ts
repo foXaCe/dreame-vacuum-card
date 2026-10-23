@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../utils/define-element";
+import { sidePanelStyles } from "./panel-tab-styles";
 
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
@@ -340,294 +341,297 @@ export class CarePanel extends LitElement {
     }
 
     public static get styles(): CSSResultGroup {
-        return css`
-            /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
+        return [
+            sidePanelStyles,
+            css`
+                /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
                l'hôte disparaît du rendu (display: contents) pour que les boutons partagent la
                rangée, et le contenu ouvert passe à la ligne sur toute la largeur. */
-            :host([tab]) {
-                display: contents;
-            }
-            :host([tab]) .toggle {
-                position: relative;
-                flex: 1 1 0;
-                min-width: 0;
-                width: auto;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                min-height: 56px;
-                padding: 8px 4px;
-                font-size: 12px;
-                text-align: center;
-            }
-            :host([tab]) .toggle .grow {
-                flex: none;
-                max-width: 100%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            :host([tab]) .toggle .chevron,
-            :host([tab]) .toggle .muted {
-                display: none !important;
-            }
-            :host([tab]) .toggle[aria-expanded="true"] {
-                background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
-            }
-            :host([tab]) .toggle[aria-expanded="true"] ha-icon {
-                color: var(--primary-color);
-            }
-            :host([tab]) .toggle .badge {
-                position: absolute;
-                top: 4px;
-                right: 6px;
-                min-width: 18px;
-                height: 18px;
-                font-size: 11px;
-            }
-            :host([tab]) .content {
-                order: 1;
-                flex-basis: 100%;
-                width: 100%;
-                box-sizing: border-box;
-            }
-            :host {
-                display: block;
-                padding: 4px 16px 16px;
-                color: var(--primary-text-color);
-            }
-            .toggle {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                width: 100%;
-                min-height: 44px;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 14px;
-                background: var(--secondary-background-color);
-                color: inherit;
-                font: inherit;
-                font-size: 14px;
-                font-weight: 590;
-                text-align: start;
-                cursor: pointer;
-            }
-            .toggle:focus-visible {
-                outline: 2px solid var(--primary-color);
-                outline-offset: 2px;
-            }
-            .chevron {
-                transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
-            }
-            .chevron.open {
-                transform: rotate(180deg);
-            }
-            .badge {
-                min-width: 22px;
-                height: 22px;
-                padding: 0 6px;
-                border-radius: 11px;
-                display: inline-grid;
-                place-items: center;
-                font-size: 12px;
-                font-weight: 700;
-                color: #fff;
-                background: var(--warning-color, #ff9800);
-            }
-            .badge.crit {
-                background: var(--error-color, #f44336);
-            }
-            .content {
-                padding-top: 14px;
-            }
-            section + section {
-                margin-top: 16px;
-            }
-            h3 {
-                margin: 0 0 8px;
-                font-size: 15px;
-                font-weight: 600;
-            }
-            .head {
-                display: flex;
-                align-items: baseline;
-                justify-content: space-between;
-                gap: 8px;
-            }
-            .muted {
-                color: var(--secondary-text-color);
-                font-size: 13px;
-            }
-            .grow {
-                flex: 1;
-                min-width: 0;
-            }
-            ha-icon {
-                --mdc-icon-size: 20px;
-                color: var(--secondary-text-color);
-                flex: none;
-            }
-            .bar {
-                height: 6px;
-                border-radius: 3px;
-                background: color-mix(in srgb, var(--secondary-text-color) 18%, transparent);
-                overflow: hidden;
-                margin-top: 6px;
-            }
-            .bar i {
-                display: block;
-                height: 100%;
-                border-radius: inherit;
-                background: var(--success-color, #4caf50);
-            }
-            .warn .bar i {
-                background: var(--warning-color, #ff9800);
-            }
-            .crit .bar i {
-                background: var(--error-color, #f44336);
-            }
-            .alerts {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 16px;
-            }
-            .alert {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 10px 12px;
-                border-radius: 12px;
-                font-size: 14px;
-                background: color-mix(in srgb, var(--warning-color, #ff9800) 14%, transparent);
-            }
-            .alert.crit {
-                background: color-mix(in srgb, var(--error-color, #f44336) 14%, transparent);
-            }
-            .alert.warn ha-icon {
-                color: var(--warning-color, #ff9800);
-            }
-            .alert.crit ha-icon {
-                color: var(--error-color, #f44336);
-            }
-            .tanks {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 8px;
-                margin: 10px 0;
-            }
-            .tank {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                column-gap: 8px;
-                align-items: center;
-                padding: 8px 10px;
-                border-radius: 12px;
-                background: var(--secondary-background-color);
-            }
-            .tank ha-icon {
-                grid-row: span 2;
-            }
-            .tank b {
-                font-size: 14px;
-                font-weight: 600;
-            }
-            .tank.warn ha-icon,
-            .tank.warn b {
-                color: var(--warning-color, #ff9800);
-            }
-            .tiles {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-                gap: 8px;
-                margin-top: 10px;
-            }
-            .tile {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 6px;
-                min-height: 64px;
-                padding: 10px;
-                border: none;
-                border-radius: 14px;
-                background: var(--secondary-background-color);
-                color: inherit;
-                font: inherit;
-                font-size: 13px;
-                cursor: pointer;
-            }
-            .tile ha-icon {
-                color: var(--primary-color);
-            }
-            .tile.busy {
-                cursor: default;
-                opacity: 0.7;
-            }
-            .tile:focus-visible,
-            .chip:focus-visible {
-                outline: 2px solid var(--primary-color);
-                outline-offset: 2px;
-            }
-            .parts {
-                list-style: none;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            .parts li {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: 14px;
-            }
-            .row {
-                display: flex;
-                justify-content: space-between;
-                gap: 8px;
-            }
-            .icon-btn {
-                flex: none;
-                display: grid;
-                place-items: center;
-                width: 36px;
-                height: 36px;
-                border: none;
-                border-radius: 50%;
-                background: transparent;
-                cursor: pointer;
-            }
-            .icon-btn:hover {
-                background: var(--secondary-background-color);
-            }
-            .icon-btn:focus-visible {
-                outline: 2px solid var(--primary-color);
-                outline-offset: 2px;
-            }
-            .chip {
-                flex: none;
-                border: 1px solid var(--divider-color);
-                border-radius: 999px;
-                padding: 6px 12px;
-                background: transparent;
-                color: var(--primary-text-color);
-                font: inherit;
-                font-size: 13px;
-                cursor: pointer;
-                min-height: 32px;
-            }
-            .chip.armed {
-                border-color: var(--error-color, #f44336);
-                color: var(--error-color, #f44336);
-            }
-            .chip.ghost {
-                border-color: transparent;
-                color: var(--secondary-text-color);
-            }
-        `;
+                :host([tab]) {
+                    display: contents;
+                }
+                :host([tab]) .toggle {
+                    position: relative;
+                    flex: 1 1 0;
+                    min-width: 0;
+                    width: auto;
+                    flex-direction: column;
+                    justify-content: center;
+                    gap: 4px;
+                    min-height: 56px;
+                    padding: 8px 4px;
+                    font-size: 12px;
+                    text-align: center;
+                }
+                :host([tab]) .toggle .grow {
+                    flex: none;
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                :host([tab]) .toggle .chevron,
+                :host([tab]) .toggle .muted {
+                    display: none !important;
+                }
+                :host([tab]) .toggle[aria-expanded="true"] {
+                    background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
+                }
+                :host([tab]) .toggle[aria-expanded="true"] ha-icon {
+                    color: var(--primary-color);
+                }
+                :host([tab]) .toggle .badge {
+                    position: absolute;
+                    top: 4px;
+                    right: 6px;
+                    min-width: 18px;
+                    height: 18px;
+                    font-size: 11px;
+                }
+                :host([tab]) .content {
+                    order: 1;
+                    flex-basis: 100%;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                :host {
+                    display: block;
+                    padding: 4px 16px 16px;
+                    color: var(--primary-text-color);
+                }
+                .toggle {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                    min-height: 44px;
+                    padding: 8px 12px;
+                    border: none;
+                    border-radius: 14px;
+                    background: var(--secondary-background-color);
+                    color: inherit;
+                    font: inherit;
+                    font-size: 14px;
+                    font-weight: 590;
+                    text-align: start;
+                    cursor: pointer;
+                }
+                .toggle:focus-visible {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                .chevron {
+                    transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+                }
+                .chevron.open {
+                    transform: rotate(180deg);
+                }
+                .badge {
+                    min-width: 22px;
+                    height: 22px;
+                    padding: 0 6px;
+                    border-radius: 11px;
+                    display: inline-grid;
+                    place-items: center;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #fff;
+                    background: var(--warning-color, #ff9800);
+                }
+                .badge.crit {
+                    background: var(--error-color, #f44336);
+                }
+                .content {
+                    padding-top: 14px;
+                }
+                section + section {
+                    margin-top: 16px;
+                }
+                h3 {
+                    margin: 0 0 8px;
+                    font-size: 15px;
+                    font-weight: 600;
+                }
+                .head {
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: space-between;
+                    gap: 8px;
+                }
+                .muted {
+                    color: var(--secondary-text-color);
+                    font-size: 13px;
+                }
+                .grow {
+                    flex: 1;
+                    min-width: 0;
+                }
+                ha-icon {
+                    --mdc-icon-size: 20px;
+                    color: var(--secondary-text-color);
+                    flex: none;
+                }
+                .bar {
+                    height: 6px;
+                    border-radius: 3px;
+                    background: color-mix(in srgb, var(--secondary-text-color) 18%, transparent);
+                    overflow: hidden;
+                    margin-top: 6px;
+                }
+                .bar i {
+                    display: block;
+                    height: 100%;
+                    border-radius: inherit;
+                    background: var(--success-color, #4caf50);
+                }
+                .warn .bar i {
+                    background: var(--warning-color, #ff9800);
+                }
+                .crit .bar i {
+                    background: var(--error-color, #f44336);
+                }
+                .alerts {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-bottom: 16px;
+                }
+                .alert {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    background: color-mix(in srgb, var(--warning-color, #ff9800) 14%, transparent);
+                }
+                .alert.crit {
+                    background: color-mix(in srgb, var(--error-color, #f44336) 14%, transparent);
+                }
+                .alert.warn ha-icon {
+                    color: var(--warning-color, #ff9800);
+                }
+                .alert.crit ha-icon {
+                    color: var(--error-color, #f44336);
+                }
+                .tanks {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 8px;
+                    margin: 10px 0;
+                }
+                .tank {
+                    display: grid;
+                    grid-template-columns: auto 1fr;
+                    column-gap: 8px;
+                    align-items: center;
+                    padding: 8px 10px;
+                    border-radius: 12px;
+                    background: var(--secondary-background-color);
+                }
+                .tank ha-icon {
+                    grid-row: span 2;
+                }
+                .tank b {
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+                .tank.warn ha-icon,
+                .tank.warn b {
+                    color: var(--warning-color, #ff9800);
+                }
+                .tiles {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+                    gap: 8px;
+                    margin-top: 10px;
+                }
+                .tile {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                    min-height: 64px;
+                    padding: 10px;
+                    border: none;
+                    border-radius: 14px;
+                    background: var(--secondary-background-color);
+                    color: inherit;
+                    font: inherit;
+                    font-size: 13px;
+                    cursor: pointer;
+                }
+                .tile ha-icon {
+                    color: var(--primary-color);
+                }
+                .tile.busy {
+                    cursor: default;
+                    opacity: 0.7;
+                }
+                .tile:focus-visible,
+                .chip:focus-visible {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                .parts {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .parts li {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 14px;
+                }
+                .row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 8px;
+                }
+                .icon-btn {
+                    flex: none;
+                    display: grid;
+                    place-items: center;
+                    width: 36px;
+                    height: 36px;
+                    border: none;
+                    border-radius: 50%;
+                    background: transparent;
+                    cursor: pointer;
+                }
+                .icon-btn:hover {
+                    background: var(--secondary-background-color);
+                }
+                .icon-btn:focus-visible {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                .chip {
+                    flex: none;
+                    border: 1px solid var(--divider-color);
+                    border-radius: 999px;
+                    padding: 6px 12px;
+                    background: transparent;
+                    color: var(--primary-text-color);
+                    font: inherit;
+                    font-size: 13px;
+                    cursor: pointer;
+                    min-height: 32px;
+                }
+                .chip.armed {
+                    border-color: var(--error-color, #f44336);
+                    color: var(--error-color, #f44336);
+                }
+                .chip.ghost {
+                    border-color: transparent;
+                    color: var(--secondary-text-color);
+                }
+            `,
+        ];
     }
 }
 

@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing, PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../utils/define-element";
+import { sidePanelStyles } from "./panel-tab-styles";
 
 import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
@@ -169,134 +170,137 @@ export class SettingsPanel extends LitElement {
     }
 
     public static get styles(): CSSResultGroup {
-        return css`
-            /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
+        return [
+            sidePanelStyles,
+            css`
+                /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
                l'hôte disparaît du rendu (display: contents) pour que les boutons partagent la
                rangée, et le contenu ouvert passe à la ligne sur toute la largeur. */
-            :host([tab]) {
-                display: contents;
-            }
-            :host([tab]) .toggle {
-                position: relative;
-                flex: 1 1 0;
-                min-width: 0;
-                width: auto;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                min-height: 56px;
-                padding: 8px 4px;
-                font-size: 12px;
-                text-align: center;
-            }
-            :host([tab]) .toggle .grow {
-                flex: none;
-                max-width: 100%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            :host([tab]) .toggle .chevron,
-            :host([tab]) .toggle .muted {
-                display: none !important;
-            }
-            :host([tab]) .toggle[aria-expanded="true"] {
-                background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
-            }
-            :host([tab]) .toggle[aria-expanded="true"] ha-icon {
-                color: var(--primary-color);
-            }
-            :host([tab]) .toggle .badge {
-                position: absolute;
-                top: 4px;
-                right: 6px;
-                min-width: 18px;
-                height: 18px;
-                font-size: 11px;
-            }
-            :host([tab]) .content {
-                order: 1;
-                flex-basis: 100%;
-                width: 100%;
-                box-sizing: border-box;
-            }
-            :host {
-                display: block;
-                padding: 0 16px 16px;
-                color: var(--primary-text-color);
-            }
-            .toggle,
-            .cat-head {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                width: 100%;
-                min-height: 44px;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 14px;
-                background: var(--secondary-background-color);
-                color: inherit;
-                font: inherit;
-                font-size: 14px;
-                font-weight: 590;
-                text-align: start;
-                cursor: pointer;
-            }
-            .cat-head {
-                background: transparent;
-                font-weight: 500;
-                border-radius: 10px;
-            }
-            .cat-head:hover {
-                background: var(--secondary-background-color);
-            }
-            .toggle:focus-visible,
-            .cat-head:focus-visible {
-                outline: 2px solid var(--primary-color);
-                outline-offset: 2px;
-            }
-            ha-icon {
-                --mdc-icon-size: 20px;
-                color: var(--secondary-text-color);
-                flex: none;
-            }
-            .grow {
-                flex: 1;
-                min-width: 0;
-            }
-            .muted {
-                color: var(--secondary-text-color);
-                font-size: 13px;
-            }
-            .chevron {
-                transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
-            }
-            .chevron.open {
-                transform: rotate(180deg);
-            }
-            .content {
-                padding-top: 8px;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            .rows {
-                padding: 4px 4px 8px 42px;
-            }
-            .row {
-                min-height: 40px;
-                display: flex;
-                align-items: center;
-            }
-            .row > * {
-                flex: 1;
-            }
-            .fallback {
-                justify-content: space-between;
-                font-size: 14px;
-            }
-        `;
+                :host([tab]) {
+                    display: contents;
+                }
+                :host([tab]) .toggle {
+                    position: relative;
+                    flex: 1 1 0;
+                    min-width: 0;
+                    width: auto;
+                    flex-direction: column;
+                    justify-content: center;
+                    gap: 4px;
+                    min-height: 56px;
+                    padding: 8px 4px;
+                    font-size: 12px;
+                    text-align: center;
+                }
+                :host([tab]) .toggle .grow {
+                    flex: none;
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                :host([tab]) .toggle .chevron,
+                :host([tab]) .toggle .muted {
+                    display: none !important;
+                }
+                :host([tab]) .toggle[aria-expanded="true"] {
+                    background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
+                }
+                :host([tab]) .toggle[aria-expanded="true"] ha-icon {
+                    color: var(--primary-color);
+                }
+                :host([tab]) .toggle .badge {
+                    position: absolute;
+                    top: 4px;
+                    right: 6px;
+                    min-width: 18px;
+                    height: 18px;
+                    font-size: 11px;
+                }
+                :host([tab]) .content {
+                    order: 1;
+                    flex-basis: 100%;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                :host {
+                    display: block;
+                    padding: 0 16px 16px;
+                    color: var(--primary-text-color);
+                }
+                .toggle,
+                .cat-head {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                    min-height: 44px;
+                    padding: 8px 12px;
+                    border: none;
+                    border-radius: 14px;
+                    background: var(--secondary-background-color);
+                    color: inherit;
+                    font: inherit;
+                    font-size: 14px;
+                    font-weight: 590;
+                    text-align: start;
+                    cursor: pointer;
+                }
+                .cat-head {
+                    background: transparent;
+                    font-weight: 500;
+                    border-radius: 10px;
+                }
+                .cat-head:hover {
+                    background: var(--secondary-background-color);
+                }
+                .toggle:focus-visible,
+                .cat-head:focus-visible {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                ha-icon {
+                    --mdc-icon-size: 20px;
+                    color: var(--secondary-text-color);
+                    flex: none;
+                }
+                .grow {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .muted {
+                    color: var(--secondary-text-color);
+                    font-size: 13px;
+                }
+                .chevron {
+                    transition: transform var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+                }
+                .chevron.open {
+                    transform: rotate(180deg);
+                }
+                .content {
+                    padding-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                .rows {
+                    padding: 4px 4px 8px 42px;
+                }
+                .row {
+                    min-height: 40px;
+                    display: flex;
+                    align-items: center;
+                }
+                .row > * {
+                    flex: 1;
+                }
+                .fallback {
+                    justify-content: space-between;
+                    font-size: 14px;
+                }
+            `,
+        ];
     }
 }
 
