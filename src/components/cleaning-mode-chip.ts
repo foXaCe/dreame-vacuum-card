@@ -7,6 +7,8 @@ import { HomeAssistantFixed } from "../types/fixes";
 import { localize } from "../localize/localize";
 import { computeStateDisplay } from "../localize/hass/compute_state_display";
 import { shouldUpdateForEntities } from "../utils/ha-change-detection";
+import { ACTIVE_VACUUM_STATES } from "../const";
+import type { HassEntity } from "home-assistant-js-websocket";
 
 /** Une entrée du menu de sélection de mode. */
 interface ModeChoice {
@@ -90,6 +92,42 @@ export class CleaningModeChip extends LitElement {
             return ["mdi:water-outline"];
         }
         return ["mdi:robot-vacuum"];
+    }
+
+    /** Mode en cours d'après les attributs du vacuum, quand le robot nettoie et que les
+     *  selects sont indisponibles. `undefined` hors de ce cas. */
+    private _runningMode(
+        modeObj: HassEntity,
+        cgObj: HassEntity | undefined
+    ): { text: string; icons: string[] } | undefined {
+        const vac = this.hass.states[this.entityId];
+        if (!vac || !ACTIVE_VACUUM_STATES.includes(vac.state)) return undefined;
+        if (!["unavailable", "unknown", ""].includes(modeObj.state)) return undefined;
+        const slug = (value: string): string =>
+            value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "_")
+                .replace(/^_|_$/g, "");
+        const label = (obj: HassEntity | undefined, value: string): string =>
+            obj
+                ? computeStateDisplay(
+                      this.hass.localize,
+                      { ...obj, state: slug(value) },
+                      this.hass.locale,
+                      this.hass.entities
+                  )
+                : value;
+        const attr = (key: string): string | undefined => {
+            const value = vac.attributes[key];
+            return typeof value === "string" && value ? value : undefined;
+        };
+        const cg = attr("cleangenius");
+        if (cg && slug(cg) !== "off") {
+            return { text: `CleanGenius · ${label(cgObj, cg)}`, icons: ["mdi:auto-fix"] };
+        }
+        const mode = attr("cleaning_mode");
+        if (mode) return { text: label(modeObj, mode), icons: this._getModeIcons(slug(mode)) };
+        return undefined;
     }
 
     private _isCgActive(): boolean {
@@ -240,12 +278,24 @@ export class CleaningModeChip extends LitElement {
                 ? computeStateDisplay(this.hass.localize, cgObj, this.hass.locale, this.hass.entities)
                 : "";
 
-        const icons = cgActive ? ["mdi:auto-fix"] : this._getModeIcons(currentMode);
+        // Pendant un nettoyage, l'intégration rend les selects indisponibles (on ne change
+        // pas de mode en cours de route), mais le vacuum garde la valeur en cours dans ses
+        // attributs (« Deep cleaning », « Sweeping and mopping ») : on l'affiche, traduite
+        // comme l'option du select, en lecture seule — au lieu d'un « — » muet.
+        const running = this._runningMode(stateObj, cgObj);
+
+        const icons = running ? running.icons : cgActive ? ["mdi:auto-fix"] : this._getModeIcons(currentMode);
         // Valeur seule, compacte : « CleanGenius · Routine » ou le mode manuel traduit.
-        const valueText = cgActive ? `CleanGenius · ${cgOptionLabel}` : unavailable ? "—" : translatedMode;
-        const ariaLabel = `${modeLabel}: ${cgActive ? "CleanGenius" : unavailable ? "—" : translatedMode}`;
-        const dimmed = unavailable && !cgActive;
-        const interactive = !dimmed;
+        const valueText = running
+            ? running.text
+            : cgActive
+              ? `CleanGenius · ${cgOptionLabel}`
+              : unavailable
+                ? "—"
+                : translatedMode;
+        const ariaLabel = `${modeLabel}: ${running ? running.text : cgActive ? "CleanGenius" : unavailable ? "—" : translatedMode}`;
+        const dimmed = unavailable && !cgActive && !running;
+        const interactive = !dimmed && !running;
         const choices = interactive ? this._buildChoices(cgActive) : [];
         const cgChoices = choices.filter((c) => c.kind === "cleangenius");
         const manualChoices = choices.filter((c) => c.kind === "manual");
@@ -271,7 +321,14 @@ export class CleaningModeChip extends LitElement {
                     ${icons.map((icon) => html`<ha-icon class="mode-icon" icon="${icon}"></ha-icon>`)}
                 </div>
                 <span class="mode-label">${valueText}</span>
-                <ha-icon class="mode-arrow ${this._menuOpen ? "open" : ""}" icon="mdi:chevron-down"></ha-icon>
+                ${
+                    interactive
+                        ? html`<ha-icon
+                              class="mode-arrow ${this._menuOpen ? "open" : ""}"
+                              icon="mdi:chevron-down"
+                          ></ha-icon>`
+                        : nothing
+                }
             </div>
             ${
                 this._menuOpen

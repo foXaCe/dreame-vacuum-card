@@ -468,6 +468,28 @@ describe("dreame-cleaning-mode-chip", () => {
         expect(el.shadowRoot?.querySelector(".mode-chip")).toBeNull();
     });
 
+    it("while cleaning (selects unavailable) shows the running mode read-only instead of a dash", async () => {
+        const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
+        el.hass = makeHass({
+            states: {
+                [VACUUM_ID]: {
+                    state: "cleaning",
+                    attributes: { cleaning_mode: "Sweeping and mopping", cleangenius: "Off" },
+                } as never,
+                [SELECT_ID]: { entity_id: SELECT_ID, state: "unavailable", attributes: { options: [] } } as never,
+            },
+            entities: { [VACUUM_ID]: { device_id: "dev1" }, [SELECT_ID]: { device_id: "dev1" } } as never,
+            localize: ((key: string) => (key.endsWith("sweeping_and_mopping") ? "Aspiration et lavage" : "")) as never,
+        });
+        el.entityId = VACUUM_ID;
+        await mount(el);
+        const chip = el.shadowRoot!.querySelector(".mode-chip")!;
+        expect(chip.querySelector(".mode-label")?.textContent).not.toBe("—");
+        expect(chip.classList.contains("unavailable")).toBe(false);
+        expect(chip.getAttribute("tabindex")).toBe("-1");
+        expect(chip.querySelector(".mode-arrow")).toBeNull();
+    });
+
     it("renders an accessible role=button chip with tabindex=0 and aria-label", async () => {
         const el = document.createElement("dreame-cleaning-mode-chip") as CleaningModeChip;
         el.hass = chipHass();
