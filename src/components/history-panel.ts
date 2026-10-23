@@ -119,6 +119,7 @@ export class HistoryPanel extends LitElement {
 
     private _toggle(): void {
         this._open = !this._open;
+        this._announceOpen();
         this._photo = undefined;
     }
 
@@ -132,6 +133,18 @@ export class HistoryPanel extends LitElement {
         this._failed = new Set(this._failed).add(url);
     }
 
+    /** Ferme le panneau (la carte n'en garde qu'un ouvert à la fois). */
+    public close(): void {
+        this._open = false;
+    }
+
+    /** Signale l'ouverture à la carte, qui ferme les autres panneaux. */
+    private _announceOpen(): void {
+        if (this._open) {
+            this.dispatchEvent(new CustomEvent("dreame-panel-open", { bubbles: true, composed: true }));
+        }
+    }
+
     protected render(): TemplateResult | typeof nothing {
         if (!this.hass || !this.entityId || !this.hass.states[this.entityId]) return nothing;
         const { runs, photos } = this._data();
@@ -140,7 +153,7 @@ export class HistoryPanel extends LitElement {
         return html`
             <button class="toggle" aria-expanded=${this._open} @click=${this._toggle}>
                 <ha-icon .icon=${"mdi:history"}></ha-icon>
-                <span class="grow">${this._t("title")}</span>
+                <span class="grow">${this.hasAttribute("tab") ? this._t("tab_label") : this._t("title")}</span>
                 ${runs.length ? html`<span class="muted">${runs.length}</span>` : nothing}
                 <ha-icon class="chevron ${this._open ? "open" : ""}" .icon=${"mdi:chevron-down"}></ha-icon>
             </button>
@@ -253,6 +266,56 @@ export class HistoryPanel extends LitElement {
 
     public static get styles(): CSSResultGroup {
         return css`
+            /* Mode « tab » : les panneaux de la carte forment une rangée de boutons compacts ;
+               l'hôte disparaît du rendu (display: contents) pour que les boutons partagent la
+               rangée, et le contenu ouvert passe à la ligne sur toute la largeur. */
+            :host([tab]) {
+                display: contents;
+            }
+            :host([tab]) .toggle {
+                position: relative;
+                flex: 1 1 0;
+                min-width: 0;
+                width: auto;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                min-height: 56px;
+                padding: 8px 4px;
+                font-size: 12px;
+                text-align: center;
+            }
+            :host([tab]) .toggle .grow {
+                flex: none;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            :host([tab]) .toggle .chevron,
+            :host([tab]) .toggle .muted {
+                display: none !important;
+            }
+            :host([tab]) .toggle[aria-expanded="true"] {
+                background: color-mix(in srgb, var(--primary-color) 20%, var(--secondary-background-color));
+            }
+            :host([tab]) .toggle[aria-expanded="true"] ha-icon {
+                color: var(--primary-color);
+            }
+            :host([tab]) .toggle .badge {
+                position: absolute;
+                top: 4px;
+                right: 6px;
+                min-width: 18px;
+                height: 18px;
+                font-size: 11px;
+            }
+            :host([tab]) .content {
+                order: 1;
+                flex-basis: 100%;
+                width: 100%;
+                box-sizing: border-box;
+            }
             :host {
                 display: block;
                 padding: 0 16px 16px;

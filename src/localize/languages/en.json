@@ -374,7 +374,8 @@
                 "dirty_water_tank": "Dirty water tank",
                 "onboard_dirty_water_tank": "Onboard dirty water tank",
                 "tank_filter": "Tank filter"
-            }
+            },
+            "tab_label": "Care"
         },
         "settings": {
             "title": "Settings",
@@ -387,7 +388,8 @@
                 "dnd_sound": "Do not disturb & sound",
                 "system": "System",
                 "other": "Other"
-            }
+            },
+            "tab_label": "Settings"
         },
         "remote": {
             "title": "Remote control",
@@ -400,7 +402,8 @@
             "speed": "Speed",
             "speed_slow": "Slow",
             "speed_normal": "Normal",
-            "speed_fast": "Fast"
+            "speed_fast": "Fast",
+            "tab_label": "Remote"
         },
         "history": {
             "title": "History",
@@ -420,7 +423,8 @@
                 "follow_wall_cleaning": "Edge clean",
                 "cruising_path": "Patrol",
                 "cruising_point": "Patrol"
-            }
+            },
+            "tab_label": "History"
         }
     },
     "editor": {

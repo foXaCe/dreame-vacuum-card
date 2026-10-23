@@ -103,6 +103,26 @@ describe("dreame-care-panel", () => {
         );
     });
 
+    it("en rangée (attribut tab) : libellé court, annonce l'ouverture, se ferme sur demande", async () => {
+        const el = document.createElement("dreame-care-panel") as CarePanel;
+        el.setAttribute("tab", "");
+        el.hass = makeHass();
+        el.entityId = VACUUM;
+        document.body.appendChild(el);
+        await el.updateComplete;
+        const opened = vi.fn();
+        document.body.addEventListener("dreame-panel-open", opened);
+        expect(q(el, ".toggle .grow")?.textContent?.trim()).toBe("Entretien");
+        q(el, ".toggle")!.click();
+        await el.updateComplete;
+        expect(opened).toHaveBeenCalledTimes(1);
+        expect(q(el, ".content")).not.toBeNull();
+        el.close();
+        await el.updateComplete;
+        expect(q(el, ".content")).toBeNull();
+        document.body.removeEventListener("dreame-panel-open", opened);
+    });
+
     it("robot sans aucune donnée d'entretien : rien d'affiché", async () => {
         const el = document.createElement("dreame-care-panel") as CarePanel;
         el.hass = {

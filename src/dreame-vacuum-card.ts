@@ -766,44 +766,50 @@ export class DreameVacuumCard extends LitElement {
                     @action-append=${() => this._runAppend()}
                     @action-cancel=${() => this._clearSelection()}
                 ></dreame-action-buttons>
-                ${
-                    showCare
-                        ? html`<dreame-care-panel
-                              .hass=${this.hass}
-                              .entityId=${preset.entity}
-                              .thresholds=${{
-                                  warning: this.config.care_warning ?? DEFAULT_CARE_THRESHOLDS.warning,
-                                  critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
-                              }}
-                          ></dreame-care-panel>`
-                        : nothing
-                }
-                ${
-                    this.config.show_settings !== false
-                        ? html`<dreame-settings-panel
-                              .hass=${this.hass}
-                              .entityId=${preset.entity}
-                          ></dreame-settings-panel>`
-                        : nothing
-                }
-                ${
-                    this.config.show_remote !== false
-                        ? html`<dreame-remote-panel
-                              .hass=${this.hass}
-                              .entityId=${preset.entity}
-                              .stateSensorId=${stateSensorId}
-                          ></dreame-remote-panel>`
-                        : nothing
-                }
-                ${
-                    this.config.show_history !== false
-                        ? html`<dreame-history-panel
-                              .hass=${this.hass}
-                              .entityId=${preset.entity}
-                              .cameraId=${preset.map_source?.camera}
-                          ></dreame-history-panel>`
-                        : nothing
-                }
+                <div class="panel-bar" @dreame-panel-open=${this._onPanelOpen}>
+                    ${
+                        showCare
+                            ? html`<dreame-care-panel
+                                  tab
+                                  .hass=${this.hass}
+                                  .entityId=${preset.entity}
+                                  .thresholds=${{
+                                      warning: this.config.care_warning ?? DEFAULT_CARE_THRESHOLDS.warning,
+                                      critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
+                                  }}
+                              ></dreame-care-panel>`
+                            : nothing
+                    }
+                    ${
+                        this.config.show_settings !== false
+                            ? html`<dreame-settings-panel
+                                  tab
+                                  .hass=${this.hass}
+                                  .entityId=${preset.entity}
+                              ></dreame-settings-panel>`
+                            : nothing
+                    }
+                    ${
+                        this.config.show_remote !== false
+                            ? html`<dreame-remote-panel
+                                  tab
+                                  .hass=${this.hass}
+                                  .entityId=${preset.entity}
+                                  .stateSensorId=${stateSensorId}
+                              ></dreame-remote-panel>`
+                            : nothing
+                    }
+                    ${
+                        this.config.show_history !== false
+                            ? html`<dreame-history-panel
+                                  tab
+                                  .hass=${this.hass}
+                                  .entityId=${preset.entity}
+                                  .cameraId=${preset.map_source?.camera}
+                              ></dreame-history-panel>`
+                            : nothing
+                    }
+                </div>
             </ha-card>
         `;
     }
@@ -843,6 +849,14 @@ export class DreameVacuumCard extends LitElement {
         this._overlayDirty = true;
         this.requestUpdate();
     }
+
+    /** Les panneaux du bas partagent une rangée : un seul ouvert à la fois. */
+    private _onPanelOpen = (e: Event): void => {
+        const bar = e.currentTarget as HTMLElement;
+        for (const panel of Array.from(bar.children) as Array<HTMLElement & { close?: () => void }>) {
+            if (panel !== e.target && typeof panel.close === "function") panel.close();
+        }
+    };
 
     private _hasActiveSelection(): boolean {
         return (

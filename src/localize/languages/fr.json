@@ -305,7 +305,7 @@
             "stop": "Stop",
             "pause": "Pause",
             "resume": "Reprendre",
-            "dock": "Retour à la base",
+            "dock": "Retour base",
             "cancel": "Annuler",
             "append": "Ajouter au nettoyage"
         },
@@ -374,7 +374,8 @@
                 "dirty_water_tank": "Réservoir d'eau sale",
                 "onboard_dirty_water_tank": "Réservoir d'eau sale embarqué",
                 "tank_filter": "Filtre du réservoir"
-            }
+            },
+            "tab_label": "Entretien"
         },
         "settings": {
             "title": "Réglages",
@@ -387,7 +388,8 @@
                 "dnd_sound": "Ne pas déranger et son",
                 "system": "Système",
                 "other": "Autres"
-            }
+            },
+            "tab_label": "Réglages"
         },
         "remote": {
             "title": "Télécommande",
@@ -400,7 +402,8 @@
             "speed": "Vitesse",
             "speed_slow": "Lente",
             "speed_normal": "Normale",
-            "speed_fast": "Rapide"
+            "speed_fast": "Rapide",
+            "tab_label": "Télécommande"
         },
         "history": {
             "title": "Historique",
@@ -420,7 +423,8 @@
                 "follow_wall_cleaning": "Nettoyage des bords",
                 "cruising_path": "Patrouille",
                 "cruising_point": "Patrouille"
-            }
+            },
+            "tab_label": "Historique"
         }
     },
     "editor": {

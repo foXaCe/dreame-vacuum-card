@@ -433,6 +433,15 @@ export const cardStyles: CSSResultGroup = css`
         }
     }
 
+    /* Panneaux du bas (entretien, réglages, télécommande, historique) : une rangée de
+       boutons compacts, le contenu ouvert passe à la ligne sur toute la largeur. */
+    .panel-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 16px 16px;
+    }
+
     .room-chips {
         display: flex;
         flex-wrap: wrap;
