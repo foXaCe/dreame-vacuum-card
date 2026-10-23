@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.15.0] - 2026-10-23
+
+### Added
+- **Spot cleaning.** A fourth tab, Spot, next to Room / All / Zone: tap the map to place the spot, pick 1 to 3 passes with the passes button, then Clean (`dreame_vacuum.vacuum_clean_spot`). Shown only when a map mode serves that service (the default Dreame modes do). New option `show_spot` (default `true`, also in the visual editor).
+- **Remote control.** A collapsible panel with a hold-to-drive direction pad (forward, backward, turn left/right, stop) and three speeds (`dreame_vacuum.vacuum_remote_control_move_step`); the arrow keys drive too. Shown only when the robot can be driven, not while it cleans, returns or is busy at the dock. New option `show_remote` (default `true`).
+- **History.** A collapsible panel with the last cleanings (type, date, duration, area, completed or interrupted) and the map of the selected one, plus the obstacle photos of the current map, tap one to enlarge it. Built from what the integration already exposes; hidden when there is nothing to show. New option `show_history` (default `true`).
+
 ## [5.14.0] - 2026-10-23
 
 ### Added
