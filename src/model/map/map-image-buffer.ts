@@ -9,6 +9,12 @@ export interface MapImageBufferDeps {
     onSwapped: () => void;
 }
 
+/** Retire le paramètre `_retry` ajouté par la carte lors d'une nouvelle tentative de
+ *  chargement de l'image (voir `_retryMapImage`), pour retrouver l'URL d'origine. */
+export function stripMapRetry(url: string): string {
+    return url.replace(/[?&]_retry=\d+$/, "");
+}
+
 export interface MapSrcInput {
     mapSource: MapSourceConfig;
     /** `entity_picture` de l'entité caméra du preset, si une caméra est configurée. */
@@ -50,6 +56,16 @@ export class MapImageBuffer {
                 // image identique). Couplé au double-buffering ci-dessous, cela supprime le flash.
                 const fullUrl = this.deps.resolveUrl(cameraEntityPicture);
                 this.lastValidUrl = fullUrl;
+                if (this.displayedUrl === undefined) {
+                    // Rien d'affiché encore : l'<img> visible charge directement cette URL,
+                    // et c'est SON chargement qui la marque affichée (`markDisplayed`).
+                    // Pas de préchargement en parallèle — rien à protéger d'un flash, et
+                    // c'était une DEUXIÈME requête sur la même URL. Sur un cache d'image
+                    // vide côté intégration (après un redémarrage de HA), cette seconde
+                    // requête recevait un 500 pendant que la première rendait : <img>
+                    // cassée, carte vide jusqu'au prochain changement d'URL.
+                    return fullUrl;
+                }
                 this._preload(fullUrl);
                 // Tant que la nouvelle image n'est pas décodée, on garde l'URL déjà affichée :
                 // l'<img> visible ne pointe jamais vers une ressource non prête -> aucun blanc.
@@ -68,6 +84,17 @@ export class MapImageBuffer {
             return `${mapSource.image}`;
         }
         return DISCONNECTED_IMAGE;
+    }
+
+    /**
+     * À appeler quand l'<img> visible a fini de charger `url` (évènement `load`).
+     * Ne sert qu'au premier affichage, que l'<img> charge seule (sans préchargement) :
+     * ensuite, c'est le préchargement qui fait basculer `displayedUrl`.
+     */
+    markDisplayed(url: string): void {
+        if (this.displayedUrl === undefined && url === this.lastValidUrl) {
+            this.displayedUrl = url;
+        }
     }
 
     /**

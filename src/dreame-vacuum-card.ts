@@ -70,7 +70,7 @@ import { PlatformGenerator } from "./model/generators/platform-generator";
 import { CoordinatesConverter } from "./model/map_objects/coordinates-converter";
 import { resolveCalibration, isCalibrationSourceConfigured } from "./model/map/calibration-resolver";
 import { computeRobotOverlayGeometry, INITIAL_ROBOT_SAMPLE, RobotSample } from "./model/map/robot-overlay-geometry";
-import { MapImageBuffer } from "./model/map/map-image-buffer";
+import { MapImageBuffer, stripMapRetry } from "./model/map/map-image-buffer";
 import { RoomPickEngine } from "./model/map/room-pick-engine";
 import { MapObject } from "./model/map_objects/map-object";
 import { MousePosition } from "./model/map_objects/mouse-position";
@@ -364,10 +364,15 @@ export class DreameVacuumCard extends LitElement {
             clearTimeout(this._throttledRenderTimer);
             this._throttledRenderTimer = undefined;
         }
+        clearTimeout(this._mapImageRetryTimer);
+        this._mapImageRetryTimer = undefined;
     }
 
     private _lastRenderTs = 0;
     private _throttledRenderTimer?: number;
+    /** Nouvelles tentatives de chargement de `#map-image` après une erreur (voir `_retryMapImage`). */
+    private _mapImageRetries = 0;
+    private _mapImageRetryTimer?: number;
     private static readonly _CLEANING_RENDER_MIN_MS = 200;
 
     protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -564,11 +569,14 @@ export class DreameVacuumCard extends LitElement {
                     loading="eager"
                     fetchpriority="high"
                     src="${mapSrc}"
-                    @load="${() => {
+                    @load="${(e: Event) => {
+                        this._mapImageRetries = 0;
+                        this._mapImageBuffer.markDisplayed(stripMapRetry((e.target as HTMLImageElement).src));
                         this.mapLoaded = true;
                         this._calculateBasicScale();
                         this._buildPickCanvas();
                     }}"
+                    @error="${(e: Event) => this._retryMapImage(e.target as HTMLImageElement)}"
                 />
 
                 <canvas id="room-selection-overlay"></canvas>
@@ -885,6 +893,32 @@ export class DreameVacuumCard extends LitElement {
         if (key === this._lastCalibrationKey && this.coordinatesConverter) return;
         this._lastCalibrationKey = key;
         this.coordinatesConverter = new CoordinatesConverter(calibrationPoints, calibrationSourceFailed);
+    }
+
+    /**
+     * `#map-image` en erreur (ex. 500 de `camera_proxy` pendant que l'intégration
+     * rend sa première image après un redémarrage) : sans rien faire, l'<img>
+     * restait cassée — squelette / carte vide — jusqu'au prochain changement
+     * d'`entity_picture`, ce qui peut durer longtemps robot à la base. On relance
+     * le chargement de la MÊME image avec un paramètre `_retry` (sinon le navigateur
+     * ne refait pas la requête), avec un délai croissant et un nombre borné
+     * d'essais. Le `src` est modifié directement sur l'élément : Lit ne le
+     * réécrit qu'au prochain changement de `mapSrc`, qui repart de zéro.
+     */
+    private _retryMapImage(img: HTMLImageElement): void {
+        if (!this.connected || this._mapImageRetries >= 6) return;
+        const base = stripMapRetry(img.src);
+        if (!base || base.startsWith("data:")) return;
+        const attempt = ++this._mapImageRetries;
+        clearTimeout(this._mapImageRetryTimer);
+        this._mapImageRetryTimer = window.setTimeout(
+            () => {
+                // L'URL a changé entre-temps (nouvel état) : Lit a déjà posé la nouvelle.
+                if (stripMapRetry(img.src) !== base) return;
+                img.src = `${base}${base.includes("?") ? "&" : "?"}_retry=${attempt}`;
+            },
+            Math.min(8000, 500 * 2 ** (attempt - 1))
+        );
     }
 
     private _getMapSrc(config: CardPresetConfig): string {
