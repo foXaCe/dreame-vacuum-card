@@ -650,6 +650,11 @@ export class DreameVacuumCard extends LitElement {
                         <dreame-pinch-zoom
                             min-scale="0.5"
                             id="map-zoomer"
+                            style="--dvc-map-aspect: ${
+                                this.realImageWidth && this.realImageHeight
+                                    ? this.realImageWidth / this.realImageHeight
+                                    : 100
+                            };"
                             @change="${this._calculateScale}"
                             two-finger-pan="${preset.two_finger_pan}"
                             locked="${this.mapLocked}"
@@ -697,7 +702,8 @@ export class DreameVacuumCard extends LitElement {
                                               class="icon-on-map clickable ripple cycle-counter"
                                               role="button"
                                               tabindex="0"
-                                              aria-label="${this._localize("dreame_ui.map.cycle_repeats")}"
+                                              aria-label="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
+                                              title="${this._localize("dreame_ui.map.cycle_repeats")} (${this.repeats})"
                                               @click="${this._cycleRepeats}"
                                               @keydown="${(e: KeyboardEvent) => this._handleIconKey(e, this._cycleRepeats)}"
                                           >
