@@ -82,6 +82,11 @@ export class Room extends PredefinedMapObject {
         return this._config.id;
     }
 
+    /** Nom affiché de la pièce (texte de son étiquette sur la carte). */
+    public get name(): string {
+        return this._config.label?.text ?? String(this._config.id);
+    }
+
     public getOutline(): OutlineType | undefined {
         return this._config.outline;
     }

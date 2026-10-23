@@ -433,6 +433,49 @@ export const cardStyles: CSSResultGroup = css`
         }
     }
 
+    .room-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 16px 8px;
+    }
+    .room-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 6px 14px;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--primary-text-color);
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color var(--dvc-dur-tap, 180ms) var(--dvc-ease-out, ease);
+    }
+    .room-chip.selected {
+        border-color: transparent;
+        background: color-mix(in srgb, var(--primary-color) 22%, transparent);
+        font-weight: 600;
+    }
+    .room-chip:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    .room-chip-rank {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        display: inline-grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-primary-color, #fff);
+        background: var(--primary-color);
+    }
+
     #map-zoomer {
         overflow: hidden;
         display: block;
