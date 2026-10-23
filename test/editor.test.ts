@@ -101,6 +101,7 @@ describe("dreame-vacuum-card-editor", () => {
             expect(data.map_source).toEqual({ camera: "camera.robot" });
             expect(data.display).toEqual({
                 show_title: false,
+                show_care: true,
                 appearance: "premium",
                 language: "",
             });

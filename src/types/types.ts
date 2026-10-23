@@ -45,6 +45,12 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
      * ambiantes) ou `minimal` (surfaces opaques, animations ambiantes coupées).
      */
     readonly appearance?: "minimal" | "premium";
+    /** Page « Station et entretien » sous les boutons d'action (défaut : affichée). */
+    readonly show_care?: boolean;
+    /** Seuil (%) sous lequel un consommable passe en alerte (défaut 20). */
+    readonly care_warning?: number;
+    /** Seuil (%) sous lequel l'alerte devient critique (défaut 10). */
+    readonly care_critical?: number;
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {
