@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still reports "Missing property: map_source" as before. The card picker
   suggestion now prefers the same main map camera.
 
+## [5.17.0] - 2026-10-23
+
+### Added
+- **Panel buttons as a sidebar.** New option `panel_position: left` (also in the visual editor, Display section): the Care, Settings, Remote and History buttons sit in a column on the left of the map instead of a row under the controls. The open panel unfolds below, at full width. The default stays `bottom`.
+
 ## [5.16.0] - 2026-10-23
 
 ### Changed
