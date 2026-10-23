@@ -388,6 +388,19 @@
                 "system": "Système",
                 "other": "Autres"
             }
+        },
+        "remote": {
+            "title": "Télécommande",
+            "hint": "Maintenez une flèche pour déplacer le robot.",
+            "forward": "Avancer",
+            "backward": "Reculer",
+            "left": "Tourner à gauche",
+            "right": "Tourner à droite",
+            "stop": "Arrêter",
+            "speed": "Vitesse",
+            "speed_slow": "Lente",
+            "speed_normal": "Normale",
+            "speed_fast": "Rapide"
         }
     },
     "editor": {
@@ -434,7 +447,8 @@
             "display": "Affichage",
             "map_behavior": "Comportement de la carte",
             "appearance": "Apparence",
-            "show_spot": "Afficher l'onglet Point"
+            "show_spot": "Afficher l'onglet Point",
+            "show_remote": "Afficher la télécommande"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"

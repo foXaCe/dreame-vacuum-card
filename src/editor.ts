@@ -84,6 +84,7 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
             { name: "show_care", selector: { boolean: {} } },
             { name: "show_settings", selector: { boolean: {} } },
             { name: "show_spot", selector: { boolean: {} } },
+            { name: "show_remote", selector: { boolean: {} } },
             {
                 name: "appearance",
                 selector: {
@@ -143,6 +144,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
                 show_care: this._config.show_care ?? true,
                 show_settings: this._config.show_settings ?? true,
                 show_spot: this._config.show_spot ?? true,
+                show_remote: this._config.show_remote ?? true,
                 appearance: this._config.appearance ?? "premium",
                 language: this._config.language ?? "",
             },
@@ -191,6 +193,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
                 show_care?: boolean;
                 show_settings?: boolean;
                 show_spot?: boolean;
+                show_remote?: boolean;
                 appearance?: string;
                 language?: string;
             };
@@ -213,6 +216,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             show_care: value.display?.show_care === false ? false : undefined,
             show_settings: value.display?.show_settings === false ? false : undefined,
             show_spot: value.display?.show_spot === false ? false : undefined,
+            show_remote: value.display?.show_remote === false ? false : undefined,
             // On ne stocke que l'écart au défaut (premium) pour garder le YAML propre.
             appearance: value.display?.appearance === "minimal" ? "minimal" : undefined,
             language: value.display?.language || undefined,
@@ -235,6 +239,9 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         }
         if (draft.show_spot === undefined) {
             delete draft.show_spot;
+        }
+        if (draft.show_remote === undefined) {
+            delete draft.show_remote;
         }
 
         // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`

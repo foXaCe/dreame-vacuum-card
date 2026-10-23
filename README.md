@@ -43,6 +43,12 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 - **Spot tab**: tap the map to place a point, pick 1 to 3 passes, then clean (`dreame_vacuum.vacuum_clean_spot`)
 - Shown only when a map mode serves `vacuum_clean_spot` (the default Dreame modes do); hide it with `show_spot: false`
 
+### Remote control
+
+- **Collapsible panel** with a hold-to-drive direction pad (forward, backward, turn left/right, stop) and three speeds, via `dreame_vacuum.vacuum_remote_control_move_step`
+- Arrow keys drive the robot too when the pad has focus
+- Shown only when the robot can be driven (not while cleaning, returning or busy at the station); hide it with `show_remote: false`
+
 ### Accessibility (5.2.2+)
 
 - **ARIA labels** on all map overlay icons (lock, add-rectangle, recenter, repeat cycle)
@@ -134,6 +140,7 @@ vacuum_platform: tasshackDreameVacuum
 | `vacuum_platform` | string | `tasshackDreameVacuum` | Platform identifier |
 | `show_title` | boolean | `false` | Show device name in the header |
 | `show_spot` | boolean | `true` | Show the Spot tab (spot cleaning) next to Room / All / Zone |
+| `show_remote` | boolean | `true` | Show the remote control panel when the robot can be driven |
 | `map_locked` | boolean | `false` | Disable map pan/zoom |
 | `two_finger_pan` | boolean | `false` | Require two fingers to pan |
 | `clean_selection_on_start` | boolean | `true` | Clear the current selection when a clean starts |
