@@ -436,6 +436,12 @@ export const cardStyles: CSSResultGroup = css`
     #map-zoomer {
         overflow: hidden;
         display: block;
+        /* Carte haute dans une carte large (tableau de bord bureau) : sans limite, l'image
+           dépassait l'écran et repoussait les boutons d'action hors de vue. La largeur est
+           bornée pour que la hauteur reste sous --dvc-map-max-height ; --dvc-map-aspect
+           (largeur / hauteur de l'image) est posé par la carte au chargement. */
+        max-width: min(100%, calc(var(--dvc-map-max-height, 65vh) * var(--dvc-map-aspect, 100)));
+        margin-inline: auto;
         --scale: 1;
         --x: 0;
         --y: 0;
