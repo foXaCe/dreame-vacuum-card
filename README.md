@@ -49,6 +49,12 @@ A custom Lovelace card for Home Assistant that provides a Dreame-app-style inter
 - Arrow keys drive the robot too when the pad has focus
 - Shown only when the robot can be driven (not while cleaning, returning or busy at the station); hide it with `show_remote: false`
 
+### History
+
+- **Collapsible panel** listing the last cleanings (type, date, duration, area, completed or interrupted) with the map of the selected run
+- **Obstacle photos** of the current map, tap one to enlarge it
+- Built from what the integration already exposes (`cleaning_history_picture` and `obstacle_picture` on the map camera, the `cleaning_history` sensor); hidden when there is nothing to show, or with `show_history: false`
+
 ### Accessibility (5.2.2+)
 
 - **ARIA labels** on all map overlay icons (lock, add-rectangle, recenter, repeat cycle)
@@ -141,6 +147,7 @@ vacuum_platform: tasshackDreameVacuum
 | `show_title` | boolean | `false` | Show device name in the header |
 | `show_spot` | boolean | `true` | Show the Spot tab (spot cleaning) next to Room / All / Zone |
 | `show_remote` | boolean | `true` | Show the remote control panel when the robot can be driven |
+| `show_history` | boolean | `true` | Show the history panel (last cleanings and obstacle photos) |
 | `map_locked` | boolean | `false` | Disable map pan/zoom |
 | `two_finger_pan` | boolean | `false` | Require two fingers to pan |
 | `clean_selection_on_start` | boolean | `true` | Clear the current selection when a clean starts |

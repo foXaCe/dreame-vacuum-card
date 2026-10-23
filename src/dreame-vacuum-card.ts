@@ -89,6 +89,7 @@ import "./components/robot-marker";
 import "./components/care-panel";
 import "./components/settings-panel";
 import "./components/remote-panel";
+import "./components/history-panel";
 import { careWatchedEntities, resolveDeviceEntities, DEFAULT_CARE_THRESHOLDS } from "./model/care/care-model";
 
 /** Palette Dreame par défaut, indexée par color_index 0-3 */
@@ -792,6 +793,15 @@ export class DreameVacuumCard extends LitElement {
                               .entityId=${preset.entity}
                               .stateSensorId=${stateSensorId}
                           ></dreame-remote-panel>`
+                        : nothing
+                }
+                ${
+                    this.config.show_history !== false
+                        ? html`<dreame-history-panel
+                              .hass=${this.hass}
+                              .entityId=${preset.entity}
+                              .cameraId=${preset.map_source?.camera}
+                          ></dreame-history-panel>`
                         : nothing
                 }
             </ha-card>
