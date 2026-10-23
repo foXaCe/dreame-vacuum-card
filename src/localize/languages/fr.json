@@ -320,6 +320,59 @@
         },
         "status": {
             "ready": "Prêt"
+        },
+        "care": {
+            "title": "Station et entretien",
+            "open": "Station et entretien",
+            "alerts": "Alertes d'entretien",
+            "consumables": "Pièces",
+            "reset": "Réinitialiser",
+            "confirm": "Confirmer ?",
+            "clear": "Effacer",
+            "snooze": "Plus tard",
+            "snooze_hint": "Masquer cette alerte pendant 24 heures",
+            "ok": "OK",
+            "alert": {
+                "consumable": "{name} à {pct} %"
+            },
+            "dock": {
+                "title": "Station",
+                "ready": "Prête",
+                "washing": "Lavage des serpillières",
+                "washing_paused": "Lavage en pause",
+                "drying": "Séchage des serpillières",
+                "emptying": "Vidage en cours"
+            },
+            "action": {
+                "empty": "Vider le bac",
+                "empty_busy": "Vidage…",
+                "wash": "Laver les serpillières",
+                "wash_busy": "Lavage…",
+                "dry": "Sécher les serpillières",
+                "dry_busy": "Séchage…"
+            },
+            "tank": {
+                "clean_water_tank_status": "Eau propre",
+                "dirty_water_tank_status": "Eau sale",
+                "dust_bag_status": "Sac à poussière",
+                "detergent_status": "Détergent"
+            },
+            "consumable": {
+                "main_brush": "Brosse principale",
+                "side_brush": "Brosse latérale",
+                "filter": "Filtre",
+                "mop_pad": "Serpillières",
+                "sensor_dirty": "Capteurs",
+                "wheel_dirty": "Roues",
+                "squeegee": "Raclette",
+                "silver_ion": "Ions d'argent",
+                "detergent": "Détergent",
+                "scale_inhibitor": "Anticalcaire",
+                "deodorizer": "Désodorisant",
+                "dirty_water_tank": "Réservoir d'eau sale",
+                "onboard_dirty_water_tank": "Réservoir d'eau sale embarqué",
+                "tank_filter": "Filtre du réservoir"
+            }
         }
     },
     "editor": {
@@ -337,6 +390,7 @@
         },
         "label": {
             "show_title": "Afficher le titre",
+            "show_care": "Afficher la station et l'entretien",
             "name": "Titre (optionnel)",
             "entity": "Entité de l'aspirateur (obligatoire)",
             "camera": "Entité de la caméra",

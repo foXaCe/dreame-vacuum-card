@@ -81,6 +81,7 @@ const buildSchema = (t: (key: string) => string): HaFormSchema[] => [
         title: t("editor.section.display"),
         schema: [
             { name: "show_title", selector: { boolean: {} } },
+            { name: "show_care", selector: { boolean: {} } },
             {
                 name: "appearance",
                 selector: {
@@ -137,6 +138,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             map_source: this._config.map_source ?? { camera: "" },
             display: {
                 show_title: this._config.show_title ?? false,
+                show_care: this._config.show_care ?? true,
                 appearance: this._config.appearance ?? "premium",
                 language: this._config.language ?? "",
             },
@@ -180,7 +182,7 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         const value = ev.detail.value as {
             entity?: string;
             map_source?: { camera?: string };
-            display?: { show_title?: boolean; appearance?: string; language?: string };
+            display?: { show_title?: boolean; show_care?: boolean; appearance?: string; language?: string };
             map_behavior?: {
                 map_locked?: boolean;
                 two_finger_pan?: boolean;
@@ -196,6 +198,8 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
             entity: value.entity ?? this._config.entity,
             map_source: value.map_source ?? this._config.map_source,
             show_title: value.display?.show_title,
+            // Défaut : affichée. On ne stocke que la désactivation, pour garder le YAML propre.
+            show_care: value.display?.show_care === false ? false : undefined,
             // On ne stocke que l'écart au défaut (premium) pour garder le YAML propre.
             appearance: value.display?.appearance === "minimal" ? "minimal" : undefined,
             language: value.display?.language || undefined,
@@ -209,6 +213,9 @@ export class DreameVacuumCardEditor extends LitElement implements Omit<LovelaceC
         };
         if (draft.robot_overlay === undefined) {
             delete draft.robot_overlay;
+        }
+        if (draft.show_care === undefined) {
+            delete draft.show_care;
         }
 
         // Auto-attache une calibration_source caméra si l'entité caméra a des `calibration_points`

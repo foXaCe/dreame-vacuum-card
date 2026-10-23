@@ -1,4 +1,4 @@
-import { CSSResultGroup, html, LitElement, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
+import { CSSResultGroup, html, LitElement, nothing, PropertyValues, svg, SVGTemplateResult, TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "./utils/define-element";
 import type { HassEntity } from "home-assistant-js-websocket";
@@ -84,6 +84,8 @@ import "./components/action-buttons";
 import "./components/cleaning-progress-bar";
 import "./components/robot-animation";
 import "./components/robot-marker";
+import "./components/care-panel";
+import { careWatchedEntities, resolveDeviceEntities, DEFAULT_CARE_THRESHOLDS } from "./model/care/care-model";
 
 /** Palette Dreame par défaut, indexée par color_index 0-3 */
 const DEFAULT_ROOM_PALETTE: Record<number, number[]> = {
@@ -413,6 +415,21 @@ export class DreameVacuumCard extends LitElement {
         return !!state && ACTIVE_VACUUM_STATES.includes(state);
     }
 
+    private _careWatchedFor?: string;
+    private _careWatchedRegistry?: unknown;
+
+    /** Les sensors de la page « Station et entretien » doivent réveiller la carte : sans
+     *  ça, `shouldUpdate` filtrerait leurs changements et le panneau (enfant) ne recevrait
+     *  jamais le nouveau `hass`. Résolu une fois par vacuum / version du registre. */
+    private _watchCareEntities(entityId: string): void {
+        if (this._careWatchedFor === entityId && this._careWatchedRegistry === this.hass?.entities) return;
+        this._careWatchedFor = entityId;
+        this._careWatchedRegistry = this.hass?.entities;
+        for (const eid of careWatchedEntities(entityId, resolveDeviceEntities(this.hass, entityId))) {
+            if (this.hass.states[eid] && !this.watchedEntities.includes(eid)) this.watchedEntities.push(eid);
+        }
+    }
+
     private _resolveStateSensor(entityId: string): string | null {
         if (this._stateSensorId !== undefined && this._stateSensorEntityKey === entityId) {
             return this._stateSensorId;
@@ -456,6 +473,8 @@ export class DreameVacuumCard extends LitElement {
         const preset = this._getCurrentPreset();
 
         const stateSensorId = this._resolveStateSensor(preset.entity);
+        const showCare = this.config.show_care !== false;
+        if (showCare) this._watchCareEntities(preset.entity);
         const robotState = stateSensorId ? (this.hass.states[stateSensorId]?.state ?? "") : "";
 
         this._updateCalibration(preset);
@@ -725,6 +744,18 @@ export class DreameVacuumCard extends LitElement {
                     @action-append=${() => this._runAppend()}
                     @action-cancel=${() => this._clearSelection()}
                 ></dreame-action-buttons>
+                ${
+                    showCare
+                        ? html`<dreame-care-panel
+                              .hass=${this.hass}
+                              .entityId=${preset.entity}
+                              .thresholds=${{
+                                  warning: this.config.care_warning ?? DEFAULT_CARE_THRESHOLDS.warning,
+                                  critical: this.config.care_critical ?? DEFAULT_CARE_THRESHOLDS.critical,
+                              }}
+                          ></dreame-care-panel>`
+                        : nothing
+                }
             </ha-card>
         `;
     }

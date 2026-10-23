@@ -320,6 +320,59 @@
         },
         "status": {
             "ready": "Ready"
+        },
+        "care": {
+            "title": "Dock & care",
+            "open": "Dock & care",
+            "alerts": "Care alerts",
+            "consumables": "Parts",
+            "reset": "Reset",
+            "confirm": "Confirm?",
+            "clear": "Clear",
+            "snooze": "Later",
+            "snooze_hint": "Hide this alert for 24 hours",
+            "ok": "OK",
+            "alert": {
+                "consumable": "{name} at {pct} %"
+            },
+            "dock": {
+                "title": "Dock",
+                "ready": "Ready",
+                "washing": "Washing mops",
+                "washing_paused": "Mop wash paused",
+                "drying": "Drying mops",
+                "emptying": "Emptying"
+            },
+            "action": {
+                "empty": "Empty bin",
+                "empty_busy": "Emptying…",
+                "wash": "Wash mops",
+                "wash_busy": "Washing…",
+                "dry": "Dry mops",
+                "dry_busy": "Drying…"
+            },
+            "tank": {
+                "clean_water_tank_status": "Clean water",
+                "dirty_water_tank_status": "Dirty water",
+                "dust_bag_status": "Dust bag",
+                "detergent_status": "Detergent"
+            },
+            "consumable": {
+                "main_brush": "Main brush",
+                "side_brush": "Side brush",
+                "filter": "Filter",
+                "mop_pad": "Mop pads",
+                "sensor_dirty": "Sensors",
+                "wheel_dirty": "Wheels",
+                "squeegee": "Squeegee",
+                "silver_ion": "Silver ion",
+                "detergent": "Detergent",
+                "scale_inhibitor": "Scale inhibitor",
+                "deodorizer": "Deodorizer",
+                "dirty_water_tank": "Dirty water tank",
+                "onboard_dirty_water_tank": "Onboard dirty water tank",
+                "tank_filter": "Tank filter"
+            }
         }
     },
     "editor": {
@@ -337,6 +390,7 @@
         },
         "label": {
             "show_title": "Show title",
+            "show_care": "Show dock & care",
             "name": "Title (optional)",
             "entity": "Vacuum entity (required)",
             "camera": "Camera entity",
