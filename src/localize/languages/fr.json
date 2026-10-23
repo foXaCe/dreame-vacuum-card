@@ -401,6 +401,26 @@
             "speed_slow": "Lente",
             "speed_normal": "Normale",
             "speed_fast": "Rapide"
+        },
+        "history": {
+            "title": "Historique",
+            "completed": "Terminé",
+            "interrupted": "Interrompu",
+            "second_pass": "2e passage",
+            "map_of": "Carte du",
+            "map_unavailable": "Carte indisponible",
+            "obstacles": "Obstacles détectés",
+            "close_photo": "Fermer la photo",
+            "kind": {
+                "cleaning": "Nettoyage complet",
+                "room_cleaning": "Nettoyage de pièces",
+                "zone_cleaning": "Nettoyage de zone",
+                "spot_cleaning": "Nettoyage par point",
+                "fast_mapping": "Cartographie",
+                "follow_wall_cleaning": "Nettoyage des bords",
+                "cruising_path": "Patrouille",
+                "cruising_point": "Patrouille"
+            }
         }
     },
     "editor": {
@@ -448,7 +468,8 @@
             "map_behavior": "Comportement de la carte",
             "appearance": "Apparence",
             "show_spot": "Afficher l'onglet Point",
-            "show_remote": "Afficher la télécommande"
+            "show_remote": "Afficher la télécommande",
+            "show_history": "Afficher l'historique"
         },
         "alerts": {
             "set_static_config": "Vous devez utiliser cette fonctionnalité uniquement si vous souhaitez ajuster manuellement la configuration générée automatiquement.\nContinuer ?"

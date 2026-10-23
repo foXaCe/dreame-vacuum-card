@@ -401,6 +401,26 @@
             "speed_slow": "Slow",
             "speed_normal": "Normal",
             "speed_fast": "Fast"
+        },
+        "history": {
+            "title": "History",
+            "completed": "Completed",
+            "interrupted": "Interrupted",
+            "second_pass": "second pass",
+            "map_of": "Map of",
+            "map_unavailable": "Map unavailable",
+            "obstacles": "Obstacles detected",
+            "close_photo": "Close photo",
+            "kind": {
+                "cleaning": "Full clean",
+                "room_cleaning": "Room clean",
+                "zone_cleaning": "Zone clean",
+                "spot_cleaning": "Spot clean",
+                "fast_mapping": "Mapping",
+                "follow_wall_cleaning": "Edge clean",
+                "cruising_path": "Patrol",
+                "cruising_point": "Patrol"
+            }
         }
     },
     "editor": {
@@ -448,7 +468,8 @@
             "map_behavior": "Map behavior",
             "appearance": "Appearance",
             "show_spot": "Show spot tab",
-            "show_remote": "Show remote control"
+            "show_remote": "Show remote control",
+            "show_history": "Show history"
         },
         "alerts": {
             "set_static_config": "You should use this functionality only if you want to manually adjust automatically generated configuration.\nContinue?"

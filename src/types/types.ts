@@ -57,6 +57,8 @@ export interface DreameVacuumCardConfig extends LovelaceCardConfig, CardPresetCo
     readonly show_spot?: boolean;
     /** Panneau « Télécommande » (croix directionnelle), quand le robot l'accepte (défaut : affiché). */
     readonly show_remote?: boolean;
+    /** Panneau « Historique » : derniers nettoyages et photos d'obstacles (défaut : affiché). */
+    readonly show_history?: boolean;
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {
