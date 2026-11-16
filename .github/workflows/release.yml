@@ -67,7 +67,7 @@ jobs:
         # parallèle — le jour où une release avec zip existe, hacs.json pourra
         # basculer en zip_release (filename: dreame-vacuum-card.zip) pour livrer les
         # chunks aux utilisateurs HACS, et la validation HACS restera verte.
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           files: |
             dist-release/dreame-vacuum-card.js
